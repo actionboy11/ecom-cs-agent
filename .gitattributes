@@ -1,0 +1,10 @@
+# 统一换行：仓库内一律 LF，避免 Windows 下 CRLF 噪音
+* text=auto eol=lf
+
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jar binary

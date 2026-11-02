@@ -1,0 +1,41 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.local
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- Java ----
+target/
+*.class
+*.jar
+!java-service/.mvn/wrapper/maven-wrapper.jar
+.mvn/
+!mvnw
+!mvnw.cmd
+
+# ---- Node (future frontend) ----
+node_modules/
+dist/
+.vite/
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---- Runtime data ----
+data/
+traces/
+eval/reports/
+*.db
+*.sqlite
+*.sqlite3
+*.log

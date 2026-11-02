@@ -1,0 +1,62 @@
+"""图装配：这里是「Agent 长什么样」的唯一事实来源。"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
+
+from app.graph import nodes
+from app.graph.state import AgentState
+
+
+def build_graph(checkpointer: Any = None):
+    """编译状态机。
+
+    checkpointer 选择：
+    - 开发：MemorySaver（进程内，重启即丢）
+    - 演示/生产：SqliteSaver（W2 切换，演示「服务重启后会话还能续上」）
+    """
+    graph = StateGraph(AgentState)
+
+    graph.add_node("classify", nodes.classify)
+    graph.add_node("knowledge", nodes.knowledge_node)
+    graph.add_node("tools", nodes.tool_node)
+    graph.add_node("handoff", nodes.handoff_node)
+    graph.add_node("respond", nodes.respond_node)
+
+    graph.add_edge(START, "classify")
+    graph.add_conditional_edges(
+        "classify",
+        nodes.route_after_classify,
+        {
+            "knowledge": "knowledge",
+            "tools": "tools",
+            "handoff": "handoff",
+            "respond": "respond",
+        },
+    )
+    graph.add_edge("knowledge", "respond")
+    graph.add_edge("tools", "respond")
+    graph.add_edge("handoff", "respond")
+    graph.add_edge("respond", END)
+
+    return graph.compile(checkpointer=checkpointer or MemorySaver())
+
+
+_graph: Any = None
+
+
+def get_graph():
+    """单例：FastAPI 生命周期内复用同一个 checkpointer。"""
+    global _graph
+    if _graph is None:
+        _graph = build_graph()
+    return _graph
+
+
+def reset_graph() -> None:
+    """测试用：清空单例。"""
+    global _graph
+    _graph = None
