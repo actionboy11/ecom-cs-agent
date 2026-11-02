@@ -1,96 +1,108 @@
-# 电商售后客服 Agent（cs-agent）
+# 电商售后客服 Agent（E-commerce After-Sales Support Agent）
 
-> 4 周项目：把一个「能演示、能报数、能讲透」的 Agent 项目做出来，用于投递中厂「AI Agent 应用开发 / 大模型应用开发（客服·电商方向）」岗位。
-> 计划与排期见 [PLAN.md](PLAN.md)。
+**一个能上生产的售后客服 Agent 参考实现**：LangGraph 编排 + MCP 工具化 + 资源级鉴权 + 三层可复现评测。
 
-## 它是什么
+> 不是又一个 RAG 客服 demo。这个项目回答一个具体问题：**当 AI 客服出错时，系统怎么办？**
 
-用户用自然语言描述售后诉求（查订单 / 查物流 / 申请退款 / 问政策 / 投诉），Agent 完成：
+[English](#english) · [规格书](docs/SPEC.md) · [每日开发记录](docs/daily/) · [简历](docs/resume/agent-version.md)
 
-1. 意图识别与槽位抽取（订单号、退款原因）
-2. 知识检索（售后政策）
-3. 工具调用（订单、物流、退款 —— 通过 MCP 调 Java 业务系统）
-4. 多轮澄清 + 会话记忆
-5. 必要时 `interrupt` 转人工，人工确认后恢复执行
-6. 全链路 Trace → 评测集 → 指标报告
+---
+
+## 为什么做这个项目
+
+调研了 12 个 GitHub 同类项目（见 [对标笔记](docs/daily/2026-11-02.md)）后发现三个空白：
+
+| 空白 | 本项目怎么做 |
+|---|---|
+| 几乎都没做**资源级鉴权**（有项目在 README 自认 `user_id` 未认证） | JWT + 订单归属校验 + 越权统一 404 + 审计 |
+| 很少有**失败路径**的演示（只演示成功对话） | 转人工中断/恢复、工具降级、写操作审批、拒答边界 |
+| **评测**要么缺失、要么自建自测 | 公开 600 条基准 + 自建 60 条（含 holdout）+ 真实对话质量评测 |
 
 ## 架构
 
 ```
-           ┌──────────────────────────────┐
-  用户 ───▶ │ FastAPI (python-agent)       │
-           │  └ LangGraph 状态机           │
-           │     classify → knowledge/tool │
-           │        → handoff(interrupt)   │
-           │        → respond              │
-           │  ├ Checkpointer(会话续跑)      │
-           │  ├ Memory(短期/长期)           │
-           │  └ Trace(JSONL)               │
-           └───────────┬──────────────────┘
-                       │ MCP / HTTP
-           ┌───────────▼──────────────────┐
-           │ Spring Boot (java-service)    │
-           │  订单 / 物流 / 退款 / 审计     │
-           └───────────┬──────────────────┘
-                       │
-                  MySQL (W3 接入)
+用户浏览器
+   │
+   ▼
+Streamlit（双栏：买家对话 / 坐席审批）
+   │
+   ▼
+Python: FastAPI + LangGraph
+  ├─ classify → knowledge(Chroma) / tools / handoff
+  ├─ checkpointer(SQLite)：会话续跑
+  ├─ interrupt：转人工审批
+  └─ Trace(JSONL)
+   │ MCP（工具调用，user_id 由服务端注入，模型不可见）
+   ▼
+Java: Spring Boot 3 + Spring Security(JWT) + MyBatis-Plus
+  ├─ 订单 / 物流 / 退款 / 商品 / 审计
+  └─ Flyway 迁移 + MySQL
 ```
 
-**为什么是 Java + Python 双栈**：Agent 内核必须是 Python（生态与岗位要求），业务系统用 Java —— 既复用既有积累，又能真实体现「Agent 与内部系统集成、权限、审计」这类 JD 高频要求。
+## 五个演示场景
+
+1. **查物流**：多轮补槽 → 工具调用 → 轨迹 + 超时提示
+2. **申请退款**：校验政策 → 创建 PENDING → 坐席审批 → 状态回写
+3. **投诉**：情绪触发 → 先落盘再中断 → 恢复
+4. **商品咨询**：参数/尺码/库存 → 商品工具
+5. **越权尝试**：查他人订单 → 404 + 审计 DENIED
 
 ## 快速开始
 
-```powershell
-# 0) 配置环境变量（多模型，可只填 DeepSeek）
-Copy-Item .env.example .env
-
-# 1) Java 业务系统（JDK 21 + Maven）
-cd java-service
-mvn spring-boot:run          # http://localhost:8080/api/health
-
-# 2) Python Agent（新终端）
-cd python-agent
-uv sync                       # 未装 uv：python -m venv .venv; .\.venv\Scripts\pip install -e .
-uv run uvicorn app.main:app --reload --port 8000
-# 文档：http://localhost:8000/docs
-# 若报 [WinError 10013]（端口被系统保留或占用），换端口：
-#   uv run uvicorn app.main:app --reload --port 8010
-
-# 3) 跑评测
-uv run python eval/run_eval.py
-
-# 4) 一键启动（可选，需要镜像构建）
-docker compose up --build
+```bash
+cp .env.example .env        # 填 DEEPSEEK_API_KEY
+docker compose up -d         # MySQL + Java + Python + UI
+open http://localhost:8501   # Streamlit
 ```
 
-> 无 API Key 也能启动：意图分类和应答都有规则兜底，方便先验证链路，再接真模型。
+本地开发见 [SPEC 第 12 节](docs/SPEC.md)。
+
+## 评测（持续更新）
+
+| 层 | 数据 | 指标 | 结果 |
+|---|---|---|---|
+| 标准 | 公开 600 条售后基准 | 任务完成率 | _待填_ |
+| 业务 | 自建 60 条（48 train / 12 holdout） | 意图/工具/回复 | _待填_ |
+| 安全 | 越权 4 条 | 拦截率 | _待填_ |
 
 ## 目录
 
 ```
-python-agent/        Python Agent 服务（FastAPI + LangGraph）
-  app/graph/         状态机：state / nodes / builder
-  app/llm/           多模型注册与任务路由
-  app/tools/         Java 业务系统客户端（W1 用 HTTP，W2 换 MCP）
-  app/observability  Trace
-  eval/              评测集与评测脚本
-java-service/        Spring Boot 业务系统
-docs/daily/          每日开发记录
+java-service/    Spring Boot 业务系统 + 鉴权 + MCP Server
+python-agent/    LangGraph Agent + 评测 + Streamlit
+data/policies/   售后政策库（12 条）
+docs/            SPEC / 每日记录 / 简历
 ```
 
-## 常见问题
+## 设计取舍
 
-| 现象 | 原因 | 处理 |
-|---|---|---|
-| Agent 返回「业务系统错误 502」，但 `curl localhost:8080/api/health` 正常 | 系统代理把 localhost 也代理走了（企业网络 / 本机代理） | 代码里已用 `trust_env=False` 规避；自己写 HTTP 客户端时同样要注意 |
-| 启动 uvicorn 报 `[WinError 10013]` | 端口被占用或被 Windows 动态保留 | 换端口 `--port 8010`；或管理员执行 `net stop winnat` / `net start winnat` |
-| 找不到 `uv` 命令 | 安装后 PATH 未刷新 | 关掉终端重开；`winget install --id astral-sh.uv -e` |
-| pytest 提示 asyncio fixture loop scope | pytest-asyncio 默认值变更 | 已在 `pyproject.toml` 显式设置 |
+- **业务数据用 MySQL，Agent 状态用 SQLite**：前者要事务和 join，后者是高频小写入。
+- **越权返回 404 而不是 403**：403 会泄露资源是否存在，可被用来枚举。
+- **关键词规则只做降级兜底，不计入质量指标**：规则一旦参与评测，就会变成为评测集调参。
 
-## 状态
+## Roadmap
 
-- [x] W0 骨架：目录、配置、多模型路由、LangGraph 主图、Java 三接口
-- [ ] W1 端到端跑通
-- [ ] W2 记忆 / 转人工 / 多 Agent
-- [ ] W3 评测与优化
-- [ ] W4 部署 / 简历 / 投递
+- [x] W0 脚手架：LangGraph 图 + Java 接口 + 10 条评测
+- [ ] W1 MySQL + JWT + 资源归属校验
+- [ ] W2 Chroma 检索 + MCP 工具化
+- [ ] W3 三层评测 + 拒答边界
+- [ ] W4 Streamlit 双栏 + Docker 一键启动
+- [ ] W5 subgraph 多 Agent + 多模型成本对比
+- [ ] W6 技术文章 + 面试题库
+
+---
+
+## English
+
+An after-sales customer-support agent that focuses on what demos usually skip: **failure paths and authorization**.
+
+- **Graph**: LangGraph state machine with checkpointing, human-in-the-loop interrupts, and subgraphs.
+- **Tools**: MCP-exposed tools backed by a real Spring Boot service; `user_id` is injected server-side and never exposed to the model.
+- **Security**: JWT auth, per-resource ownership checks, 404-on-unauthorized (no existence leak), audit trail.
+- **Evaluation**: public 600-case benchmark + 60 hand-written cases with a hold-out split + quality review on real conversations.
+
+See [SPEC.md](docs/SPEC.md) for the full specification.
+
+## License
+
+MIT
