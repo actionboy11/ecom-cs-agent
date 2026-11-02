@@ -8,7 +8,8 @@ services:
       MYSQL_USER: csagent
       MYSQL_PASSWORD: csagent
     ports:
-      - "3306:3306"
+      # 宿主机 3307 → 容器 3306：本机已装 MySQL 占用 3306，避免冲突
+      - "3307:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
     healthcheck:

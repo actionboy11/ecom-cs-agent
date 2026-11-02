@@ -80,6 +80,15 @@ docs/            SPEC / 每日记录 / 简历
 - **越权返回 404 而不是 403**：403 会泄露资源是否存在，可被用来枚举。
 - **关键词规则只做降级兜底，不计入质量指标**：规则一旦参与评测，就会变成为评测集调参。
 
+## 常见问题
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| Spring Boot 启动报 `Communications link failure` | MySQL 容器没起来；宿主机 3306 常被本机 MySQL 占用 | 本项目容器映射到 **3307**（`3307→3306`）；先 `docker compose up -d mysql`，等 healthy |
+| 启动 uvicorn 报 `[WinError 10013]` | 端口被占用或被 Windows 动态保留 | 换端口 `--port 8010`；或管理员执行 `net stop winnat` / `net start winnat` |
+| Agent 返回「业务系统错误 502」，但 `curl localhost:8080` 正常 | 系统代理把 localhost 也代理走了 | 已通过 `trust_env=False` 规避 |
+| `uv` 找不到 | PATH 未刷新 | 重开终端 |
+
 ## Roadmap
 
 - [x] W0 脚手架：LangGraph 图 + Java 接口 + 10 条评测

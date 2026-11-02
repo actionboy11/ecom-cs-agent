@@ -251,7 +251,7 @@ thread_owner(thread_id PK, user_id, created_at, updated_at)
 
 | 服务 | 镜像/进程 | 端口 | 依赖 |
 |---|---|---|---|
-| mysql | mysql:8.4 | 3306 | — |
+| mysql | mysql:8.4 | 3307（宿主机）→ 3306（容器） | — |
 | java-service | 多阶段构建（maven → jre21） | 8080 | mysql |
 | python-agent | python:3.12-slim | 8000 | java |
 | ui | streamlit | 8501 | python |
