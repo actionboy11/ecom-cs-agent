@@ -4,7 +4,7 @@
 
 > 不是又一个 RAG 客服 demo。这个项目回答一个具体问题：**当 AI 客服出错时，系统怎么办？**
 
-[English](#english) · [规格书](docs/SPEC.md) · [每日开发记录](docs/daily/) · [简历](docs/resume/agent-version.md)
+**仓库**：https://github.com/actionboy11/ecom-cs-agent ｜ [规格书](docs/SPEC.md) ｜ [项目总报告](docs/PROJECT-REPORT.md) ｜ [词汇表](GLOSSARY.md) ｜ [每日开发记录](docs/daily/) ｜ [决策记录](docs/adr/)
 
 ---
 

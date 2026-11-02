@@ -34,7 +34,8 @@ GitHub：github.com/actionboy11 ｜ 在线演示：47-76-185-182.sslip.io ｜ �
 
 ### 1. 电商售后客服 Agent（Python / LangGraph + MCP + Java 业务系统）｜个人项目｜2026.11 – 至今
 
-**技术栈**：Python 3.12、LangGraph、LangChain、FastAPI、MCP、Spring Boot 3 / Java 21、Chroma、Ollama、Docker Compose
+**技术栈**：Python 3.12、LangGraph、LangChain、FastAPI、MCP、Spring Boot 3 / Java 21、MySQL、Chroma、Ollama、Docker Compose
+**开源仓库**：https://github.com/actionboy11/ecom-cs-agent
 
 - 用 LangGraph 编排「意图识别 → 知识检索 / 工具调用 → 应答 → 转人工」状态机，落地 checkpointer 断点续跑（服务重启不丢会话）、interrupt 人工审核后恢复、subgraph 多 Agent 分工三项核心机制。
 - Agent 通过 **MCP** 调用 Spring Boot 订单 / 物流 / 退款接口，业务侧实现权限校验、操作审计与写操作幂等；工具失败按「重试 → 备用模型 → 人工转接」三级降级，转人工时把会话上下文摘要推给坐席。
