@@ -28,6 +28,7 @@ class AgentState(TypedDict, total=False):
     needs_human: bool
     handoff_reason: str | None
     handoff_summary: str | None
+    handoff_approved: bool | None
 
     # 最终回复
     reply: str

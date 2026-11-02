@@ -3,8 +3,12 @@
 原则：脚手架必须先「无外部依赖可跑通」，否则 D1 会被环境问题拖死。
 """
 
+import asyncio
+
+from langchain_core.messages import HumanMessage
+
 from app.graph.builder import build_graph
-from app.graph.nodes import _keyword_classify, route_after_classify
+from app.graph.nodes import _keyword_classify, handoff_prepare, route_after_classify
 
 
 def test_graph_builds() -> None:
@@ -41,3 +45,18 @@ def test_route_complaint_goes_to_handoff() -> None:
     assert route_after_classify({"intent": "logistics"}) == "tools"
     assert route_after_classify({"intent": "policy"}) == "knowledge"
     assert route_after_classify({"intent": "other"}) == "respond"
+
+
+def test_handoff_prepare_writes_reply_before_interrupt() -> None:
+    """回归测试：转人工前必须先把答复写进状态，否则用户看到空回复。"""
+    out = asyncio.run(
+        handoff_prepare(
+            {
+                "messages": [HumanMessage(content="我要投诉，客服一直不回复")],
+                "thread_id": "t-test",
+                "intent": "complaint",
+            }
+        )
+    )
+    assert out["needs_human"] is True
+    assert "人工" in out["reply"]

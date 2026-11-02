@@ -1,10 +1,10 @@
 {"id": "c01", "input": "帮我查一下订单 CS2024001", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["CS2024001"]}
-{"id": "c02", "input": "我下的单到哪了 CS2024002", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["运单"]}
-{"id": "c03", "input": "CS2024003 这双鞋我想退款，尺码不合适", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"]}
+{"id": "c02", "input": "我下的单到哪了 CS2024002", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["ZT9876543210"]}
+{"id": "c03", "input": "CS2024003 这双鞋我想退款，尺码不合适", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"]}
 {"id": "c04", "input": "你们的退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"]}
 {"id": "c05", "input": "物流三天没更新了 CS2024001", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"]}
 {"id": "c06", "input": "快递什么时候到", "expect_intent": "logistics", "expect_tool": false, "must_contain": ["订单号"]}
 {"id": "c07", "input": "我要投诉，客服一直不回复", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"]}
 {"id": "c08", "input": "你好", "expect_intent": "other", "expect_tool": false, "must_contain": []}
-{"id": "c09", "input": "订单 CS2024002 的耳机有问题，要换货", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"]}
-{"id": "c10", "input": "帮我把 CS2024003 退了，理由是不想要了", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"]}
+{"id": "c09", "input": "订单 CS2024002 的耳机有问题，要换货", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"]}
+{"id": "c10", "input": "帮我把 CS2024003 退了，理由是不想要了", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"]}

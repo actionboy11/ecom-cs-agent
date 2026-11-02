@@ -23,7 +23,8 @@ def build_graph(checkpointer: Any = None):
     graph.add_node("classify", nodes.classify)
     graph.add_node("knowledge", nodes.knowledge_node)
     graph.add_node("tools", nodes.tool_node)
-    graph.add_node("handoff", nodes.handoff_node)
+    graph.add_node("handoff_prepare", nodes.handoff_prepare)
+    graph.add_node("await_human", nodes.await_human)
     graph.add_node("respond", nodes.respond_node)
 
     graph.add_edge(START, "classify")
@@ -33,13 +34,15 @@ def build_graph(checkpointer: Any = None):
         {
             "knowledge": "knowledge",
             "tools": "tools",
-            "handoff": "handoff",
+            "handoff": "handoff_prepare",
             "respond": "respond",
         },
     )
     graph.add_edge("knowledge", "respond")
     graph.add_edge("tools", "respond")
-    graph.add_edge("handoff", "respond")
+    # 转人工两段式：先写答复（可落盘）→ 再 interrupt 挂起 → 人工恢复后继续
+    graph.add_edge("handoff_prepare", "await_human")
+    graph.add_edge("await_human", "respond")
     graph.add_edge("respond", END)
 
     return graph.compile(checkpointer=checkpointer or MemorySaver())

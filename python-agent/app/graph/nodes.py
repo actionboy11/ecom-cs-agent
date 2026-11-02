@@ -146,28 +146,38 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
             return {"tool_result": {"tool": intent, "error": str(exc), "recoverable": True}}
 
 
-async def handoff_node(state: AgentState) -> dict[str, Any]:
-    """投诉类工单转人工：interrupt 挂起，人工在外部确认后 resume。"""
-    thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    summary = _last_user_text(state["messages"])
+async def handoff_prepare(state: AgentState) -> dict[str, Any]:
+    """转人工第一步：先把「已转接」的答复写进状态，再去挂起。
 
+    顺序不能反：``interrupt()`` 一执行，节点就中断、返回值不会落到状态里，
+    用户在界面上就会看到一条空回复（c07 的 bug 就是这么来的）。
+    正确姿势是「先落盘、再挂起」——这也是生产 Agent 恢复时能无缝续上的关键。
+    """
+    thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    with node_span(thread_id, "handoff_prepare"):
+        return {
+            "needs_human": True,
+            "handoff_reason": state.get("intent", "complaint"),
+            "handoff_summary": _last_user_text(state["messages"]),
+            "reply": "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。",
+        }
+
+
+async def await_human(state: AgentState) -> dict[str, Any]:
+    """转人工第二步：真正的挂起点。恢复后拿到审批结果。"""
+    thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     decision = interrupt(
         {
             "type": "human_handoff",
             "thread_id": thread_id,
-            "reason": state.get("intent", "complaint"),
-            "summary": summary,
+            "reason": state.get("handoff_reason", "complaint"),
+            "summary": state.get("handoff_summary", ""),
         }
     )
     approved = bool(decision.get("approved")) if isinstance(decision, dict) else bool(decision)
 
-    with node_span(thread_id, "handoff", approved=approved):
-        reply = (
-            "已为您转接人工客服，人工会在 3 分钟内接入，请稍候。"
-            if approved
-            else "已记录您的投诉，我们会安排专员在 24 小时内回访。"
-        )
-        return {"needs_human": True, "reply": reply, "handoff_summary": summary}
+    with node_span(thread_id, "await_human", approved=approved):
+        return {"handoff_approved": approved}
 
 
 def _template_reply(state: AgentState) -> str:
@@ -201,6 +211,9 @@ def _template_reply(state: AgentState) -> str:
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     if state.get("needs_human"):
+        # 转人工的答复已在 handoff_prepare 里写好；这里只在「人工驳回」时改写。
+        if state.get("handoff_approved") is False:
+            return {"reply": "已记录您的投诉，我们会安排专员在 24 小时内回访，感谢您的反馈。"}
         return {}
 
     context = {

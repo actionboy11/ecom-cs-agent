@@ -30,7 +30,8 @@ REPORT_DIR = HERE / "reports"
 
 
 def load_cases(limit: int | None = None) -> list[dict]:
-    cases = [json.loads(line) for line in (HERE / "cases.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    raw = (HERE / "cases.jsonl").read_text(encoding="utf-8-sig")  # utf-8-sig：容忍 Windows 编辑器写入的 BOM
+    cases = [json.loads(line) for line in raw.splitlines() if line.strip()]
     return cases[:limit] if limit else cases
 
 
