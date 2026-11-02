@@ -67,7 +67,7 @@
 | 工具 | 订单、物流、售后请求、商品（经 MCP） | 写操作幂等 | 真实支付/物流 |
 | 知识 | Chroma + 12 条政策 + 全意图检索 + 引用编号 | 混合检索 + 重排 | 知识图谱 |
 | 安全 | 拒答四类 + 10 轮上限 + 情绪关键词 | — | 风控平台 |
-| 记忆 | 会话短期 | 跨会话用户偏好 | 长期知识库 |
+| 记忆 | 会话短期（SQLite checkpoint）+ 30 天 TTL | 跨会话用户偏好（v2） | 长期知识库 |
 | 评测 | 子串 + LLM judge 双轨 + 越权 + holdout | 多模型成本矩阵 | 在线 A/B |
 | 界面 | Streamlit 登录 + 双栏 | 细节打磨 | React |
 
@@ -119,6 +119,21 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 ### 5.4 SQLite
 
 `checkpoints` / `writes`（LangGraph 官方）+ `thread_owner(thread_id PK, user_id, created_at, updated_at)`
+
+### 5.5 数据保留与 TTL
+
+| 数据 | 位置 | 保留期 | 清理方式 |
+|---|---|---|---|
+| `checkpoints` / `writes`（会话状态） | SQLite | **30 天**（`SESSION_TTL_DAYS` 可配） | 定时任务物理删除 |
+| `thread_owner`（会话归属） | SQLite | 随对应 thread 一并删除 | 同上 |
+| `traces/*.jsonl`（运行轨迹） | 文件 | **30 天** | 按日期删除过期文件 |
+| `audit_logs`（业务审计） | MySQL | **365 天** | 只记操作与结果，不存对话正文 |
+| 订单 / 售后请求 / 用户 | MySQL | 不自动删除 | 业务事实，按合规要求保留 |
+
+**原则**：会话是「可丢状态」，业务事实是「不可丢数据」。清理时**物理删除**（不软删），因为会话里可能含订单号、地址片段等个人信息。
+
+**触发方式**：① 服务启动时跑一次 ② 每日定时（`APScheduler` 或系统计划任务）③ 提供手动 CLI `python -m app.maintenance.cleanup --dry-run`。
+
 
 ---
 
@@ -247,7 +262,7 @@ State：`thread_id, user_id, role, messages[], intent, order_no, sku, as_type, r
 
 | 周 | 主线 | 验收 |
 |---|---|---|
-| W1 | MySQL + Flyway + 种子数据；JWT；归属校验；`after_sales_request` 建模 | 越权 4/4 拦截；带/不带 token 行为正确 |
+| W1 | MySQL + Flyway + 种子数据；JWT；归属校验；`after_sales_request` 建模；**SQLite checkpointer + `thread_owner` + TTL 清理** | 越权 4/4 拦截；带/不带 token 行为正确；重启后会话可续；过期会话被清理 |
 | W2 | Chroma + 全意图检索 + 引用；MCP 工具化 | 政策问答带 `[P0x]`；MCP 3 工具通 |
 | W3 | 三层评测 + 拒答四类 + 错误码 + 10 轮上限 | 双轨报告 + 公开集跑分 |
 | W4 | Streamlit 双栏 + compose + README；**投递 5 家** | 一键启动 + 5 分钟录屏 |
