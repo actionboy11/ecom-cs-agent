@@ -17,6 +17,7 @@ class AgentState(TypedDict, total=False):
     # 意图与槽位
     intent: str
     order_no: str | None
+    sku: str | None
     reason: str | None
     confidence: float
 
@@ -40,5 +41,6 @@ INTENTS = (
     "refund",
     "policy",
     "complaint",
+    "product_info",
     "other",
 )

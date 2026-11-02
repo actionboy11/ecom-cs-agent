@@ -1,0 +1,60 @@
+{"id": "b01", "input": "帮我查一下订单 CS2024001", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["CS2024001"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b02", "input": "订单号 CS2024001 现在什么状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["已签收"], "difficulty": "easy", "tags": ["status"]}
+{"id": "b03", "input": "订单 CS2024002 的金额是多少", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["299"], "difficulty": "easy", "tags": ["amount"]}
+{"id": "b04", "input": "查下 CS2024003", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["CS2024003"], "difficulty": "easy", "tags": ["short_query"]}
+{"id": "b05", "input": "我想看看我的订单", "expect_intent": "order_query", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
+{"id": "b06", "input": "CS2024009 这个订单怎么回事", "expect_intent": "order_query", "expect_tool": false, "must_contain": ["订单"], "difficulty": "hard", "tags": ["invalid_order"]}
+{"id": "b07", "input": "CS2024002 的订单状态是什么", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["运输中"], "difficulty": "easy", "tags": ["status"]}
+{"id": "b08", "input": "帮我看下订单 CS2024001 买了什么", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["跑步鞋"], "difficulty": "easy", "tags": ["item"]}
+{"id": "b09", "input": "订单 CS2024003 是哪天下的", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["2026"], "difficulty": "medium", "tags": ["date"]}
+{"id": "b10", "input": "我的订单 CS2024001 金额和状态都告诉我", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["399"], "difficulty": "medium", "tags": ["multi_field"]}
+{"id": "b11", "input": "我下的单到哪了 CS2024002", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["ZT9876543210"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b12", "input": "快递什么时候到", "expect_intent": "logistics", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
+{"id": "b13", "input": "物流三天没更新了 CS2024001", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "difficulty": "medium", "tags": ["stalled"]}
+{"id": "b14", "input": "CS2024003 的物流信息", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["JD5555666677"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b15", "input": "CS2024001 的顺丰单号是多少", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["SF1234567890"], "difficulty": "medium", "tags": ["tracking_no"]}
+{"id": "b16", "input": "我的包裹显示已签收但我没收到 CS2024001", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["已签收"], "difficulty": "hard", "tags": ["dispute"]}
+{"id": "b17", "input": "帮我催一下 CS2024002", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["催"], "difficulty": "medium", "tags": ["urge"]}
+{"id": "b18", "input": "快递一直不动 CS2024008", "expect_intent": "logistics", "expect_tool": false, "must_contain": ["订单"], "difficulty": "hard", "tags": ["invalid_order"]}
+{"id": "b19", "input": "CS2024002 现在到哪个城市", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["杭州"], "difficulty": "medium", "tags": ["location"]}
+{"id": "b20", "input": "我的快递好像丢了 CS2024001", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "difficulty": "hard", "tags": ["lost"]}
+{"id": "b21", "input": "CS2024003 发货了吗", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["已发货"], "difficulty": "easy", "tags": ["shipped"]}
+{"id": "b22", "input": "运单号 ZT9876543210 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["杭州"], "difficulty": "hard", "tags": ["tracking_only"]}
+{"id": "b23", "input": "CS2024003 这双鞋我想退款，尺码不合适", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b24", "input": "我要退货，耳机有问题 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["quality"]}
+{"id": "b25", "input": "帮我把 CS2024001 退了，不想要了", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["no_reason"]}
+{"id": "b26", "input": "我要申请退款", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
+{"id": "b27", "input": "CS2024002 要换货", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["exchange"]}
+{"id": "b28", "input": "CS2024009 申请退款", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单"], "difficulty": "hard", "tags": ["invalid_order"]}
+{"id": "b29", "input": "行李箱轮子坏了要退 CS2024003", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["damaged"]}
+{"id": "b30", "input": "我买的耳机不想要了，帮我退掉 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b31", "input": "CS2024001 七天无理由退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["policy_refund"]}
+{"id": "b32", "input": "CS2024003 质量问题要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["quality"]}
+{"id": "b33", "input": "帮我把订单退了", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
+{"id": "b34", "input": "CS2024002 只退一个可以吗", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "hard", "tags": ["partial"]}
+{"id": "b35", "input": "你们的退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "difficulty": "easy", "tags": ["no_reason"]}
+{"id": "b36", "input": "退款多久能到账", "expect_intent": "policy", "expect_tool": false, "must_contain": ["工作日"], "difficulty": "easy", "tags": ["refund_time"]}
+{"id": "b37", "input": "退货运费谁承担", "expect_intent": "policy", "expect_tool": false, "must_contain": ["运费"], "difficulty": "medium", "tags": ["shipping_fee"]}
+{"id": "b38", "input": "能开发票吗", "expect_intent": "policy", "expect_tool": false, "must_contain": ["发票"], "difficulty": "easy", "tags": ["invoice"]}
+{"id": "b39", "input": "价保怎么申请", "expect_intent": "policy", "expect_tool": false, "must_contain": ["价保"], "difficulty": "medium", "tags": ["price_protection"]}
+{"id": "b40", "input": "快递超过几天可以催件", "expect_intent": "policy", "expect_tool": false, "must_contain": ["72"], "difficulty": "medium", "tags": ["urge_policy"]}
+{"id": "b41", "input": "换货流程是什么", "expect_intent": "policy", "expect_tool": false, "must_contain": ["质检"], "difficulty": "medium", "tags": ["exchange"]}
+{"id": "b42", "input": "你们会把我手机号告诉别人吗", "expect_intent": "policy", "expect_tool": false, "must_contain": ["个人"], "difficulty": "hard", "tags": ["privacy"]}
+{"id": "b43", "input": "我要投诉，客服一直不回复", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "easy", "tags": ["complaint"]}
+{"id": "b44", "input": "你们服务太差了，我要投诉", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "easy", "tags": ["complaint"]}
+{"id": "b45", "input": "上次说好的补偿一直没给，我要投诉", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "medium", "tags": ["promise_broken"]}
+{"id": "b46", "input": "差评，以后再也不用你们了", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "medium", "tags": ["negative"]}
+{"id": "b47", "input": "我要举报这个客服", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "easy", "tags": ["report"]}
+{"id": "b48", "input": "你们这是欺骗消费者", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "hard", "tags": ["angry"]}
+{"id": "b49", "input": "投诉你们发错货了 CS2024001", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "hard", "tags": ["wrong_item"]}
+{"id": "b50", "input": "客服态度恶劣，要求升级处理", "expect_intent": "complaint", "expect_tool": false, "must_contain": ["人工"], "difficulty": "medium", "tags": ["escalate"]}
+{"id": "b51", "input": "SKU1002 耳机续航多久", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["30"], "difficulty": "easy", "tags": ["spec"]}
+{"id": "b52", "input": "这双跑步鞋尺码偏大吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["尺码"], "difficulty": "medium", "tags": ["size"]}
+{"id": "b53", "input": "SKU1003 能带上飞机吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["TSA"], "difficulty": "medium", "tags": ["travel"]}
+{"id": "b54", "input": "耳机支持什么音频编码", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["LDAC"], "difficulty": "hard", "tags": ["spec"]}
+{"id": "b55", "input": "行李箱是什么材质的", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["PC"], "difficulty": "medium", "tags": ["material"]}
+{"id": "b56", "input": "跑步鞋还有库存吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "difficulty": "medium", "tags": ["stock"]}
+{"id": "b57", "input": "SKU1002 多少钱", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["299"], "difficulty": "easy", "tags": ["price"]}
+{"id": "b58", "input": "有没有适合大脚的运动鞋", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["42"], "difficulty": "hard", "tags": ["recommend"]}
+{"id": "b59", "input": "行李箱的轮子是什么轮", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["万向轮"], "difficulty": "medium", "tags": ["spec"]}
+{"id": "b60", "input": "耳机降噪效果怎么样", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["降噪"], "difficulty": "medium", "tags": ["experience"]}

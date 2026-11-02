@@ -60,6 +60,10 @@ async def apply_refund(order_no: str, reason: str) -> dict[str, Any]:
     return await _request("POST", "/api/refunds", json={"orderNo": order_no, "reason": reason})
 
 
+async def get_product(sku: str) -> dict[str, Any]:
+    return await _request("GET", f"/api/products/{sku}")
+
+
 async def healthy() -> bool:
     try:
         async with _client() as client:

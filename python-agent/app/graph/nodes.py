@@ -28,13 +28,25 @@ POLICY_TEXT = """【售后政策摘要】
 4. 物流超过 72 小时无更新可申请催件或补发。"""
 
 ORDER_NO_PATTERN = re.compile(r"(CS\d{7,})", re.IGNORECASE)
+SKU_PATTERN = re.compile(r"(SKU\d{4})", re.IGNORECASE)
 
-Intent = Literal["order_query", "logistics", "refund", "policy", "complaint", "other"]
+# 用户很少报 SKU，多数说商品名；这里做一层最简映射（真实系统应查商品目录）
+PRODUCT_SKU_HINTS: dict[str, str] = {
+    "跑步鞋": "SKU1001",
+    "运动鞋": "SKU1001",
+    "鞋": "SKU1001",
+    "耳机": "SKU1002",
+    "行李箱": "SKU1003",
+    "登机箱": "SKU1003",
+}
+
+Intent = Literal["order_query", "logistics", "refund", "policy", "complaint", "product_info", "other"]
 
 
 class Classification(BaseModel):
     intent: Intent = Field(description="用户意图")
     order_no: str | None = Field(default=None, description="订单号，用户没给则为空")
+    sku: str | None = Field(default=None, description="商品 SKU，用户没给则为空")
     reason: str | None = Field(default=None, description="退款/投诉原因")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
@@ -46,27 +58,53 @@ def _last_user_text(messages: list[BaseMessage]) -> str:
     return ""
 
 
+def _guess_sku(text: str) -> str | None:
+    match = SKU_PATTERN.search(text)
+    if match:
+        return match.group(1).upper()
+    for hint, sku in PRODUCT_SKU_HINTS.items():
+        if hint in text:
+            return sku
+    return None
+
+
 def _keyword_classify(text: str) -> Classification:
     """没有 API Key 或模型超时的兜底路径：保证本地永远能跑通。
 
-    判定顺序很重要：先「投诉」再「政策」再「退款」。
-    否则「退货政策几天」会被「退货」抢先判成 refund（早期测试就栽在这）。
+    判定顺序很重要：投诉 → 政策 → 退款 → 商品 → 物流 → 订单。
+    「退货政策几天」必须先判政策，「尺码不合适」这类商品咨询不能抢在退款前面。
     """
     match = ORDER_NO_PATTERN.search(text)
     order_no = match.group(1).upper() if match else None
-    if any(k in text for k in ("投诉", "差评", "客服态度", "生气", "举报")):
+    sku = _guess_sku(text)
+
+    if any(k in text for k in ("投诉", "差评", "客服态度", "生气", "举报", "欺骗", "举报")):
         intent: Intent = "complaint"
-    elif any(k in text for k in ("政策", "规则", "无理由", "能不能退", "几天内")):
+    elif any(
+        k in text
+        for k in (
+            "政策", "规则", "能不能退", "几天内",
+            "发票", "价保", "运费", "到账", "流程", "隐私", "手机号", "多少天", "几天",
+        )
+    ):
         intent = "policy"
     elif any(k in text for k in ("退款", "退货", "退钱", "换货", "退掉", "退")):
         intent = "refund"
-    elif any(k in text for k in ("物流", "快递", "到哪", "运单", "发货")):
+    elif sku or any(
+        k in text
+        for k in ("续航", "尺码", "材质", "库存", "多少钱", "编码", "降噪", "轮子", "能带", "适合", "参数", "支持")
+    ):
+        intent = "product_info"
+    elif "订单号" in text:
+        # 「订单号」里含「单号」，必须在物流分支之前拦截
+        intent = "order_query"
+    elif any(k in text for k in ("物流", "快递", "到哪", "运单", "发货", "单号", "签收", "催", "派送", "到货", "运输", "轨迹")):
         intent = "logistics"
     elif order_no or any(k in text for k in ("订单", "买的", "下单")):
         intent = "order_query"
     else:
         intent = "other"
-    return Classification(intent=intent, order_no=order_no, reason=text[:100], confidence=0.4)
+    return Classification(intent=intent, order_no=order_no, sku=sku, reason=text[:100], confidence=0.4)
 
 
 async def classify(state: AgentState) -> dict[str, Any]:
@@ -81,7 +119,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
                     SystemMessage(
                         content=(
                             "你是电商售后意图分类器。只输出结构化结果。"
-                            "intent 从 order_query/logistics/refund/policy/complaint/other 中选。"
+                            "intent 从 order_query/logistics/refund/policy/complaint/product_info/other 中选。"
+                            "用户问商品参数（续航、尺码、材质、库存、价格）时选 product_info。"
                         )
                     ),
                     HumanMessage(content=text),
@@ -97,7 +136,9 @@ async def classify(state: AgentState) -> dict[str, Any]:
         info["intent"] = parsed.intent
         return {
             "intent": parsed.intent,
-            "order_no": parsed.order_no or (ORDER_NO_PATTERN.search(text).group(1).upper() if ORDER_NO_PATTERN.search(text) else None),
+            "order_no": parsed.order_no
+            or (ORDER_NO_PATTERN.search(text).group(1).upper() if ORDER_NO_PATTERN.search(text) else None),
+            "sku": parsed.sku or _guess_sku(text),
             "reason": parsed.reason,
             "confidence": parsed.confidence,
         }
@@ -107,7 +148,7 @@ def route_after_classify(state: AgentState) -> str:
     intent = state.get("intent", "other")
     if intent == "complaint":
         return "handoff"
-    if intent in ("order_query", "logistics", "refund"):
+    if intent in ("order_query", "logistics", "refund", "product_info"):
         return "tools"
     if intent == "policy":
         return "knowledge"
@@ -125,9 +166,24 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     intent = state.get("intent", "other")
     order_no = state.get("order_no")
+    sku = state.get("sku")
     reason = state.get("reason") or ""
 
-    with node_span(thread_id, "tools", intent=intent, order_no=order_no) as info:
+    with node_span(thread_id, "tools", intent=intent, order_no=order_no, sku=sku) as info:
+        # 商品咨询只需要 SKU，不需要订单号
+        if intent == "product_info":
+            if not sku:
+                info["result"] = "missing_sku"
+                return {"tool_result": {"tool": intent, "error": "missing_sku", "recoverable": True}}
+            try:
+                data = await business_api.get_product(sku)
+                info["result"] = "ok"
+                return {"tool_result": data}
+            except BusinessAPIError as exc:
+                info["result"] = "error"
+                info["error"] = str(exc)[:200]
+                return {"tool_result": {"tool": intent, "error": str(exc), "recoverable": True}}
+
         if not order_no:
             info["result"] = "missing_order_no"
             return {"tool_result": {"tool": intent, "error": "missing_order_no", "recoverable": True}}
@@ -185,9 +241,17 @@ def _template_reply(state: AgentState) -> str:
     tool_result = state.get("tool_result") or {}
     if tool_result.get("error") == "missing_order_no":
         return "请提供您的订单号（例如 CS2024001），我马上帮您查询。"
+    if tool_result.get("error") == "missing_sku":
+        return "请告诉我具体是哪个商品（例如轻量跑步鞋 / 降噪耳机 / 登机行李箱），我帮您查参数。"
     if tool_result.get("error"):
         return f"抱歉，暂时查不到该订单：{tool_result['error']}。您可以稍后重试或转人工。"
 
+    if intent == "product_info" and tool_result:
+        attrs = "，".join(f"{k}{v}" for k, v in (tool_result.get("attrs") or {}).items())
+        return (
+            f"{tool_result.get('name')}（{tool_result.get('sku')}），"
+            f"售价 {tool_result.get('price')} 元，库存 {tool_result.get('stock')} 件。{attrs}。"
+        )
     if intent == "order_query" and tool_result:
         return (
             f"订单 {tool_result.get('orderNo')}：{tool_result.get('item')}，"

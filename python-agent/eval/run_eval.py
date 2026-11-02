@@ -29,9 +29,20 @@ HERE = Path(__file__).parent
 REPORT_DIR = HERE / "reports"
 
 
-def load_cases(limit: int | None = None) -> list[dict]:
-    raw = (HERE / "cases.jsonl").read_text(encoding="utf-8-sig")  # utf-8-sig：容忍 Windows 编辑器写入的 BOM
+def load_cases(path: Path, limit: int | None = None, split: str = "all", holdout: float = 0.0) -> list[dict]:
+    """读取用例。
+
+    ``holdout`` 用固定规则切分（每 5 条取 1 条作 holdout），保证可复现，
+    也保证「调优用的集」和「验收用的集」不是同一批——避免自己考自己。
+    """
+    raw = path.read_text(encoding="utf-8-sig")  # utf-8-sig：容忍 Windows 编辑器写入的 BOM
     cases = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    if holdout > 0:
+        step = max(int(round(1 / holdout)), 2)
+        if split == "holdout":
+            cases = [c for i, c in enumerate(cases) if i % step == 0]
+        elif split == "train":
+            cases = [c for i, c in enumerate(cases) if i % step != 0]
     return cases[:limit] if limit else cases
 
 
@@ -114,11 +125,17 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
 
 async def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--cases", default=str(HERE / "cases.jsonl"), help="用例文件路径")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--split", choices=["all", "train", "holdout"], default="all")
+    parser.add_argument("--holdout", type=float, default=0.0, help="holdout 比例，如 0.2")
     parser.add_argument("--json", action="store_true", help="只输出 JSON 汇总")
     args = parser.parse_args()
 
-    cases = load_cases(args.limit)
+    if args.split != "all" and args.holdout <= 0:
+        parser.error("--split train/holdout 需要同时给 --holdout")
+
+    cases = load_cases(Path(args.cases), args.limit, args.split, args.holdout)
     backend_ok = await business_api.healthy()
     graph = build_graph()
 
@@ -129,6 +146,8 @@ async def main() -> None:
         print(f"[{row['id']}] intent={row['intent']} intent_ok={row['intent_ok']} tool_ok={row['tool_ok']}")
 
     summary = summarize(rows)
+    summary["split"] = args.split
+    summary["cases_file"] = Path(args.cases).name
     if args.json:
         print(json.dumps(summary, ensure_ascii=False))
     else:

@@ -33,6 +33,15 @@ class RefundResult(BaseModel):
     createdAt: str
 
 
+class ProductInfo(BaseModel):
+    sku: str
+    name: str
+    price: float
+    attrs: dict[str, str] = Field(default_factory=dict, description="商品参数，键为中文")
+    stock: int = Field(description="库存")
+    faq: list[str] = Field(default_factory=list)
+
+
 class ToolError(BaseModel):
     tool: str
     error: str
