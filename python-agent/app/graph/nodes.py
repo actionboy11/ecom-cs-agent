@@ -47,19 +47,23 @@ def _last_user_text(messages: list[BaseMessage]) -> str:
 
 
 def _keyword_classify(text: str) -> Classification:
-    """没有 API Key 或模型超时的兜底路径：保证本地永远能跑通。"""
+    """没有 API Key 或模型超时的兜底路径：保证本地永远能跑通。
+
+    判定顺序很重要：先「投诉」再「政策」再「退款」。
+    否则「退货政策几天」会被「退货」抢先判成 refund（早期测试就栽在这）。
+    """
     match = ORDER_NO_PATTERN.search(text)
     order_no = match.group(1).upper() if match else None
     if any(k in text for k in ("投诉", "差评", "客服态度", "生气", "举报")):
         intent: Intent = "complaint"
-    elif any(k in text for k in ("退款", "退货", "退钱", "换货")):
+    elif any(k in text for k in ("政策", "规则", "无理由", "能不能退", "几天内")):
+        intent = "policy"
+    elif any(k in text for k in ("退款", "退货", "退钱", "换货", "退掉", "退")):
         intent = "refund"
     elif any(k in text for k in ("物流", "快递", "到哪", "运单", "发货")):
         intent = "logistics"
     elif order_no or any(k in text for k in ("订单", "买的", "下单")):
         intent = "order_query"
-    elif any(k in text for k in ("政策", "规则", "能不能退", "几天")):
-        intent = "policy"
     else:
         intent = "other"
     return Classification(intent=intent, order_no=order_no, reason=text[:100], confidence=0.4)

@@ -53,6 +53,8 @@ cd python-agent
 uv sync                       # 未装 uv：python -m venv .venv; .\.venv\Scripts\pip install -e .
 uv run uvicorn app.main:app --reload --port 8000
 # 文档：http://localhost:8000/docs
+# 若报 [WinError 10013]（端口被系统保留或占用），换端口：
+#   uv run uvicorn app.main:app --reload --port 8010
 
 # 3) 跑评测
 uv run python eval/run_eval.py

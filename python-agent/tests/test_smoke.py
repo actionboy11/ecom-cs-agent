@@ -25,6 +25,17 @@ def test_order_no_extracted() -> None:
     assert result.order_no == "CS2024002"
 
 
+def test_policy_wins_over_refund_keyword() -> None:
+    """回归测试：'退货政策' 同时含 '退货'，必须判成 policy。"""
+    assert _keyword_classify("退货政策几天").intent == "policy"
+    assert _keyword_classify("你们的退货政策是几天").intent == "policy"
+
+
+def test_refund_variants() -> None:
+    assert _keyword_classify("帮我把 CS2024003 退了").intent == "refund"
+    assert _keyword_classify("这双鞋想退掉").intent == "refund"
+
+
 def test_route_complaint_goes_to_handoff() -> None:
     assert route_after_classify({"intent": "complaint"}) == "handoff"
     assert route_after_classify({"intent": "logistics"}) == "tools"
