@@ -78,6 +78,15 @@ java-service/        Spring Boot 业务系统
 docs/daily/          每日开发记录
 ```
 
+## 常见问题
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| Agent 返回「业务系统错误 502」，但 `curl localhost:8080/api/health` 正常 | 系统代理把 localhost 也代理走了（企业网络 / 本机代理） | 代码里已用 `trust_env=False` 规避；自己写 HTTP 客户端时同样要注意 |
+| 启动 uvicorn 报 `[WinError 10013]` | 端口被占用或被 Windows 动态保留 | 换端口 `--port 8010`；或管理员执行 `net stop winnat` / `net start winnat` |
+| 找不到 `uv` 命令 | 安装后 PATH 未刷新 | 关掉终端重开；`winget install --id astral-sh.uv -e` |
+| pytest 提示 asyncio fixture loop scope | pytest-asyncio 默认值变更 | 已在 `pyproject.toml` 显式设置 |
+
 ## 状态
 
 - [x] W0 骨架：目录、配置、多模型路由、LangGraph 主图、Java 三接口

@@ -17,9 +17,14 @@ class BusinessAPIError(RuntimeError):
 
 
 def _client() -> httpx.AsyncClient:
+    # trust_env=False：显式跳过系统代理。
+    # 企业网络或本机代理（如 127.0.0.1:12348）会把 http://localhost:8080 也当成外网请求转发，
+    # 代理不认识内网地址就回 502 —— 现象是「Java 明明是好的，Agent 却查不到订单」。
+    # 排查方式：同一段代码加 trust_env=False 立刻就 200。
     return httpx.AsyncClient(
         base_url=settings.business_api_base,
         timeout=settings.business_api_timeout,
+        trust_env=False,
     )
 
 
