@@ -34,7 +34,9 @@ Thumbs.db
 # ---- Runtime data ----
 data/
 traces/
+**/traces/
 eval/reports/
+**/eval/reports/
 *.db
 *.sqlite
 *.sqlite3
