@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单（只读视图）。归属字段 userId 是权限校验的根，数据库层强制按它过滤。
+ * 订单（只读视图）。userId 是资源归属字段，用于鉴权。
+ * 注意：归属过滤在 T03 才接入查询条件；在那之前查询只按主键，不能据此认为已做越权防护。
  */
 @TableName("orders")
 public class OrderEntity {

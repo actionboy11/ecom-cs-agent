@@ -27,16 +27,24 @@ public class OrderQueryService {
         if (entity == null) {
             throw new NotFoundException("订单不存在: " + orderNo);
         }
-        auditService.record(user.username(), user.role(), "QUERY_ORDER", "ORDER", orderNo, "OK");
+        Order order = toOrder(entity);
+        // 先组装返回值再写审计：避免审计成功但响应构造失败时留下虚假的 OK 记录
+        auditService.record(new AuditEvent(
+                user.username(), user.role(),
+                AuditEvent.ACTION_QUERY_ORDER, AuditEvent.TYPE_ORDER, orderNo, AuditEvent.RESULT_OK));
+        return order;
+    }
+
+    public long count() {
+        return orderMapper.selectCount(null);
+    }
+
+    private static Order toOrder(OrderEntity entity) {
         return new Order(
                 entity.getOrderNo(),
                 entity.getItemName(),
                 entity.getAmount(),
                 entity.getStatus(),
                 entity.getCreatedAt().toLocalDate());
-    }
-
-    public long count() {
-        return orderMapper.selectCount(null);
     }
 }

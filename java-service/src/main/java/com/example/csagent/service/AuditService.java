@@ -18,16 +18,15 @@ public class AuditService {
         this.auditLogMapper = auditLogMapper;
     }
 
-    public void record(String actor, String actorRole, String action,
-                       String resourceType, String resourceId, String result) {
+    public void record(AuditEvent event) {
         AuditLogEntity entry = new AuditLogEntity();
         entry.setTs(LocalDateTime.now());
-        entry.setActor(actor);
-        entry.setActorRole(actorRole);
-        entry.setAction(action);
-        entry.setResourceType(resourceType);
-        entry.setResourceId(resourceId);
-        entry.setResult(result);
+        entry.setActor(event.actor());
+        entry.setActorRole(event.actorRole());
+        entry.setAction(event.action());
+        entry.setResourceType(event.resourceType());
+        entry.setResourceId(event.resourceId());
+        entry.setResult(event.result());
         auditLogMapper.insert(entry);
     }
 }

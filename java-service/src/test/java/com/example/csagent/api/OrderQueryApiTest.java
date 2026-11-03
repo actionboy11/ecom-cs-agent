@@ -62,8 +62,15 @@ class OrderQueryApiTest {
     }
 
     @Test
-    void creating_a_refund_is_not_required_to_read_an_order() {
-        // 保证测试库真的被 V2 种子灌过，而不是内存兜底
+    void public_product_endpoint_stays_open_without_a_token() throws Exception {
+        mockMvc.perform(get("/api/products/SKU1002"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sku").value("SKU1002"));
+    }
+
+    @Test
+    void seed_migration_loads_twelve_orders() {
+        // 这条断言的是迁移脚本本身（V2 种子），不是接口行为；接口行为由上面的 HTTP 用例覆盖
         Long count = orderMapper.selectCount(new LambdaQueryWrapper<>());
         assertThat(count).isEqualTo(12L);
         OrderEntity first = orderMapper.selectById("CS2024001");
