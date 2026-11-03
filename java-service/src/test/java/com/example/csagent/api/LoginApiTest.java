@@ -39,15 +39,6 @@ class LoginApiTest {
     @Autowired
     private com.example.csagent.security.JwtService jwtService;
 
-    private String loginAndGetToken(String username) throws Exception {
-        String body = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + username + "\",\"password\":\"demo123\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return com.jayway.jsonpath.JsonPath.read(body, "$.token");
-    }
-
     @Test
     void buyer_a_can_login_and_receives_a_token() throws Exception {
         mockMvc.perform(post("/api/auth/login")
@@ -93,14 +84,14 @@ class LoginApiTest {
 
     @Test
     void issued_token_unlocks_a_protected_endpoint() throws Exception {
-        String token = loginAndGetToken("buyer_a");
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
         mockMvc.perform(get("/api/orders/CS2024001").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
 
     @Test
     void issued_token_carries_identity_and_two_hour_ttl() throws Exception {
-        String token = loginAndGetToken("buyer_a");
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
         var claims = jwtService.parse(token);
 
         assertThat(claims.getSubject()).isEqualTo("buyer_a");

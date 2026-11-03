@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单（只读视图）。userId 是资源归属字段，用于鉴权。
- * 注意：归属过滤在 T03 才接入查询条件；在那之前查询只按主键，不能据此认为已做越权防护。
+ * 订单（只读视图）。userId 是资源归属字段；买家查询在数据层带该条件过滤，
+ * 坐席（CS_AGENT）按主键直查。
  */
 @TableName("orders")
 public class OrderEntity {

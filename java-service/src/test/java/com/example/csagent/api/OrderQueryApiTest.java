@@ -31,18 +31,9 @@ class OrderQueryApiTest {
     @Autowired
     private OrderMapper orderMapper;
 
-    private String tokenFor(String username) throws Exception {
-        String body = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"" + username + "\",\"password\":\"demo123\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return com.jayway.jsonpath.JsonPath.read(body, "$.token");
-    }
-
     @Test
     void buyer_reads_order_details_from_the_database() throws Exception {
-        String token = tokenFor("buyer_a");
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
 
         mockMvc.perform(get("/api/orders/CS2024001").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -55,7 +46,7 @@ class OrderQueryApiTest {
 
     @Test
     void unknown_order_returns_404_not_500() throws Exception {
-        String token = tokenFor("buyer_a");
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
 
         mockMvc.perform(get("/api/orders/CS9999999").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());

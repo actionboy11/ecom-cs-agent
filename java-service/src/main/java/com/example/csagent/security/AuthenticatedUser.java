@@ -8,7 +8,6 @@ public record AuthenticatedUser(String username, long userId, String role) {
 
     /** 人工坐席角色。注意不是 AI Agent——领域词汇见 GLOSSARY.md。 */
     public static final String ROLE_CS_AGENT = "CS_AGENT";
-    public static final String ROLE_CUSTOMER = "CUSTOMER";
 
     public boolean isCustomerServiceAgent() {
         return ROLE_CS_AGENT.equals(role);
