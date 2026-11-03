@@ -17,6 +17,13 @@ public class ApiExceptionHandler {
                 .body(Map.of("error", "NOT_FOUND", "message", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.example.csagent.service.InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
+            com.example.csagent.service.InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "UNAUTHORIZED", "message", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()

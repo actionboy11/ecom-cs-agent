@@ -1,0 +1,9 @@
+spring:
+  flyway:
+    clean-disabled: false
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/cs_agent_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${MYSQL_USER:csagent}
+    password: ${MYSQL_PASSWORD:csagent}
+
+# 测试专用库：与开发库隔离，Flyway 每次按迁移脚本重建结构
