@@ -263,6 +263,11 @@ State：`thread_id, user_id, role, messages[], intent, order_no, sku, as_type, r
 | 周 | 主线 | 验收 |
 |---|---|---|
 | W1 | MySQL + Flyway + 种子数据；JWT；归属校验；`after_sales_request` 建模；**SQLite checkpointer + `thread_owner` + TTL 清理** | 越权 4/4 拦截；带/不带 token 行为正确；重启后会话可续；过期会话被清理 |
+
+> **实施说明（2026-11-03）**：W1 被拆成三个可独立验收的切片执行——
+> 切片 1（MySQL + JWT + 归属校验 + 审计）已完成；
+> 切片 2 承接 `after_sales_request` 建模；切片 3 承接 SQLite 会话与 TTL。
+> 因此在切片 2、3 关闭前，**W1 整体不算完成**（当前 3/5）。
 | W2 | Chroma + 全意图检索 + 引用；MCP 工具化 | 政策问答带 `[P0x]`；MCP 3 工具通 |
 | W3 | 三层评测 + 拒答四类 + 错误码 + 10 轮上限 | 双轨报告 + 公开集跑分 |
 | W4 | Streamlit 双栏 + compose + README；**投递 5 家** | 一键启动 + 5 分钟录屏 |

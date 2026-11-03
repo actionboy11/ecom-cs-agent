@@ -9,14 +9,17 @@ import com.example.csagent.store.OrderStore;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
+/**
+ * 售后申请（临时实现，切片 2 会替换为 after_sales_requests 统一建模）。
+ *
+ * <p>只暴露 SPEC §6.2 定义的 POST；不提供列表查询——列表涉及归属与分页，
+ * 属于切片 2 的 /api/after-sales 职责。
+ */
 @RestController
 @RequestMapping("/api/refunds")
 public class RefundController {
@@ -47,10 +50,5 @@ public class RefundController {
                 refund.refundNo(), AuditEvent.RESULT_OK, httpRequest.getRequestURI(),
                 java.util.Map.of("orderNo", refund.orderNo(), "status", refund.status())));
         return refund;
-    }
-
-    @GetMapping
-    public List<Refund> list() {
-        return store.findRefunds();
     }
 }
