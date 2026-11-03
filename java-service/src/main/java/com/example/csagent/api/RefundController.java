@@ -40,10 +40,12 @@ public class RefundController {
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, httpRequest.getRequestURI());
 
         Refund refund = store.createRefund(request.orderNo(), request.reason());
+        // detail 里带上 orderNo 与状态：退款单号本身无法 join 回订单，审计要能追溯到「哪一单」
         auditService.recordQuietly(AuditEvent.of(
                 user.username(), user.role(),
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES,
-                refund.refundNo(), AuditEvent.RESULT_OK, httpRequest.getRequestURI()));
+                refund.refundNo(), AuditEvent.RESULT_OK, httpRequest.getRequestURI(),
+                java.util.Map.of("orderNo", refund.orderNo(), "status", refund.status())));
         return refund;
     }
 

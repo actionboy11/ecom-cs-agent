@@ -86,7 +86,7 @@
 | **查物流** | `GET /api/logistics/{no}` | 归属校验 → 物流 + 轨迹（子查询） | 审计 | 同订单 |
 | **申请售后** | `POST /api/after-sales` | 归属校验 → 类型（退款/退货/换货）→ 政策校验 → 插入 PENDING | `after_sales_requests` + 审计 | 订单不存在/非本人 → 404 |
 | **坐席审批** | `POST /api/after-sales/{no}/review` | 校验角色 CS_AGENT → 更新状态 + reviewed_by/at | 状态 + 审计 | 非坐席 → 403 |
-| **商品查询** | `GET /api/products/{sku}`、`?keyword=` | SKU 直查 / 名称模糊 | 审计 | 未找到 → 404 |
+| **商品查询** | `GET /api/products/{sku}`、`?keyword=` | SKU 直查 / 名称模糊 | **不写审计**（公开只读，无身份主体） | 未找到 → 404 |
 | **政策问答** | Agent 内部 | query → bge-m3 → Chroma top-3 → 阈值 0.35 → 拼上下文 + `[P0x]` | trace 记录命中片段 | 无命中 → 明确说「政策未覆盖」+ 转人工 |
 | **意图分类** | Agent 节点 `classify` | LLM 结构化输出（7 类 + 槽位）；失败降级关键词 | trace | 降级不报错，标注 `source=keyword` |
 | **工具调用** | Agent 节点 `tools` | 按意图分发 4 个工具；user_id 由 State 注入 | trace + Java 审计 | **错误码分流**（见 4.1） |
@@ -309,19 +309,20 @@ thread_owner(thread_id PK, user_id, created_at, updated_at)
 |---|---|
 | LangGraph 图（分类/工具/知识/转人工两段式） | ✅ 已实现（含 7 个单测） |
 | 多模型路由（DeepSeek/千问/Ollama + 降级） | ✅ 已实现 |
-| Java 订单/物流/退款/商品/审计 | ✅ 已实现（内存版） |
+| **JWT 鉴权 + 资源归属校验 + 越权 404 + 审计** | ✅ 已实现（切片 1） |
+| **MySQL + Flyway + 种子数据（4 用户 / 6 商品 / 12 订单）** | ✅ 已实现（切片 1） |
+| **订单 / 物流 / 商品查询改读 MySQL** | ✅ 已实现（切片 1） |
+| **`/api/audit` 改读数据库，仅坐席可访问** | ✅ 已实现（切片 1） |
+| 退款接口（内存版，已加归属校验） | ⚠️ 待切片 2 迁移到 `after_sales_requests` |
 | 60 条业务用例 + 评测脚本 + holdout | ✅ 已实现 |
 | 政策库 12 条 + 规格书 + ADR + 词汇表 | ✅ 已实现 |
-| JWT 鉴权 + 资源归属校验 | ⏳ W1 |
-| MySQL + Flyway + 种子数据 | ⏳ W1 |
-| 售后请求统一建模（替换 refunds） | ⏳ W1 |
-| SQLite checkpointer + thread_owner + TTL | ⏳ W1 |
-| Chroma 全意图检索 + 引用 | ⏳ W2 |
-| MCP 工具化 | ⏳ W2 |
-| 拒答四类 / 错误码 / 10 轮上限 | ⏳ W3 |
-| 双轨评测报告 | ⏳ W3 |
-| Streamlit 双栏 | ⏳ W4 |
-| 部署 + 录屏 + 投递 | ⏳ W4 |
+| SQLite checkpointer + thread_owner + TTL | ⏳ 切片 3 |
+| Chroma 全意图检索 + 引用 | ⏳ 切片 4 |
+| MCP 工具化 | ⏳ 切片 5 |
+| 拒答四类 / 错误码 / 10 轮上限 | ⏳ 切片 6 |
+| 双轨评测报告 | ⏳ 切片 6 |
+| Streamlit 双栏 | ⏳ 切片 7 |
+| 部署 + 录屏 + 投递 | ⏳ 切片 7 |
 
 ---
 

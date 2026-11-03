@@ -92,7 +92,7 @@ docs/            SPEC / 每日记录 / 简历
 ## Roadmap
 
 - [x] W0 脚手架：LangGraph 图 + Java 接口 + 10 条评测
-- [ ] W1 MySQL + JWT + 资源归属校验
+- [x] W1 MySQL + JWT + 资源归属校验（越权 404、审计落库、21+ 用例）
 - [ ] W2 Chroma 检索 + MCP 工具化
 - [ ] W3 三层评测 + 拒答边界
 - [ ] W4 Streamlit 双栏 + Docker 一键启动

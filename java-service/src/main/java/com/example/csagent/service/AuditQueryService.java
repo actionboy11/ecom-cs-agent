@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 读审计（仅坐席可用）。按时间倒序，最近的在前。
+ * 读审计（仅坐席可用）。按写入顺序（自增 id）倒序，最近写入的在前。
  */
 @Service
 public class AuditQueryService {
