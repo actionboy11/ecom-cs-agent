@@ -4,9 +4,13 @@
 
 ## Language
 
+**用户 User**:
+系统中的一个身份账号，角色为买家（CUSTOMER）或坐席（CS_AGENT）。是「买家」与「坐席」的上位词。
+_Avoid_: 账号（口语可）、account、user record
+
 **买家 Customer**:
 发起订单并可能提出售后诉求的自然人。
-_Avoid_: 用户、客户、consumer、consumer user
+_Avoid_: 客户、consumer、consumer user
 
 **坐席 CS Agent**:
 处理人工转接的真人客服。与本系统的 AI Agent 是两个不同的角色。

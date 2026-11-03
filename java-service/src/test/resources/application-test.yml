@@ -6,4 +6,11 @@ spring:
     username: ${MYSQL_USER:csagent}
     password: ${MYSQL_PASSWORD:csagent}
 
-# 测试专用库：与开发库隔离，Flyway 每次按迁移脚本重建结构
+app:
+  jwt:
+    # 仅测试用固定密钥，保证同一轮测试内令牌可验证；生产走环境变量
+    secret: test-only-secret-key-for-ci-32-bytes!
+    ttl-seconds: 7200
+
+# 测试库结构由 Flyway 迁移建立，数据在多次运行间保留（未做 clean）。
+# 种子数据由 V2__seed.sql 以显式 id 写入，因此断言 userId 稳定。

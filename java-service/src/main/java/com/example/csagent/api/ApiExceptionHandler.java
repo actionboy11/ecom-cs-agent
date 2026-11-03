@@ -1,5 +1,6 @@
 package com.example.csagent.api;
 
+import com.example.csagent.service.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -17,11 +18,14 @@ public class ApiExceptionHandler {
                 .body(Map.of("error", "NOT_FOUND", "message", ex.getMessage()));
     }
 
-    @ExceptionHandler(com.example.csagent.service.InvalidCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
-            com.example.csagent.service.InvalidCredentialsException ex) {
+    /**
+     * 凭据错误。用 INVALID_CREDENTIALS 而非 UNAUTHORIZED：
+     * 后者在 SPEC 中表示「令牌失效」，语义不同（见 docs/SPEC.md 第 7.2 节）。
+     */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "UNAUTHORIZED", "message", ex.getMessage()));
+                .body(Map.of("error", "INVALID_CREDENTIALS", "message", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

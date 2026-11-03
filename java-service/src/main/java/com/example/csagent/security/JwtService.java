@@ -4,6 +4,8 @@ import com.example.csagent.domain.UserEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,18 +16,27 @@ import java.util.Date;
 
 /**
  * 无状态 JWT：签发与校验。
- * 载荷：sub=username、userId、role；有效期默认 2 小时（切片 1 不做 refresh）。
+ *
+ * <p>签名密钥只从配置读取，<b>不提交任何默认密钥</b>。未配置时生成一次性随机密钥：
+ * 进程重启后旧令牌全部失效——开发环境可接受，生产必须通过 {@code JWT_SECRET} 注入。
  */
 @Service
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     private final SecretKey key;
     private final long ttlSeconds;
 
     public JwtService(
-            @Value("${app.jwt.secret:dev-only-secret-key-change-me-32bytes!}") String secret,
+            @Value("${app.jwt.secret:}") String secret,
             @Value("${app.jwt.ttl-seconds:7200}") long ttlSeconds) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (secret == null || secret.isBlank()) {
+            this.key = Jwts.SIG.HS256.key().build();
+            log.warn("未配置 app.jwt.secret（环境变量 JWT_SECRET），已生成进程内临时密钥；重启后令牌全部失效");
+        } else {
+            this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        }
         this.ttlSeconds = ttlSeconds;
     }
 
@@ -43,9 +54,5 @@ public class JwtService {
 
     public Claims parse(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-    }
-
-    public long ttlSeconds() {
-        return ttlSeconds;
     }
 }
