@@ -1,6 +1,6 @@
 package com.example.csagent.api;
 
-import com.example.csagent.store.OrderStore;
+import com.example.csagent.service.OrderQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,10 +14,10 @@ import java.util.Map;
 @RequestMapping("/api/health")
 public class HealthController {
 
-    private final OrderStore store;
+    private final OrderQueryService orderQueryService;
 
-    public HealthController(OrderStore store) {
-        this.store = store;
+    public HealthController(OrderQueryService orderQueryService) {
+        this.orderQueryService = orderQueryService;
     }
 
     @GetMapping
@@ -25,7 +25,7 @@ public class HealthController {
         return Map.of(
                 "status", "UP",
                 "service", "cs-agent-service",
-                "orders", store.orderCount()
+                "orders", orderQueryService.count()
         );
     }
 }

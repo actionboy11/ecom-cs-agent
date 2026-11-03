@@ -1,32 +1,26 @@
 package com.example.csagent.api;
 
 import com.example.csagent.domain.Order;
-import com.example.csagent.service.AuditLog;
-import com.example.csagent.store.OrderStore;
+import com.example.csagent.security.AuthenticatedUser;
+import com.example.csagent.service.OrderQueryService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderStore store;
-    private final AuditLog audit;
+    private final OrderQueryService orderQueryService;
 
-    public OrderController(OrderStore store, AuditLog audit) {
-        this.store = store;
-        this.audit = audit;
+    public OrderController(OrderQueryService orderQueryService) {
+        this.orderQueryService = orderQueryService;
     }
 
     @GetMapping("/{orderNo}")
-    public Order get(@PathVariable String orderNo) {
-        Order order = store.findOrder(orderNo)
-                .orElseThrow(() -> new NotFoundException("订单不存在: " + orderNo));
-        audit.record("ORDER_QUERY", order.orderNo(), Map.of("status", order.status()));
-        return order;
+    public Order get(@PathVariable String orderNo, @AuthenticationPrincipal AuthenticatedUser user) {
+        return orderQueryService.findByOrderNo(orderNo, user);
     }
 }
