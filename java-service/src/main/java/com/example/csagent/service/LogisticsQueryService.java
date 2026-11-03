@@ -38,15 +38,18 @@ public class LogisticsQueryService {
     }
 
     public Logistics findByOrderNo(String orderNo, AuthenticatedUser user, String requestPath) {
-        orderAccessGuard.requireVisible(orderNo, user, AuditEvent.ACTION_QUERY_LOGISTICS, requestPath);
+        orderAccessGuard.requireVisible(
+                orderNo, user, AuditEvent.ACTION_QUERY_LOGISTICS, AuditEvent.TYPE_LOGISTICS, requestPath);
 
         LogisticsEntity head = logisticsMapper.selectById(orderNo);
         if (head == null) {
             throw new NotFoundException(NO_LOGISTICS_MESSAGE);
         }
 
+        // 按时间升序（seq 只作为同一时刻的稳定次序），与 SPEC「轨迹按时间升序」一致
         List<String> traces = traceMapper.selectList(new LambdaQueryWrapper<LogisticsTraceEntity>()
                         .eq(LogisticsTraceEntity::getOrderNo, orderNo)
+                        .orderByAsc(LogisticsTraceEntity::getTraceTime)
                         .orderByAsc(LogisticsTraceEntity::getSeq))
                 .stream()
                 .map(trace -> trace.getTraceTime().format(TRACE_FORMAT) + " " + trace.getContent())

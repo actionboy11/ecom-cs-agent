@@ -1,6 +1,5 @@
 package com.example.csagent.store;
 
-import com.example.csagent.domain.Logistics;
 import com.example.csagent.domain.Order;
 import com.example.csagent.domain.Refund;
 import org.springframework.stereotype.Service;
@@ -16,13 +15,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 内存版数据访问。W3 换成 MySQL + JPA，接口保持不变，所以 Agent 侧不用改。
+ * 售后写操作的临时内存实现（订单与物流已迁到 MySQL）。
+ *
+ * <p>注意：这里的订单种子仅用于退款流程的订单存在性校验，属于待收口的遗留路径——
+ * 切片 2（售后请求建模）会把它整体替换为 MySQL。不要在此处新增业务数据。
  */
 @Service
 public class OrderStore {
 
     private final Map<String, Order> orders = new ConcurrentHashMap<>();
-    private final Map<String, Logistics> logistics = new ConcurrentHashMap<>();
     private final List<Refund> refunds = new CopyOnWriteArrayList<>();
     private final AtomicInteger refundSeq = new AtomicInteger(1);
 
@@ -40,25 +41,10 @@ public class OrderStore {
         orders.put("CS2024003", new Order(
                 "CS2024003", "20寸登机行李箱", new BigDecimal("699.00"),
                 "已发货", LocalDate.of(2026, 11, 1)));
-
-        logistics.put("CS2024001", new Logistics(
-                "CS2024001", "顺丰速运", "SF1234567890", "已签收",
-                List.of("2026-10-21 09:12 已揽收", "2026-10-22 15:40 运输中",
-                        "2026-10-23 10:05 派送中", "2026-10-23 14:30 已签收")));
-        logistics.put("CS2024002", new Logistics(
-                "CS2024002", "中通快递", "ZT9876543210", "运输中",
-                List.of("2026-10-29 08:00 已揽收", "2026-10-30 21:10 到达杭州转运中心")));
-        logistics.put("CS2024003", new Logistics(
-                "CS2024003", "京东物流", "JD5555666677", "已发货",
-                List.of("2026-11-01 18:20 已出库")));
     }
 
     public Optional<Order> findOrder(String orderNo) {
         return Optional.ofNullable(orders.get(orderNo.toUpperCase()));
-    }
-
-    public Optional<Logistics> findLogistics(String orderNo) {
-        return Optional.ofNullable(logistics.get(orderNo.toUpperCase()));
     }
 
     public Refund createRefund(String orderNo, String reason) {

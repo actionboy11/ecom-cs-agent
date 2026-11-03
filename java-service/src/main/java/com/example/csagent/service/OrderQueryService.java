@@ -5,8 +5,6 @@ import com.example.csagent.domain.Order;
 import com.example.csagent.domain.OrderEntity;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.store.OrderMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,8 +15,6 @@ import java.util.List;
  */
 @Service
 public class OrderQueryService {
-
-    private static final Logger log = LoggerFactory.getLogger(OrderQueryService.class);
 
     private final OrderMapper orderMapper;
     private final OrderAccessGuard orderAccessGuard;
@@ -32,7 +28,7 @@ public class OrderQueryService {
 
     public Order findByOrderNo(String orderNo, AuthenticatedUser user, String requestPath) {
         OrderEntity entity = orderAccessGuard.requireVisible(
-                orderNo, user, AuditEvent.ACTION_QUERY_ORDER, requestPath);
+                orderNo, user, AuditEvent.ACTION_QUERY_ORDER, AuditEvent.TYPE_ORDER, requestPath);
         Order order = toOrder(entity);
         auditService.recordQuietly(AuditEvent.of(
                 user.username(), user.role(), AuditEvent.ACTION_QUERY_ORDER,
@@ -42,7 +38,8 @@ public class OrderQueryService {
 
     public List<Order> listFor(AuthenticatedUser user) {
         LambdaQueryWrapper<OrderEntity> query = new LambdaQueryWrapper<OrderEntity>()
-                .orderByAsc(OrderEntity::getCreatedAt);
+                .orderByAsc(OrderEntity::getCreatedAt)
+                .orderByAsc(OrderEntity::getOrderNo);
         if (!user.isCustomerServiceAgent()) {
             query.eq(OrderEntity::getUserId, user.userId());
         }
@@ -53,7 +50,7 @@ public class OrderQueryService {
         return orderMapper.selectCount(null);
     }
 
-    static Order toOrder(OrderEntity entity) {
+    private static Order toOrder(OrderEntity entity) {
         return new Order(
                 entity.getOrderNo(),
                 entity.getItemName(),

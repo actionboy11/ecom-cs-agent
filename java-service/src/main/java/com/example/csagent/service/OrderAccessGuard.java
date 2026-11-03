@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class OrderAccessGuard {
 
-    /** 统一话术：订单与物流的越权/不存在都复用它。 */
-    public static final String NOT_FOUND_MESSAGE = "订单不存在";
+    /** 统一话术：越权与不存在共用，避免泄露资源存在性。 */
+    private static final String NOT_FOUND_MESSAGE = "订单不存在";
 
     private final OrderMapper orderMapper;
     private final AuditService auditService;
@@ -27,7 +27,8 @@ public class OrderAccessGuard {
         this.auditService = auditService;
     }
 
-    public OrderEntity requireVisible(String orderNo, AuthenticatedUser user, String action, String requestPath) {
+    public OrderEntity requireVisible(String orderNo, AuthenticatedUser user,
+                                      String action, String resourceType, String requestPath) {
         if (user.isCustomerServiceAgent()) {
             OrderEntity any = orderMapper.selectById(orderNo);
             if (any == null) {
@@ -45,7 +46,7 @@ public class OrderAccessGuard {
 
         if (orderMapper.selectById(orderNo) != null) {
             auditService.recordQuietly(AuditEvent.of(
-                    user.username(), user.role(), action, AuditEvent.TYPE_ORDER,
+                    user.username(), user.role(), action, resourceType,
                     orderNo, AuditEvent.RESULT_DENIED, requestPath));
         }
         throw new NotFoundException(NOT_FOUND_MESSAGE);

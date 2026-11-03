@@ -62,6 +62,9 @@ public class ProductStore {
     }
 
     public List<Product> search(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.copyOf(products.values());
+        }
         return products.values().stream()
                 .filter(p -> p.name().contains(keyword) || p.sku().equalsIgnoreCase(keyword))
                 .toList();
