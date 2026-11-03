@@ -4,6 +4,7 @@ import com.example.csagent.domain.Refund;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.service.AuditEvent;
 import com.example.csagent.service.AuditService;
+import com.example.csagent.service.OrderAccessGuard;
 import com.example.csagent.store.OrderStore;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -21,10 +22,12 @@ import java.util.List;
 public class RefundController {
 
     private final OrderStore store;
+    private final OrderAccessGuard orderAccessGuard;
     private final AuditService auditService;
 
-    public RefundController(OrderStore store, AuditService auditService) {
+    public RefundController(OrderStore store, OrderAccessGuard orderAccessGuard, AuditService auditService) {
         this.store = store;
+        this.orderAccessGuard = orderAccessGuard;
         this.auditService = auditService;
     }
 
@@ -32,9 +35,10 @@ public class RefundController {
     public Refund create(@Valid @RequestBody RefundRequest request,
                          @AuthenticationPrincipal AuthenticatedUser user,
                          HttpServletRequest httpRequest) {
-        if (store.findOrder(request.orderNo()).isEmpty()) {
-            throw new NotFoundException("订单不存在，无法申请退款: " + request.orderNo());
-        }
+        // 只能对自己可见的订单发起售后：越权与不存在同为 404（ADR-0001）
+        orderAccessGuard.requireVisible(request.orderNo(), user,
+                AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, httpRequest.getRequestURI());
+
         Refund refund = store.createRefund(request.orderNo(), request.reason());
         auditService.recordQuietly(AuditEvent.of(
                 user.username(), user.role(),

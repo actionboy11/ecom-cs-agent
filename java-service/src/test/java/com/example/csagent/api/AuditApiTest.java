@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -79,11 +80,49 @@ class AuditApiTest {
     }
 
     @Test
-    void agent_reads_any_buyers_logistics() throws Exception {
+    void agent_order_list_is_audited() throws Exception {
         String agentToken = LoginSupport.tokenFor(mockMvc, "cs_agent");
-        mockMvc.perform(get("/api/logistics/CS2024005").header("Authorization", "Bearer " + agentToken))
-                .andExpect(status().isOk())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
-                        .jsonPath("$.orderNo").value("CS2024005"));
+        mockMvc.perform(get("/api/orders").header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk());
+
+        var body = mockMvc.perform(get("/api/audit?limit=20").header("Authorization", "Bearer " + agentToken))
+                .andReturn().getResponse().getContentAsString();
+        boolean listedAudited = false;
+        for (var record : MAPPER.readTree(body)) {
+            if ("QUERY_ORDER_LIST".equals(record.get("action").asText())
+                    && "cs_agent".equals(record.get("actor").asText())) {
+                listedAudited = true;
+            }
+        }
+        assertThat(listedAudited).as("坐席列举订单必须留痕").isTrue();
+    }
+
+    @Test
+    void agent_logistics_query_is_audited() throws Exception {
+        String agentToken = LoginSupport.tokenFor(mockMvc, "cs_agent");
+        mockMvc.perform(get("/api/logistics/CS2024003").header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk());
+
+        var body = mockMvc.perform(get("/api/audit?limit=20").header("Authorization", "Bearer " + agentToken))
+                .andReturn().getResponse().getContentAsString();
+        boolean logisticsAudited = false;
+        for (var record : MAPPER.readTree(body)) {
+            if ("QUERY_LOGISTICS".equals(record.get("action").asText())
+                    && "CS2024003".equals(record.get("resourceId").asText())
+                    && "cs_agent".equals(record.get("actor").asText())) {
+                logisticsAudited = true;
+            }
+        }
+        assertThat(logisticsAudited).isTrue();
+    }
+
+    @Test
+    void buyer_cannot_apply_after_sales_for_someone_elses_order() throws Exception {
+        String buyerToken = LoginSupport.tokenFor(mockMvc, "buyer_b");
+        mockMvc.perform(post("/api/refunds")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"test\"}"))
+                .andExpect(status().isNotFound());
     }
 }

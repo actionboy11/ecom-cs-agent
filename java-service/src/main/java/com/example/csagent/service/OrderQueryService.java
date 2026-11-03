@@ -36,14 +36,20 @@ public class OrderQueryService {
         return order;
     }
 
-    public List<Order> listFor(AuthenticatedUser user) {
+    public List<Order> listFor(AuthenticatedUser user, String requestPath) {
         LambdaQueryWrapper<OrderEntity> query = new LambdaQueryWrapper<OrderEntity>()
                 .orderByAsc(OrderEntity::getCreatedAt)
                 .orderByAsc(OrderEntity::getOrderNo);
         if (!user.isCustomerServiceAgent()) {
             query.eq(OrderEntity::getUserId, user.userId());
         }
-        return orderMapper.selectList(query).stream().map(OrderQueryService::toOrder).toList();
+        List<Order> orders = orderMapper.selectList(query).stream().map(OrderQueryService::toOrder).toList();
+        // 列表也要留痕：坐席能列举全部订单，必须可追溯（T05 AC）
+        auditService.recordQuietly(AuditEvent.of(
+                user.username(), user.role(), AuditEvent.ACTION_QUERY_ORDER_LIST,
+                AuditEvent.TYPE_ORDER, "-", AuditEvent.RESULT_OK, requestPath,
+                java.util.Map.of("returned", orders.size())));
+        return orders;
     }
 
     public long count() {

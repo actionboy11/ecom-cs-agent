@@ -24,8 +24,8 @@ public class OrderController {
 
     /** 列表：买家只看自己的，坐席看全部。 */
     @GetMapping
-    public List<Order> list(@AuthenticationPrincipal AuthenticatedUser user) {
-        return orderQueryService.listFor(user);
+    public List<Order> list(@AuthenticationPrincipal AuthenticatedUser user, HttpServletRequest request) {
+        return orderQueryService.listFor(user, request.getRequestURI());
     }
 
     @GetMapping("/{orderNo}")

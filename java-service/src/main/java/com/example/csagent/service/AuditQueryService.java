@@ -21,7 +21,7 @@ public class AuditQueryService {
     }
 
     public List<AuditRecord> recent(int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 200);
+        int safeLimit = Math.min(Math.max(limit, 1), 100);
         return auditLogMapper.selectList(new LambdaQueryWrapper<AuditLogEntity>()
                         .orderByDesc(AuditLogEntity::getId)
                         .last("limit " + safeLimit))
