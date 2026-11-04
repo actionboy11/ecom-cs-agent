@@ -64,11 +64,22 @@ class AfterSalesPersistenceApiTest {
 
     @Test
     void seed_contains_one_pending_request_for_the_desk_to_review() {
-        List<AfterSalesRequestEntity> pending = afterSalesMapper.selectList(
-                new LambdaQueryWrapper<AfterSalesRequestEntity>()
-                        .eq(AfterSalesRequestEntity::getStatus, "PENDING"));
-        assertThat(pending).isNotEmpty();
-        assertThat(pending).anyMatch(r -> "AS20261101000001".equals(r.getRequestNo()));
+        AfterSalesRequestEntity seed = afterSalesMapper.selectById("AS20261101000001");
+        assertThat(seed).isNotNull();
+        assertThat(seed.getOrderNo()).isEqualTo("CS2024003");
+        assertThat(seed.getUserId()).isEqualTo(1L);
+        assertThat(seed.getType()).isEqualTo("REFUND");
+        assertThat(seed.getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void agent_may_not_create_after_sales() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "cs_agent");
+        mockMvc.perform(post("/api/refunds")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"坐席代申请\"}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

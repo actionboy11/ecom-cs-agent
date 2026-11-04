@@ -3,6 +3,7 @@ package com.example.csagent.security;
 import com.example.csagent.api.ApiErrors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -34,6 +35,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/health", "/api/products/**", "/error").permitAll()
                         .requestMatchers("/api/audit/**").hasRole("CS_AGENT")
+                        // SPEC §6.2：售后只能由买家发起，坐席调用一律 403
+                        .requestMatchers(HttpMethod.POST, "/api/refunds", "/api/after-sales").hasRole("CUSTOMER")
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint((request, response, ex) -> ApiErrors.write(

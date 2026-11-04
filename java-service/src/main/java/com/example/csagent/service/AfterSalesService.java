@@ -1,6 +1,7 @@
 package com.example.csagent.service;
 
 import com.example.csagent.domain.AfterSalesRequestEntity;
+import com.example.csagent.domain.OrderEntity;
 import com.example.csagent.domain.Refund;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.store.AfterSalesRequestMapper;
@@ -17,6 +18,9 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <p>本切片只创建 REFUND 类型；类型扩展与审批在 S2-2。
  * 越权与不存在由 {@link OrderAccessGuard} 统一处理为 404（ADR-0001）。
+ *
+ * <p>注意 {@code user_id} 记录的是<b>订单所有者</b>，不是调用者——坐席不可发起售后
+ * （SPEC §6.2），即使误配角色，归属也不会落到坐席身上。
  */
 @Service
 public class AfterSalesService {
@@ -40,14 +44,14 @@ public class AfterSalesService {
 
     @Transactional
     public Refund createRefund(String orderNo, String reason, AuthenticatedUser user, String requestPath) {
-        orderAccessGuard.requireVisible(orderNo, user,
+        OrderEntity order = orderAccessGuard.requireVisible(orderNo, user,
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, requestPath);
 
         LocalDateTime now = LocalDateTime.now().withNano(0);
         AfterSalesRequestEntity entity = new AfterSalesRequestEntity();
         entity.setRequestNo(nextRequestNo(now));
         entity.setOrderNo(orderNo);
-        entity.setUserId(user.userId());
+        entity.setUserId(order.getUserId());
         entity.setType(TYPE_REFUND);
         entity.setReason(reason);
         entity.setStatus(STATUS_PENDING);
