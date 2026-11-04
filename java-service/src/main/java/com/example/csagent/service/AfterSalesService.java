@@ -5,10 +5,12 @@ import com.example.csagent.domain.Refund;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.store.AfterSalesRequestMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 售后申请：落库 + 审计。
@@ -19,8 +21,8 @@ import java.util.Map;
 @Service
 public class AfterSalesService {
 
-    private static final DateTimeFormatter REQUEST_NO_FORMAT =
-            DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+    /** 请求号 = AS + 14 位时间戳 + 4 位随机数（定长 20，避免同秒并发撞主键）。 */
+    private static final DateTimeFormatter REQUEST_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final String TYPE_REFUND = "REFUND";
     private static final String STATUS_PENDING = "PENDING";
 
@@ -36,13 +38,14 @@ public class AfterSalesService {
         this.auditService = auditService;
     }
 
+    @Transactional
     public Refund createRefund(String orderNo, String reason, AuthenticatedUser user, String requestPath) {
         orderAccessGuard.requireVisible(orderNo, user,
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, requestPath);
 
         LocalDateTime now = LocalDateTime.now().withNano(0);
         AfterSalesRequestEntity entity = new AfterSalesRequestEntity();
-        entity.setRequestNo("AS" + now.format(REQUEST_NO_FORMAT));
+        entity.setRequestNo(nextRequestNo(now));
         entity.setOrderNo(orderNo);
         entity.setUserId(user.userId());
         entity.setType(TYPE_REFUND);
@@ -55,8 +58,13 @@ public class AfterSalesService {
                 user.username(), user.role(),
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES,
                 entity.getRequestNo(), AuditEvent.RESULT_OK, requestPath,
-                Map.of("orderNo", orderNo, "status", STATUS_PENDING)));
+                Map.of("orderNo", orderNo, "status", entity.getStatus())));
 
-        return new Refund(entity.getRequestNo(), orderNo, reason, STATUS_PENDING, now);
+        return new Refund(entity.getRequestNo(), orderNo, reason, entity.getStatus(), now);
+    }
+
+    private static String nextRequestNo(LocalDateTime now) {
+        return "AS" + now.format(REQUEST_NO_FORMAT)
+                + String.format("%04d", ThreadLocalRandom.current().nextInt(10_000));
     }
 }
