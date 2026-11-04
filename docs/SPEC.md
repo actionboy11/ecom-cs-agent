@@ -38,6 +38,7 @@
 | `GET /api/logistics/{no}` | 仅自己，否则 **404** | ✅ | 401 |
 | `POST /api/after-sales` | 仅自己订单 | 403 | 401 |
 | `POST /api/after-sales/{no}/review` | 403 | ✅ | 401 |
+| `GET /api/after-sales` | 仅自己 | 全部 | 401 |
 | `GET /api/audit` | 403 | ✅ | 401 |
 | `POST /api/v1/chat` | 仅自己的 thread，否则 **404** | 自己的 thread | 401 |
 
@@ -65,6 +66,7 @@
 | 存储 | MySQL（业务）+ SQLite（Agent 状态） | 索引优化 | 分库分表 |
 | 编排 | LangGraph 单图 + checkpointer + interrupt | subgraph 三子图 | 复杂层级 |
 | 工具 | 订单、物流、售后请求、商品（经 MCP） | 写操作幂等 | 真实支付/物流 |
+| 售后 | 申请（退款/退货/换货 → PENDING）+ **列表**（买家自己的 / 坐席全部）+ 坐席审批 | 审批面板打磨、批量处理 | 真实打款/寄回物流 |
 | 知识 | Chroma + 12 条政策 + 全意图检索 + 引用编号 | 混合检索 + 重排 | 知识图谱 |
 | 安全 | 拒答四类 + 10 轮上限 + 情绪关键词 | — | 风控平台 |
 | 记忆 | 会话短期（SQLite checkpoint）+ 30 天 TTL | 跨会话用户偏好（v2） | 长期知识库 |
@@ -158,6 +160,7 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | GET | `/api/logistics/{no}` | CUSTOMER/CS_AGENT | 同上 |
 | POST | `/api/after-sales` | CUSTOMER | `{orderNo, type, reason}` → PENDING |
 | POST | `/api/after-sales/{no}/review` | CS_AGENT | `{approved, note}` |
+| GET | `/api/after-sales?status=` | CUSTOMER / CS_AGENT | 买家仅自己；坐席全部；可按状态过滤（切片 2） |
 | GET | `/api/audit?limit=` | CS_AGENT | 审计列表 |
 
 ### 6.3 Agent 接口
@@ -193,6 +196,26 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | `TIMEOUT` | 超时 | 重试一次 → 转人工 |
 | `MISSING_SLOT` | 缺订单号/SKU | 追问槽位 |
 | `INVALID_INPUT` | 参数非法 | 澄清并重试 |
+
+---
+
+### 7.3 审计动作清单
+
+所有审计只记「谁 / 对哪个资源 / 做了什么 / 结果」与请求路径，**不记对话正文、密码、令牌**（ADR-0005）。
+
+| action | 触发 | 状态 |
+|---|---|---|
+| `QUERY_ORDER` | 查订单详情（成功或越权） | ✅ 已实现 |
+| `QUERY_ORDER_LIST` | 查订单列表 | ✅ 已实现 |
+| `QUERY_LOGISTICS` | 查物流 | ✅ 已实现 |
+| `APPLY_AFTER_SALES` | 发起售后申请 | ✅ 已实现（内存版） |
+| `READ_AUDIT` | 坐席读取审计 | ✅ 已实现 |
+| `LOGIN` | 登录成功 / 失败 | ⏳ 切片 6 |
+
+**`LOGIN` 的额外约束**（切片 6 实现时必须遵守）：
+- 只记 `username` 与结果，**不记密码、不记令牌**；
+- 失败审计不得区分「用户不存在」与「密码错误」，否则审计接口本身成为账号枚举渠道；
+- 不记录 IP 与 UA（演示项目无此必要，且会增加 PII 面）。
 
 ---
 
@@ -266,8 +289,10 @@ State：`thread_id, user_id, role, messages[], intent, order_no, sku, as_type, r
 
 > **实施说明（2026-11-03）**：W1 被拆成三个可独立验收的切片执行——
 > 切片 1（MySQL + JWT + 归属校验 + 审计）已完成；
-> 切片 2 承接 `after_sales_request` 建模；切片 3 承接 SQLite 会话与 TTL。
+> 切片 2 承接 `after_sales_request` 建模、售后列表与审批流；
+> 切片 3 承接 SQLite 会话与 TTL。
 > 因此在切片 2、3 关闭前，**W1 整体不算完成**（当前 3/5）。
+> 登录审计（`LOGIN`）不属 W1，归入切片 6（安全与评测）。
 | W2 | Chroma + 全意图检索 + 引用；MCP 工具化 | 政策问答带 `[P0x]`；MCP 3 工具通 |
 | W3 | 三层评测 + 拒答四类 + 错误码 + 10 轮上限 | 双轨报告 + 公开集跑分 |
 | W4 | Streamlit 双栏 + compose + README；**投递 5 家** | 一键启动 + 5 分钟录屏 |
