@@ -1,7 +1,11 @@
 package com.example.csagent.api;
 
 import com.example.csagent.domain.AfterSalesRequestEntity;
+import com.example.csagent.domain.AuditLogEntity;
+import com.example.csagent.service.AuditEvent;
 import com.example.csagent.store.AfterSalesRequestMapper;
+import com.example.csagent.store.AuditLogMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,6 +35,9 @@ class AfterSalesReviewApiTest {
 
     @Autowired
     private AfterSalesRequestMapper afterSalesMapper;
+
+    @Autowired
+    private AuditLogMapper auditLogMapper;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -95,7 +104,38 @@ class AfterSalesReviewApiTest {
                         .header("Authorization", "Bearer " + buyerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"approved\":true}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"));
+    }
+
+    @Test
+    void agent_rejection_sets_rejected_and_is_audited() throws Exception {
+        String buyerToken = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        String requestNo = createRequest(buyerToken, "CS2024001", "REFUND");
+
+        String agentToken = LoginSupport.tokenFor(mockMvc, "cs_agent");
+        mockMvc.perform(post("/api/after-sales/" + requestNo + "/review")
+                        .header("Authorization", "Bearer " + agentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\":false,\"note\":\"不符合无理由条件\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"))
+                .andExpect(jsonPath("$.reviewNote").value("不符合无理由条件"));
+
+        AfterSalesRequestEntity saved = afterSalesMapper.selectById(requestNo);
+        assertThat(saved.getStatus()).isEqualTo("REJECTED");
+        assertThat(saved.getReviewedBy()).isEqualTo("cs_agent");
+
+        List<AuditLogEntity> audit = auditLogMapper.selectList(new LambdaQueryWrapper<AuditLogEntity>()
+                .eq(AuditLogEntity::getAction, AuditEvent.ACTION_REVIEW_AFTER_SALES)
+                .eq(AuditLogEntity::getResourceId, requestNo));
+        assertThat(audit).hasSize(1);
+        assertThat(audit.get(0).getActor()).isEqualTo("cs_agent");
+        assertThat(audit.get(0).getActorRole()).isEqualTo("CS_AGENT");
+        assertThat(audit.get(0).getResult()).isEqualTo(AuditEvent.RESULT_OK);
+        var detail = MAPPER.readTree(audit.get(0).getDetail());
+        assertThat(detail.get("approved").asBoolean()).isFalse();
+        assertThat(detail.get("status").asText()).isEqualTo("REJECTED");
     }
 
     @Test
