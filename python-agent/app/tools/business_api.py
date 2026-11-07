@@ -56,8 +56,11 @@ async def get_logistics(order_no: str) -> dict[str, Any]:
     return await _request("GET", f"/api/logistics/{order_no}")
 
 
-async def apply_refund(order_no: str, reason: str) -> dict[str, Any]:
-    return await _request("POST", "/api/refunds", json={"orderNo": order_no, "reason": reason})
+async def apply_after_sales(order_no: str, as_type: str, reason: str) -> dict[str, Any]:
+    """发起售后（REFUND / RETURN / EXCHANGE）。"""
+    return await _request(
+        "POST", "/api/after-sales", json={"orderNo": order_no, "type": as_type, "reason": reason}
+    )
 
 
 async def get_product(sku: str) -> dict[str, Any]:

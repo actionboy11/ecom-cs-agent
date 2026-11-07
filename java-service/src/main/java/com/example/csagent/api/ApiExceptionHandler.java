@@ -28,6 +28,19 @@ public class ApiExceptionHandler {
                 .body(Map.of("error", "INVALID_CREDENTIALS", "message", ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
+    }
+
+    /** 状态冲突（如重复审批）。S2-2 决定不约定具体状态码，这里取 409。 */
+    @ExceptionHandler(com.example.csagent.service.StateConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(com.example.csagent.service.StateConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "CONFLICT", "message", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()

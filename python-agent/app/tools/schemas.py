@@ -25,9 +25,10 @@ class LogisticsInfo(BaseModel):
     traces: list[str] = Field(default_factory=list, description="物流轨迹")
 
 
-class RefundResult(BaseModel):
-    refundNo: str
+class AfterSalesRequestResult(BaseModel):
+    requestNo: str
     orderNo: str
+    type: Literal["REFUND", "RETURN", "EXCHANGE"]
     reason: str
     status: Literal["PENDING", "APPROVED", "REJECTED"]
     createdAt: str

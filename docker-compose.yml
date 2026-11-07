@@ -8,8 +8,8 @@ services:
       MYSQL_USER: csagent
       MYSQL_PASSWORD: csagent
     ports:
-      # 宿主机 3307 → 容器 3306：本机已装 MySQL 占用 3306，避免冲突
-      - "3307:3306"
+      # 宿主机 3308 → 容器 3306：本机 3306 被 MySQL 服务、3307 被视网膜项目的容器占用
+      - "3308:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
       - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro

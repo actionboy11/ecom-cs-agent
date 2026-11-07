@@ -161,8 +161,6 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | POST | `/api/after-sales` | CUSTOMER | `{orderNo, type, reason}` → PENDING |
 | POST | `/api/after-sales/{no}/review` | CS_AGENT | `{approved, note}` |
 | GET | `/api/after-sales?status=` | CUSTOMER / CS_AGENT | 买家仅自己；坐席全部；可按状态过滤（切片 2） |
-
-> **过渡说明（S2-1）**：售后创建的落库已在本切片完成，但**路径仍沿用 `POST /api/refunds`**（行为与迁移前一致）；S2-2 会改为本表定义的 `POST /api/after-sales` 并增加 `type` 字段，同时重命名 `Refund` 相关类型为 `AfterSalesRequest`。
 | GET | `/api/audit?limit=` | CS_AGENT | 审计列表 |
 
 ### 6.3 Agent 接口

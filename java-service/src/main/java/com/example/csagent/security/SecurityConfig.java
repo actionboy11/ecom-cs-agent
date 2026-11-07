@@ -35,8 +35,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/health", "/api/products/**", "/error").permitAll()
                         .requestMatchers("/api/audit/**").hasRole("CS_AGENT")
-                        // SPEC §6.2：售后只能由买家发起，坐席调用一律 403
-                        .requestMatchers(HttpMethod.POST, "/api/refunds", "/api/after-sales").hasRole("CUSTOMER")
+                        // SPEC §6.2：售后只能由买家发起；审批只能由坐席执行
+                        .requestMatchers(HttpMethod.POST, "/api/after-sales").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.POST, "/api/after-sales/*/review").hasRole("CS_AGENT")
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint((request, response, ex) -> ApiErrors.write(

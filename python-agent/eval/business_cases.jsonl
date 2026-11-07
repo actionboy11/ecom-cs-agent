@@ -20,18 +20,18 @@
 {"id": "b20", "input": "我的快递好像丢了 CS2024001", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "difficulty": "hard", "tags": ["lost"]}
 {"id": "b21", "input": "CS2024003 发货了吗", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["已发货"], "difficulty": "easy", "tags": ["shipped"]}
 {"id": "b22", "input": "运单号 ZT9876543210 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["杭州"], "difficulty": "hard", "tags": ["tracking_only"]}
-{"id": "b23", "input": "CS2024003 这双鞋我想退款，尺码不合适", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["happy_path"]}
-{"id": "b24", "input": "我要退货，耳机有问题 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["quality"]}
-{"id": "b25", "input": "帮我把 CS2024001 退了，不想要了", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["no_reason"]}
+{"id": "b23", "input": "CS2024003 这双鞋我想退款，尺码不合适", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b24", "input": "我要退货，耳机有问题 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "easy", "tags": ["quality"]}
+{"id": "b25", "input": "帮我把 CS2024001 退了，不想要了", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "easy", "tags": ["no_reason"]}
 {"id": "b26", "input": "我要申请退款", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
-{"id": "b27", "input": "CS2024002 要换货", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["exchange"]}
+{"id": "b27", "input": "CS2024002 要换货", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "medium", "tags": ["exchange"]}
 {"id": "b28", "input": "CS2024009 申请退款", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单"], "difficulty": "hard", "tags": ["invalid_order"]}
-{"id": "b29", "input": "行李箱轮子坏了要退 CS2024003", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["damaged"]}
-{"id": "b30", "input": "我买的耳机不想要了，帮我退掉 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "easy", "tags": ["happy_path"]}
-{"id": "b31", "input": "CS2024001 七天无理由退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["policy_refund"]}
-{"id": "b32", "input": "CS2024003 质量问题要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "medium", "tags": ["quality"]}
+{"id": "b29", "input": "行李箱轮子坏了要退 CS2024003", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "medium", "tags": ["damaged"]}
+{"id": "b30", "input": "我买的耳机不想要了，帮我退掉 CS2024002", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "easy", "tags": ["happy_path"]}
+{"id": "b31", "input": "CS2024001 七天无理由退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "medium", "tags": ["policy_refund"]}
+{"id": "b32", "input": "CS2024003 质量问题要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "medium", "tags": ["quality"]}
 {"id": "b33", "input": "帮我把订单退了", "expect_intent": "refund", "expect_tool": false, "must_contain": ["订单号"], "difficulty": "medium", "tags": ["missing_slot"]}
-{"id": "b34", "input": "CS2024002 只退一个可以吗", "expect_intent": "refund", "expect_tool": true, "must_contain": ["RF"], "difficulty": "hard", "tags": ["partial"]}
+{"id": "b34", "input": "CS2024002 只退一个可以吗", "expect_intent": "refund", "expect_tool": true, "must_contain": ["AS"], "difficulty": "hard", "tags": ["partial"]}
 {"id": "b35", "input": "你们的退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "difficulty": "easy", "tags": ["no_reason"]}
 {"id": "b36", "input": "退款多久能到账", "expect_intent": "policy", "expect_tool": false, "must_contain": ["工作日"], "difficulty": "easy", "tags": ["refund_time"]}
 {"id": "b37", "input": "退货运费谁承担", "expect_intent": "policy", "expect_tool": false, "must_contain": ["运费"], "difficulty": "medium", "tags": ["shipping_fee"]}

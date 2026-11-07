@@ -84,7 +84,8 @@ docs/            SPEC / 每日记录 / 简历
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| Spring Boot 启动报 `Communications link failure` | MySQL 容器没起来；宿主机 3306 常被本机 MySQL 占用 | 本项目容器映射到 **3307**（`3307→3306`）；先 `docker compose up -d mysql`，等 healthy |
+| Spring Boot 启动报 `Communications link failure` | MySQL 容器没起来；宿主机 3306 被本机 MySQL、3307 常被其他项目容器占用 | 本项目容器映射到 **3308**（`3308→3306`）；先 `docker compose up -d mysql`，等 healthy |
+| 测试连到别的库 / `Access denied for user 'xxx'` | 系统里其他项目设置的全局 `SPRING_DATASOURCE_URL` 优先级高于 yml | 已在 surefire 显式覆盖；本地启动应用时用 `--spring.datasource.url=...` 或清掉该变量 |
 | 启动 uvicorn 报 `[WinError 10013]` | 端口被占用或被 Windows 动态保留 | 换端口 `--port 8010`；或管理员执行 `net stop winnat` / `net start winnat` |
 | Agent 返回「业务系统错误 502」，但 `curl localhost:8080` 正常 | 系统代理把 localhost 也代理走了 | 已通过 `trust_env=False` 规避 |
 | `uv` 找不到 | PATH 未刷新 | 重开终端 |

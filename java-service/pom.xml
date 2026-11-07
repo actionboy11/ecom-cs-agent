@@ -87,6 +87,22 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!--
+              本机存在其他项目的全局 SPRING_DATASOURCE_* 变量（如 RetinaVision），
+              Spring 的 env 优先级高于 application-test.yml，会把测试库覆盖掉。
+              这里在 surefire fork 出的 JVM 里显式覆盖，保证测试只连本项目的 cs_agent_test。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <SPRING_DATASOURCE_URL>jdbc:mysql://localhost:3308/cs_agent_test?useUnicode=true&amp;characterEncoding=utf8&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true&amp;useSSL=false</SPRING_DATASOURCE_URL>
+                        <SPRING_DATASOURCE_USERNAME>csagent</SPRING_DATASOURCE_USERNAME>
+                        <SPRING_DATASOURCE_PASSWORD>csagent</SPRING_DATASOURCE_PASSWORD>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

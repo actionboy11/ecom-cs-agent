@@ -22,7 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * S2-1：售后申请落库（V3 迁移）、种子待审记录、越权拦截、审计留痕。
+ * S2-1 的持久化能力（路径已在 S2-2 改为 /api/after-sales）：
+ * 落库字段、种子待审记录、越权拦截、审计留痕。
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -39,19 +40,19 @@ class AfterSalesPersistenceApiTest {
     private AuditLogMapper auditLogMapper;
 
     @Test
-    void refund_is_persisted_with_type_status_and_owner() throws Exception {
+    void after_sales_is_persisted_with_type_status_and_owner() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
 
-        String body = mockMvc.perform(post("/api/refunds")
+        String body = mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"尺码不合适\"}"))
+                        .content("{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"尺码不合适\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.refundNo").isNotEmpty())
+                .andExpect(jsonPath("$.requestNo").isNotEmpty())
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andReturn().getResponse().getContentAsString();
 
-        String requestNo = com.jayway.jsonpath.JsonPath.read(body, "$.refundNo");
+        String requestNo = com.jayway.jsonpath.JsonPath.read(body, "$.requestNo");
 
         AfterSalesRequestEntity saved = afterSalesMapper.selectById(requestNo);
         assertThat(saved).isNotNull();
@@ -73,25 +74,15 @@ class AfterSalesPersistenceApiTest {
     }
 
     @Test
-    void agent_may_not_create_after_sales() throws Exception {
-        String token = LoginSupport.tokenFor(mockMvc, "cs_agent");
-        mockMvc.perform(post("/api/refunds")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"坐席代申请\"}"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void refund_creation_is_audited() throws Exception {
+    void after_sales_creation_is_audited() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
-        String body = mockMvc.perform(post("/api/refunds")
+        String body = mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"CS2024002\",\"reason\":\"不想要了\"}"))
+                        .content("{\"orderNo\":\"CS2024002\",\"type\":\"REFUND\",\"reason\":\"不想要了\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        String requestNo = com.jayway.jsonpath.JsonPath.read(body, "$.refundNo");
+        String requestNo = com.jayway.jsonpath.JsonPath.read(body, "$.requestNo");
 
         List<AuditLogEntity> rows = auditLogMapper.selectList(new LambdaQueryWrapper<AuditLogEntity>()
                 .eq(AuditLogEntity::getAction, AuditEvent.ACTION_APPLY_AFTER_SALES)
@@ -105,10 +96,20 @@ class AfterSalesPersistenceApiTest {
     @Test
     void buyer_cannot_apply_for_another_buyers_order() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_b");
-        mockMvc.perform(post("/api/refunds")
+        mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"test\"}"))
+                        .content("{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"test\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void agent_may_not_create_after_sales() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "cs_agent");
+        mockMvc.perform(post("/api/after-sales")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"坐席代申请\"}"))
+                .andExpect(status().isForbidden());
     }
 }

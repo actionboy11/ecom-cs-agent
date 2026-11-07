@@ -193,7 +193,7 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
             elif intent == "logistics":
                 data = await business_api.get_logistics(order_no)
             else:
-                data = await business_api.apply_refund(order_no, reason)
+                data = await business_api.apply_after_sales(order_no, "REFUND", reason)
             info["result"] = "ok"
             return {"tool_result": data}
         except BusinessAPIError as exc:
@@ -266,7 +266,7 @@ def _template_reply(state: AgentState) -> str:
         )
     if intent == "refund" and tool_result:
         return (
-            f"退款申请已提交，单号 {tool_result.get('refundNo')}，"
+            f"售后申请已提交，单号 {tool_result.get('requestNo')}，"
             f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日原路退回。"
         )
     return state.get("knowledge", POLICY_TEXT)

@@ -1,8 +1,9 @@
 package com.example.csagent.service;
 
+import com.example.csagent.api.NotFoundException;
+import com.example.csagent.domain.AfterSalesRequest;
 import com.example.csagent.domain.AfterSalesRequestEntity;
 import com.example.csagent.domain.OrderEntity;
-import com.example.csagent.domain.Refund;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.store.AfterSalesRequestMapper;
 import org.springframework.stereotype.Service;
@@ -11,24 +12,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 售后申请：落库 + 审计。
+ * 售后申请与审批。
  *
- * <p>本切片只创建 REFUND 类型；类型扩展与审批在 S2-2。
- * 越权与不存在由 {@link OrderAccessGuard} 统一处理为 404（ADR-0001）。
- *
- * <p>注意 {@code user_id} 记录的是<b>订单所有者</b>，不是调用者——坐席不可发起售后
- * （SPEC §6.2），即使误配角色，归属也不会落到坐席身上。
+ * <p>约束：
+ * <ul>
+ *   <li>只能对「自己可见的订单」发起售后，越权与不存在同为 404（ADR-0001）；</li>
+ *   <li>{@code user_id} 记订单所有者，不是调用者；</li>
+ *   <li>只有 PENDING 能被审批，已处理的再次审批抛冲突。</li>
+ * </ul>
  */
 @Service
 public class AfterSalesService {
 
-    /** 请求号 = AS + 14 位时间戳 + 4 位随机数（定长 20，避免同秒并发撞主键）。 */
     private static final DateTimeFormatter REQUEST_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final String TYPE_REFUND = "REFUND";
+    private static final Set<String> VALID_TYPES = Set.of("REFUND", "RETURN", "EXCHANGE");
     private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_APPROVED = "APPROVED";
+    private static final String STATUS_REJECTED = "REJECTED";
 
     private final AfterSalesRequestMapper afterSalesMapper;
     private final OrderAccessGuard orderAccessGuard;
@@ -43,7 +47,13 @@ public class AfterSalesService {
     }
 
     @Transactional
-    public Refund createRefund(String orderNo, String reason, AuthenticatedUser user, String requestPath) {
+    public AfterSalesRequest create(String orderNo, String type, String reason,
+                                    AuthenticatedUser user, String requestPath) {
+        String normalizedType = type == null ? "" : type.trim().toUpperCase();
+        if (!VALID_TYPES.contains(normalizedType)) {
+            throw new IllegalArgumentException("不支持的售后类型: " + type);
+        }
+
         OrderEntity order = orderAccessGuard.requireVisible(orderNo, user,
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, requestPath);
 
@@ -52,7 +62,7 @@ public class AfterSalesService {
         entity.setRequestNo(nextRequestNo(now));
         entity.setOrderNo(orderNo);
         entity.setUserId(order.getUserId());
-        entity.setType(TYPE_REFUND);
+        entity.setType(normalizedType);
         entity.setReason(reason);
         entity.setStatus(STATUS_PENDING);
         entity.setCreatedAt(now);
@@ -62,9 +72,40 @@ public class AfterSalesService {
                 user.username(), user.role(),
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES,
                 entity.getRequestNo(), AuditEvent.RESULT_OK, requestPath,
-                Map.of("orderNo", orderNo, "status", entity.getStatus())));
+                Map.of("orderNo", orderNo, "type", normalizedType, "status", entity.getStatus())));
 
-        return new Refund(entity.getRequestNo(), orderNo, reason, entity.getStatus(), now);
+        return toView(entity);
+    }
+
+    @Transactional
+    public AfterSalesRequest review(String requestNo, boolean approved,
+                                    AuthenticatedUser user, String requestPath) {
+        AfterSalesRequestEntity entity = afterSalesMapper.selectById(requestNo);
+        if (entity == null) {
+            throw new NotFoundException("售后申请不存在");
+        }
+        if (!STATUS_PENDING.equals(entity.getStatus())) {
+            throw new StateConflictException("该售后申请已处理: " + requestNo);
+        }
+
+        entity.setStatus(approved ? STATUS_APPROVED : STATUS_REJECTED);
+        entity.setReviewedBy(user.username());
+        entity.setReviewedAt(LocalDateTime.now().withNano(0));
+        afterSalesMapper.updateById(entity);
+
+        auditService.recordQuietly(AuditEvent.of(
+                user.username(), user.role(),
+                AuditEvent.ACTION_REVIEW_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES,
+                requestNo, AuditEvent.RESULT_OK, requestPath,
+                Map.of("approved", approved, "status", entity.getStatus())));
+
+        return toView(entity);
+    }
+
+    private static AfterSalesRequest toView(AfterSalesRequestEntity entity) {
+        return new AfterSalesRequest(
+                entity.getRequestNo(), entity.getOrderNo(), entity.getType(), entity.getReason(),
+                entity.getStatus(), entity.getCreatedAt(), entity.getReviewedBy(), entity.getReviewedAt());
     }
 
     private static String nextRequestNo(LocalDateTime now) {
