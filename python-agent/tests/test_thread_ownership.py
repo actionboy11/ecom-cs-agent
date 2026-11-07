@@ -133,3 +133,62 @@ def test_unknown_thread_resume_is_404(app_env) -> None:
             headers=_auth(_token("buyer_a", 1)),
         )
         assert resp.status_code == 404
+
+
+def test_owner_can_resume_their_own_handoff(app_env) -> None:
+    with TestClient(app) as client:
+        buyer_a = _token("buyer_a", 1)
+        chat = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-owner-resume", "message": "我要投诉"},
+            headers=_auth(buyer_a),
+        )
+        assert chat.status_code == 200
+        assert chat.json()["needs_human"] is True
+
+        resumed = client.post(
+            "/api/v1/threads/t-owner-resume/resume",
+            json={"approved": True},
+            headers=_auth(buyer_a),
+        )
+        assert resumed.status_code == 200
+
+
+def test_stream_rejects_other_users_thread(app_env) -> None:
+    with TestClient(app) as client:
+        assert _chat(client, "t-stream", _token("buyer_a", 1)) == 200
+        resp = client.post(
+            "/api/v1/chat/stream",
+            json={"thread_id": "t-stream", "message": "继续"},
+            headers=_auth(_token("buyer_b", 2)),
+        )
+        assert resp.status_code == 404
+
+
+def test_legacy_thread_without_owner_cannot_be_claimed(app_env) -> None:
+    """#13 之前的会话没有归属记录：不能被任何人凭 thread_id 直接接管。"""
+    import asyncio
+
+    from langchain_core.messages import HumanMessage
+
+    from app.graph.builder import get_graph
+
+    with TestClient(app) as client:
+        graph = get_graph()
+        asyncio.run(
+            graph.aupdate_state(
+                {"configurable": {"thread_id": "t-legacy"}},
+                {"messages": [HumanMessage(content="升级前的历史会话")]},
+            )
+        )
+        assert _chat(client, "t-legacy", _token("buyer_a", 1)) == 404
+
+
+def test_empty_thread_id_is_rejected(app_env) -> None:
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "", "message": "你好"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        assert resp.status_code == 422

@@ -53,6 +53,10 @@ async def _ensure_thread_access(
     if owner is None:
         if not bind_if_new:
             _deny(thread_id, user, "resume_unknown")
+        # 历史遗留：checkpointer 里有状态但没有归属记录（#13 之前的会话）。
+        # 这种 thread 一律拒绝，避免任何人凭 thread_id 直接接管历史对话。
+        if await store.has_checkpoint(thread_id):
+            _deny(thread_id, user, "legacy_unowned")
         if not await store.bind(thread_id, user.user_id):
             # 并发首聊：另一方先绑定成功，此时必须按归属重新判定，不能继续
             owner = await store.owner_of(thread_id)
@@ -65,7 +69,7 @@ async def _ensure_thread_access(
 
 
 class ChatRequest(BaseModel):
-    thread_id: str = Field(description="会话 ID，同一会话传同一个值")
+    thread_id: str = Field(min_length=1, description="会话 ID，同一会话传同一个值")
     message: str = Field(min_length=1, description="用户输入")
     user_id: str | None = Field(default=None, description="用户 ID（W2 用于长期记忆）")
 

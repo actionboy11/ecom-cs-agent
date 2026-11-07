@@ -44,6 +44,17 @@ class ThreadOwnerStore:
             row = await cursor.fetchone()
         return int(row[0]) if row else None
 
+    async def has_checkpoint(self, thread_id: str) -> bool:
+        """该 thread 是否已有会话状态（可能有历史数据但缺少归属记录）。"""
+        try:
+            async with self._conn.execute(
+                "SELECT 1 FROM checkpoints WHERE thread_id = ? LIMIT 1", (thread_id,)
+            ) as cursor:
+                return await cursor.fetchone() is not None
+        except aiosqlite.OperationalError:
+            # checkpoints 表尚未创建（全新库）＝没有历史状态
+            return False
+
     async def bind(self, thread_id: str, user_id: int) -> bool:
         """首次绑定。返回是否由本次调用真正写入。
 
