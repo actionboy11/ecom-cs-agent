@@ -20,6 +20,7 @@ import java.util.List;
  * 售后接口（SPEC §6.2）：
  * POST /api/after-sales              买家发起（REFUND / RETURN / EXCHANGE）
  * POST /api/after-sales/{no}/review  坐席审批
+ * GET  /api/after-sales?status=      列表：买家仅自己、坐席全部，可按状态过滤
  */
 @RestController
 @RequestMapping("/api/after-sales")

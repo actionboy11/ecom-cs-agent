@@ -42,14 +42,7 @@ class AfterSalesReviewApiTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private String createRequest(String token, String orderNo, String type) throws Exception {
-        String body = mockMvc.perform(post("/api/after-sales")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"" + orderNo + "\",\"type\":\"" + type
-                                + "\",\"reason\":\"测试原因\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return com.jayway.jsonpath.JsonPath.read(body, "$.requestNo");
+        return AfterSalesTestSupport.create(mockMvc, token, orderNo, type);
     }
 
     @Test

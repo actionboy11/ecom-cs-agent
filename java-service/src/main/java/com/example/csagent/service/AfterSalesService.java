@@ -36,6 +36,7 @@ public class AfterSalesService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";
+    private static final Set<String> VALID_STATUSES = Set.of(STATUS_PENDING, STATUS_APPROVED, STATUS_REJECTED);
 
     private final AfterSalesRequestMapper afterSalesMapper;
     private final OrderAccessGuard orderAccessGuard;
@@ -123,9 +124,16 @@ public class AfterSalesService {
         if (!user.isCustomerServiceAgent()) {
             query.eq(AfterSalesRequestEntity::getUserId, user.userId());
         }
+
+        String statusFilter = null;
         if (status != null && !status.isBlank()) {
-            query.eq(AfterSalesRequestEntity::getStatus, status.trim().toUpperCase(java.util.Locale.ROOT));
+            statusFilter = status.trim().toUpperCase(java.util.Locale.ROOT);
+            if (!VALID_STATUSES.contains(statusFilter)) {
+                throw new IllegalArgumentException("不支持的售后状态: " + status);
+            }
+            query.eq(AfterSalesRequestEntity::getStatus, statusFilter);
         }
+
         List<AfterSalesRequest> rows = afterSalesMapper.selectList(query).stream()
                 .map(AfterSalesService::toView)
                 .toList();
@@ -133,7 +141,7 @@ public class AfterSalesService {
         auditService.recordQuietly(AuditEvent.of(
                 user.username(), user.role(), AuditEvent.ACTION_QUERY_AFTER_SALES_LIST,
                 AuditEvent.TYPE_AFTER_SALES, "-", AuditEvent.RESULT_OK, requestPath,
-                Map.of("returned", rows.size())));
+                Map.of("status", statusFilter == null ? "ALL" : statusFilter, "returned", rows.size())));
         return rows;
     }
 
