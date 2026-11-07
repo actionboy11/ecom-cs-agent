@@ -3,20 +3,25 @@
 规则（SPEC §2 / ADR-0001）：
 - 首次消息把 thread 绑定到当前用户；
 - 买家续别人的 thread → 404（与不存在同口径）；
-- 坐席审批恢复不受归属限制（人工介入是业务流程的一部分）。
+- 坐席审批恢复不受归属限制（SPEC §2 的 resume 行）。
 """
 
 from __future__ import annotations
+
+import time
 
 import jwt
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.conftest import TEST_SECRET
+from tests.support import TEST_SECRET
 
 
-def _token(sub: str, user_id: int, role: str = "CUSTOMER") -> str:
-    return jwt.encode({"sub": sub, "userId": user_id, "role": role}, TEST_SECRET, algorithm="HS256")
+def _token(sub: str, user_id: int, role: str = "CUSTOMER", exp_delta: int | None = 3600) -> str:
+    claims: dict[str, object] = {"sub": sub, "userId": user_id, "role": role}
+    if exp_delta is not None:
+        claims["exp"] = int(time.time()) + exp_delta
+    return jwt.encode(claims, TEST_SECRET, algorithm="HS256")
 
 
 def _auth(token: str) -> dict[str, str]:
@@ -76,10 +81,10 @@ def test_agent_may_resume_for_approval(app_env) -> None:
         resp = client.post(
             "/api/v1/threads/t-agent/resume",
             json={"approved": True},
-            headers=_auth(_token("cs_agent", 4, "CS_AGENT")),
+            headers=_auth(_token("cs_agent", 4, "ROLE_CS_AGENT")),
         )
-        # 没有待审任务时返回 409，但绝不能是 404——说明坐席的审批恢复没有被归属规则挡住
-        assert resp.status_code != 404
+        # 没有待审任务时返回 409；关键是不能被归属规则挡住（404）或报错（5xx）
+        assert resp.status_code in (200, 409)
 
 
 def test_missing_or_invalid_token_is_rejected(app_env) -> None:
@@ -91,6 +96,33 @@ def test_missing_or_invalid_token_is_rejected(app_env) -> None:
             headers=_auth("not-a-jwt"),
         )
         assert bad.status_code == 401
+
+
+def test_token_without_exp_is_rejected(app_env) -> None:
+    """没有过期时间的令牌等于永久凭证，必须拒绝（SPEC §6.1）。"""
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-noexp", "message": "你好"},
+            headers=_auth(_token("buyer_a", 1, exp_delta=None)),
+        )
+        assert resp.status_code == 401
+
+
+def test_expired_token_is_rejected(app_env) -> None:
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-exp", "message": "你好"},
+            headers=_auth(_token("buyer_a", 1, exp_delta=-60)),
+        )
+        assert resp.status_code == 401
+
+
+def test_stream_endpoint_requires_auth(app_env) -> None:
+    with TestClient(app) as client:
+        resp = client.post("/api/v1/chat/stream", json={"thread_id": "t", "message": "你好"})
+        assert resp.status_code == 401
 
 
 def test_unknown_thread_resume_is_404(app_env) -> None:

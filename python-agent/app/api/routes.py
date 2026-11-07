@@ -34,6 +34,12 @@ def get_thread_store(request: Request) -> ThreadOwnerStore:
     return store
 
 
+def _deny(thread_id: str, user: CurrentUser, reason: str) -> None:
+    """越权与不存在统一 404，并留下 DENIED 轨迹（ADR-0001）。"""
+    trace_event(thread_id, "auth", "denied", {"user": user.username, "role": user.role, "reason": reason})
+    raise HTTPException(status_code=404, detail="会话不存在")
+
+
 async def _ensure_thread_access(
     store: ThreadOwnerStore,
     thread_id: str,
@@ -45,12 +51,16 @@ async def _ensure_thread_access(
     """会话归属校验：不存在与不属于当前用户统一 404（ADR-0001）。"""
     owner = await store.owner_of(thread_id)
     if owner is None:
-        if bind_if_new:
-            await store.bind(thread_id, user.user_id)
-            return
-        raise HTTPException(status_code=404, detail="会话不存在")
+        if not bind_if_new:
+            _deny(thread_id, user, "resume_unknown")
+        if not await store.bind(thread_id, user.user_id):
+            # 并发首聊：另一方先绑定成功，此时必须按归属重新判定，不能继续
+            owner = await store.owner_of(thread_id)
+            if owner != user.user_id:
+                _deny(thread_id, user, "bind_race")
+        return
     if owner != user.user_id and not (allow_agent and user.is_agent):
-        raise HTTPException(status_code=404, detail="会话不存在")
+        _deny(thread_id, user, "not_owner")
     await store.touch(thread_id)
 
 

@@ -40,7 +40,9 @@
 | `POST /api/after-sales/{no}/review` | 403 | ✅ | 401 |
 | `GET /api/after-sales` | 仅自己 | 全部 | 401 |
 | `GET /api/audit` | 403 | ✅ | 401 |
-| `POST /api/v1/chat` | 仅自己的 thread，否则 **404** | 自己的 thread | 401 |
+| `POST /api/v1/chat` | 仅自己的 thread，否则 **404** | 403（坐席不能接管买家对话） | 401 |
+| `POST /api/v1/chat/stream` | 同 `/chat` | 403 | 401 |
+| `POST /api/v1/threads/{id}/resume` | 仅自己的 thread 且有待审转接，否则 **404** | ✅ 任意 thread 的待审转接（审批是坐席职责） | 401 |
 
 **三条安全原则**：身份不可由模型决定；越权统一 404 + `DENIED` 审计；数据层强制 `user_id` 过滤。
 

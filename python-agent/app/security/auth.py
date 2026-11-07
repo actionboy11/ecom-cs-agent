@@ -1,6 +1,6 @@
 """对话接口的身份校验。
 
-Java 服务签发 JWT（HS256，claims: sub / userId / role），Python 侧用同一个
+Java 服务签发 JWT（HS256，claims: sub / userId / role / exp），Python 侧用同一个
 密钥本地校验，避免为了取用户身份再绕一次 HTTP。
 """
 
@@ -22,7 +22,8 @@ class CurrentUser:
 
     @property
     def is_agent(self) -> bool:
-        return self.role == "CS_AGENT"
+        # 兼容 Spring 的 ROLE_CS_AGENT 写法；大小写不敏感，但只认这一个角色
+        return self.role.upper().removeprefix("ROLE_") == "CS_AGENT"
 
 
 def require_user(authorization: str | None = Header(default=None)) -> CurrentUser:
@@ -34,7 +35,13 @@ def require_user(authorization: str | None = Header(default=None)) -> CurrentUse
 
     token = authorization[7:].strip()
     try:
-        claims = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        # 必须带 exp：否则一个永不过期的令牌可以长期访问（SPEC §6.1：2 小时）
+        claims = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=["HS256"],
+            options={"require": ["exp", "sub"]},
+        )
         return CurrentUser(
             username=str(claims["sub"]),
             user_id=int(claims["userId"]),

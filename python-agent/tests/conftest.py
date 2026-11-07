@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.config import settings
-
-TEST_SECRET = "test-secret-key-32-bytes-long!!!"
+from tests.support import TEST_SECRET
 
 
 @pytest.fixture
