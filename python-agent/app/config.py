@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +41,14 @@ class Settings(BaseSettings):
 
     # --- 会话数据保留期（天）：超期会话与轨迹会被清理 ---
     session_ttl_days: int = 30
+
+    @field_validator("session_ttl_days")
+    @classmethod
+    def _ttl_must_be_positive(cls, value: int) -> int:
+        # 0 会在下次启动清空所有会话；负数会变成无效的 SQL 修饰符
+        if value < 1:
+            raise ValueError("SESSION_TTL_DAYS 必须 >= 1")
+        return value
 
     # --- 模型调用超时（秒）；测试里可调小以便快速降级 ---
     llm_timeout_seconds: float = 60.0

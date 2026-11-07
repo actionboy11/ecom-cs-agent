@@ -88,15 +88,23 @@ Agent 会话与轨迹默认保留 **30 天**（`SESSION_TTL_DAYS`），业务审
 - 手动执行（先预览，再真删）：
 
 ```bash
-uv run python -m app.session.retention --dry-run   # 只统计
-uv run python -m app.session.retention             # 实际删除
+uv run python -m app.maintenance.cleanup --dry-run   # 只统计
+uv run python -m app.maintenance.cleanup             # 实际删除
 ```
 
-- 每日定时：Windows 用任务计划程序，Linux 用 cron：
+- 每日定时：Linux 用 cron，Windows 用任务计划程序：
 
 ```cron
-30 3 * * * cd /path/to/python-agent && uv run python -m app.session.retention >> retention.log 2>&1
+30 3 * * * cd /path/to/python-agent && uv run python -m app.maintenance.cleanup >> retention.log 2>&1
 ```
+
+Windows（任务计划程序 → 创建基本任务 → 每天 03:30）：
+
+```powershell
+pwsh -NoProfile -Command "cd C:\path\to\python-agent; uv run python -m app.maintenance.cleanup"
+```
+
+退出码：`0` 成功，`2` 参数/状态库不存在，`3` 执行异常，`4` 文件删除失败（便于 cron 告警）。
 
 ## 常见问题
 

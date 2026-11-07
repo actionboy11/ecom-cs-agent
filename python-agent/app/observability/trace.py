@@ -7,13 +7,13 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Iterator
 
-TRACE_DIR = Path(os.getenv("TRACE_DIR", "traces"))
+from app.paths import resolve_trace_dir
+
+TRACE_DIR = resolve_trace_dir()
 TRACE_DIR.mkdir(parents=True, exist_ok=True)
 
 

@@ -13,17 +13,13 @@ from typing import AsyncIterator
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-logger = logging.getLogger(__name__)
+from app.paths import REPO_ROOT, resolve_under_repo
 
-# checkpointer.py -> graph -> app -> python-agent -> 仓库根
-REPO_ROOT = Path(__file__).resolve().parents[3]
+logger = logging.getLogger(__name__)
 
 
 def resolve_db_path(db_path: str) -> Path:
-    path = Path(db_path)
-    if not path.is_absolute():
-        path = REPO_ROOT / path
-    return path
+    return resolve_under_repo(db_path)
 
 
 @asynccontextmanager
@@ -38,3 +34,6 @@ async def sqlite_checkpointer(db_path: str) -> AsyncIterator[AsyncSqliteSaver]:
     logger.info("会话状态库: %s", path)
     async with AsyncSqliteSaver.from_conn_string(str(path)) as saver:
         yield saver
+
+
+__all__ = ["REPO_ROOT", "resolve_db_path", "sqlite_checkpointer"]
