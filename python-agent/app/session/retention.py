@@ -55,6 +55,14 @@ def _count(conn: sqlite3.Connection, table: str, doomed: list[str]) -> int:
     )
 
 
+# SQLite 的绑定变量有上限（旧版本 999），分批处理避免超限
+_CHUNK = 400
+
+
+def _chunks(items: list[str], size: int = _CHUNK) -> list[list[str]]:
+    return [items[i : i + size] for i in range(0, len(items), size)]
+
+
 def _purge_db(db_path: Path, ttl_days: int, dry_run: bool) -> PurgeResult:
     result = PurgeResult(ttl_days=ttl_days, dry_run=dry_run)
     conn = sqlite3.connect(db_path)
@@ -91,20 +99,25 @@ def _purge_db(db_path: Path, ttl_days: int, dry_run: bool) -> PurgeResult:
         doomed = expired + [t for t in orphans if t not in expired]
         if doomed:
             targets = [t for t in ("checkpoints", "writes") if t in tables]
-            if dry_run:
-                for table in targets:
-                    setattr(result, table, _count(conn, table, doomed))
-            else:
-                marks = ",".join("?" for _ in doomed)
-                for table in targets:
-                    setattr(
-                        result,
-                        table,
-                        conn.execute(f"DELETE FROM {table} WHERE thread_id IN ({marks})", tuple(doomed)).rowcount,
-                    )
-                if expired:
-                    marks = ",".join("?" for _ in expired)
-                    conn.execute(f"DELETE FROM thread_owner WHERE thread_id IN ({marks})", tuple(expired))
+            for batch in _chunks(doomed):
+                if dry_run:
+                    for table in targets:
+                        setattr(result, table, getattr(result, table) + _count(conn, table, batch))
+                else:
+                    marks = ",".join("?" for _ in batch)
+                    for table in targets:
+                        setattr(
+                            result,
+                            table,
+                            getattr(result, table)
+                            + conn.execute(
+                                f"DELETE FROM {table} WHERE thread_id IN ({marks})", tuple(batch)
+                            ).rowcount,
+                        )
+            if not dry_run:
+                for batch in _chunks(expired):
+                    marks = ",".join("?" for _ in batch)
+                    conn.execute(f"DELETE FROM thread_owner WHERE thread_id IN ({marks})", tuple(batch))
                 conn.commit()
     finally:
         conn.close()
@@ -161,24 +174,28 @@ def purge_expired(
 
 
 def main() -> None:
+    from app.config import settings
+
     parser = argparse.ArgumentParser(description="清理过期的 Agent 会话数据（SPEC §5.5）")
-    parser.add_argument("--db", default=None, help="状态库路径（默认 data/agent_state.db，相对仓库根）")
-    parser.add_argument("--traces", default=None, help="轨迹目录（默认 traces/，相对仓库根）")
-    parser.add_argument("--ttl-days", type=int, default=DEFAULT_TTL_DAYS)
+    parser.add_argument("--db", default=None, help="状态库路径（默认取 AGENT_STATE_DB，相对仓库根）")
+    parser.add_argument("--traces", default=None, help="轨迹目录（默认取 TRACE_DIR，相对仓库根）")
+    parser.add_argument("--ttl-days", type=int, default=None, help="保留天数（默认取 SESSION_TTL_DAYS）")
     parser.add_argument("--dry-run", action="store_true", help="只报告，不删除")
     args = parser.parse_args()
 
-    if args.ttl_days < 1:
+    # 与常驻服务共用同一份配置，避免 CLI 与服务对 .env 的读取不一致
+    ttl_days = args.ttl_days if args.ttl_days is not None else settings.session_ttl_days
+    if ttl_days < 1:
         print("ttl_days 必须 >= 1", file=sys.stderr)
         raise SystemExit(2)
 
-    db = resolve_db_path(args.db or "data/agent_state.db")
+    db = resolve_db_path(args.db or settings.agent_state_db)
     if not db.exists():
         print(f"状态库不存在: {db}", file=sys.stderr)
         raise SystemExit(2)
 
     try:
-        result = purge_expired(db, args.traces, args.ttl_days, args.dry_run)
+        result = purge_expired(db, args.traces, ttl_days, args.dry_run)
     except Exception as exc:  # noqa: BLE001 - CLI 必须给出非零退出码
         print(f"清理失败: {exc}", file=sys.stderr)
         raise SystemExit(3) from exc
