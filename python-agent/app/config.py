@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     business_api_base: str = "http://localhost:8080"
     business_api_timeout: float = 5.0
 
+    # --- Agent 会话状态（SQLite，与业务数据分离：ADR-0002） ---
+    agent_state_db: str = "data/agent_state.db"
+
 
 @lru_cache
 def get_settings() -> Settings:

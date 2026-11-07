@@ -51,11 +51,16 @@ def build_graph(checkpointer: Any = None):
 _graph: Any = None
 
 
-def get_graph():
-    """单例：FastAPI 生命周期内复用同一个 checkpointer。"""
+def set_graph(graph: Any) -> None:
+    """由 FastAPI lifespan 注入带 SQLite checkpointer 的图。"""
     global _graph
+    _graph = graph
+
+
+def get_graph():
+    """取当前图。未初始化时直接报错，而不是悄悄退回内存实现。"""
     if _graph is None:
-        _graph = build_graph()
+        raise RuntimeError("Agent 图未初始化：应通过 lifespan 打开 SQLite checkpointer")
     return _graph
 
 
