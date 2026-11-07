@@ -83,6 +83,7 @@ class AfterSalesReviewApiTest {
         assertThat(saved.getStatus()).isEqualTo("APPROVED");
         assertThat(saved.getReviewedBy()).isEqualTo("cs_agent");
         assertThat(saved.getReviewedAt()).isNotNull();
+        assertThat(saved.getReviewNote()).isEqualTo("同意");
     }
 
     @Test

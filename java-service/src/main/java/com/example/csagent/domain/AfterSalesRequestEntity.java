@@ -22,6 +22,7 @@ public class AfterSalesRequestEntity {
     private LocalDateTime createdAt;
     private String reviewedBy;
     private LocalDateTime reviewedAt;
+    private String reviewNote;
 
     public String getRequestNo() {
         return requestNo;
@@ -93,5 +94,13 @@ public class AfterSalesRequestEntity {
 
     public void setReviewedAt(LocalDateTime reviewedAt) {
         this.reviewedAt = reviewedAt;
+    }
+
+    public String getReviewNote() {
+        return reviewNote;
+    }
+
+    public void setReviewNote(String reviewNote) {
+        this.reviewNote = reviewNote;
     }
 }

@@ -41,6 +41,6 @@ public class AfterSalesController {
                                     @AuthenticationPrincipal AuthenticatedUser user,
                                     HttpServletRequest httpRequest) {
         return afterSalesService.review(requestNo, Boolean.TRUE.equals(request.approved()),
-                user, httpRequest.getRequestURI());
+                request.note(), user, httpRequest.getRequestURI());
     }
 }

@@ -13,6 +13,7 @@ public record AfterSalesRequest(
         String status,
         LocalDateTime createdAt,
         String reviewedBy,
-        LocalDateTime reviewedAt
+        LocalDateTime reviewedAt,
+        String reviewNote
 ) {
 }

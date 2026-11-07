@@ -1,5 +1,6 @@
 package com.example.csagent.service;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.csagent.api.NotFoundException;
 import com.example.csagent.domain.AfterSalesRequest;
 import com.example.csagent.domain.AfterSalesRequestEntity;
@@ -49,7 +50,8 @@ public class AfterSalesService {
     @Transactional
     public AfterSalesRequest create(String orderNo, String type, String reason,
                                     AuthenticatedUser user, String requestPath) {
-        String normalizedType = type == null ? "" : type.trim().toUpperCase();
+        // 与 V3 的 ENUM('REFUND','RETURN','EXCHANGE') 保持一致；新增类型需同时改迁移与客户端
+        String normalizedType = type == null ? "" : type.trim().toUpperCase(java.util.Locale.ROOT);
         if (!VALID_TYPES.contains(normalizedType)) {
             throw new IllegalArgumentException("不支持的售后类型: " + type);
         }
@@ -78,34 +80,41 @@ public class AfterSalesService {
     }
 
     @Transactional
-    public AfterSalesRequest review(String requestNo, boolean approved,
+    public AfterSalesRequest review(String requestNo, boolean approved, String note,
                                     AuthenticatedUser user, String requestPath) {
-        AfterSalesRequestEntity entity = afterSalesMapper.selectById(requestNo);
-        if (entity == null) {
+        if (afterSalesMapper.selectById(requestNo) == null) {
             throw new NotFoundException("售后申请不存在");
         }
-        if (!STATUS_PENDING.equals(entity.getStatus())) {
+
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        String newStatus = approved ? STATUS_APPROVED : STATUS_REJECTED;
+
+        // 条件更新：只有仍处于 PENDING 才能被改成终态，避免并发审批互相覆盖
+        int updated = afterSalesMapper.update(null, new LambdaUpdateWrapper<AfterSalesRequestEntity>()
+                .eq(AfterSalesRequestEntity::getRequestNo, requestNo)
+                .eq(AfterSalesRequestEntity::getStatus, STATUS_PENDING)
+                .set(AfterSalesRequestEntity::getStatus, newStatus)
+                .set(AfterSalesRequestEntity::getReviewedBy, user.username())
+                .set(AfterSalesRequestEntity::getReviewedAt, now)
+                .set(AfterSalesRequestEntity::getReviewNote, note));
+        if (updated == 0) {
             throw new StateConflictException("该售后申请已处理: " + requestNo);
         }
-
-        entity.setStatus(approved ? STATUS_APPROVED : STATUS_REJECTED);
-        entity.setReviewedBy(user.username());
-        entity.setReviewedAt(LocalDateTime.now().withNano(0));
-        afterSalesMapper.updateById(entity);
 
         auditService.recordQuietly(AuditEvent.of(
                 user.username(), user.role(),
                 AuditEvent.ACTION_REVIEW_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES,
                 requestNo, AuditEvent.RESULT_OK, requestPath,
-                Map.of("approved", approved, "status", entity.getStatus())));
+                Map.of("approved", approved, "status", newStatus)));
 
-        return toView(entity);
+        return toView(afterSalesMapper.selectById(requestNo));
     }
 
     private static AfterSalesRequest toView(AfterSalesRequestEntity entity) {
         return new AfterSalesRequest(
                 entity.getRequestNo(), entity.getOrderNo(), entity.getType(), entity.getReason(),
-                entity.getStatus(), entity.getCreatedAt(), entity.getReviewedBy(), entity.getReviewedAt());
+                entity.getStatus(), entity.getCreatedAt(), entity.getReviewedBy(),
+                entity.getReviewedAt(), entity.getReviewNote());
     }
 
     private static String nextRequestNo(LocalDateTime now) {

@@ -119,10 +119,10 @@ class AuditApiTest {
     @Test
     void buyer_cannot_apply_after_sales_for_someone_elses_order() throws Exception {
         String buyerToken = LoginSupport.tokenFor(mockMvc, "buyer_b");
-        mockMvc.perform(post("/api/refunds")
+        mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + buyerToken)
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"orderNo\":\"CS2024001\",\"reason\":\"test\"}"))
+                        .content("{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"test\"}"))
                 .andExpect(status().isNotFound());
     }
 }

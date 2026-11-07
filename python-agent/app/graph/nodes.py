@@ -193,7 +193,8 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
             elif intent == "logistics":
                 data = await business_api.get_logistics(order_no)
             else:
-                data = await business_api.apply_after_sales(order_no, "REFUND", reason)
+                as_type = _infer_after_sales_type(_last_user_text(state["messages"]))
+                data = await business_api.apply_after_sales(order_no, as_type, reason)
             info["result"] = "ok"
             return {"tool_result": data}
         except BusinessAPIError as exc:
@@ -236,6 +237,15 @@ async def await_human(state: AgentState) -> dict[str, Any]:
         return {"handoff_approved": approved}
 
 
+def _infer_after_sales_type(text: str) -> str:
+    """从用户话术推断售后类型；判不出来按退款处理。"""
+    if "换货" in text:
+        return "EXCHANGE"
+    if "退货" in text or "寄回" in text:
+        return "RETURN"
+    return "REFUND"
+
+
 def _template_reply(state: AgentState) -> str:
     intent = state.get("intent", "other")
     tool_result = state.get("tool_result") or {}
@@ -265,9 +275,12 @@ def _template_reply(state: AgentState) -> str:
             f"当前状态：{tool_result.get('status')}。最新轨迹：{traces}。"
         )
     if intent == "refund" and tool_result:
+        type_label = {"REFUND": "退款", "RETURN": "退货", "EXCHANGE": "换货"}.get(
+            tool_result.get("type"), "售后"
+        )
         return (
-            f"售后申请已提交，单号 {tool_result.get('requestNo')}，"
-            f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日原路退回。"
+            f"您的{type_label}申请已提交，单号 {tool_result.get('requestNo')}，"
+            f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日处理。"
         )
     return state.get("knowledge", POLICY_TEXT)
 

@@ -196,6 +196,8 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | `TIMEOUT` | 超时 | 重试一次 → 转人工 |
 | `MISSING_SLOT` | 缺订单号/SKU | 追问槽位 |
 | `INVALID_INPUT` | 参数非法 | 澄清并重试 |
+| `BAD_REQUEST` | 请求体校验失败 / 非法枚举值 | 提示修正后重试 |
+| `CONFLICT` | 资源状态不允许该操作（如重复审批） | 提示当前状态，不重试；**具体状态码不在本 SPEC 约定**（实现取 409） |
 
 ---
 
@@ -208,7 +210,8 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | `QUERY_ORDER` | 查订单详情（成功或越权） | ✅ 已实现 |
 | `QUERY_ORDER_LIST` | 查订单列表 | ✅ 已实现 |
 | `QUERY_LOGISTICS` | 查物流 | ✅ 已实现 |
-| `APPLY_AFTER_SALES` | 发起售后申请 | ✅ 已实现（内存版） |
+| `APPLY_AFTER_SALES` | 发起售后申请 | ✅ 已实现（落库） |
+| `REVIEW_AFTER_SALES` | 坐席审批售后申请 | ✅ 已实现 |
 | `READ_AUDIT` | 坐席读取审计 | ✅ 已实现 |
 | `LOGIN` | 登录成功 / 失败 | ⏳ 切片 6 |
 
