@@ -20,8 +20,10 @@ from app.graph.checkpointer import sqlite_checkpointer
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async with sqlite_checkpointer(settings.agent_state_db) as checkpointer:
         set_graph(build_graph(checkpointer))
-        yield
-    set_graph(None)
+        try:
+            yield
+        finally:
+            set_graph(None)
 
 
 app = FastAPI(

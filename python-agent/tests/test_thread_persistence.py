@@ -94,3 +94,20 @@ async def test_unknown_thread_has_no_state(tmp_path) -> None:
         graph = build_graph(saver)
         snapshot = await graph.aget_state({"configurable": {"thread_id": "never-seen"}})
         assert snapshot.values.get("messages", []) == []
+
+
+def test_graph_requires_initialization() -> None:
+    """未经过 lifespan 就拿图，必须报错而不是悄悄退回内存实现。"""
+    from app.graph.builder import get_graph, reset_graph
+
+    reset_graph()
+    with pytest.raises(RuntimeError):
+        get_graph()
+
+
+def test_relative_db_path_resolves_to_repo_root() -> None:
+    from app.graph.checkpointer import REPO_ROOT, resolve_db_path
+
+    resolved = resolve_db_path("data/agent_state.db")
+    assert resolved.is_absolute()
+    assert resolved == REPO_ROOT / "data" / "agent_state.db"
