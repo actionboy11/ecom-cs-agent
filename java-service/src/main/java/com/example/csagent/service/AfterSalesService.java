@@ -1,5 +1,6 @@
 package com.example.csagent.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.csagent.api.NotFoundException;
 import com.example.csagent.domain.AfterSalesRequest;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -108,6 +110,31 @@ public class AfterSalesService {
                 Map.of("approved", approved, "status", newStatus)));
 
         return toView(afterSalesMapper.selectById(requestNo));
+    }
+
+    /**
+     * 售后列表：买家只返回自己的（SQL 层按 user_id 过滤），坐席返回全部；可按状态过滤。
+     * 读取本身写审计，便于追溯「谁批量看过售后数据」。
+     */
+    public List<AfterSalesRequest> listFor(AuthenticatedUser user, String status, String requestPath) {
+        LambdaQueryWrapper<AfterSalesRequestEntity> query = new LambdaQueryWrapper<AfterSalesRequestEntity>()
+                .orderByDesc(AfterSalesRequestEntity::getCreatedAt)
+                .orderByDesc(AfterSalesRequestEntity::getRequestNo);
+        if (!user.isCustomerServiceAgent()) {
+            query.eq(AfterSalesRequestEntity::getUserId, user.userId());
+        }
+        if (status != null && !status.isBlank()) {
+            query.eq(AfterSalesRequestEntity::getStatus, status.trim().toUpperCase(java.util.Locale.ROOT));
+        }
+        List<AfterSalesRequest> rows = afterSalesMapper.selectList(query).stream()
+                .map(AfterSalesService::toView)
+                .toList();
+
+        auditService.recordQuietly(AuditEvent.of(
+                user.username(), user.role(), AuditEvent.ACTION_QUERY_AFTER_SALES_LIST,
+                AuditEvent.TYPE_AFTER_SALES, "-", AuditEvent.RESULT_OK, requestPath,
+                Map.of("returned", rows.size())));
+        return rows;
     }
 
     private static AfterSalesRequest toView(AfterSalesRequestEntity entity) {

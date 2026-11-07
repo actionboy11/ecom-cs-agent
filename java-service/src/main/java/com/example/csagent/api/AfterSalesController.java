@@ -6,11 +6,15 @@ import com.example.csagent.service.AfterSalesService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 售后接口（SPEC §6.2）：
@@ -25,6 +29,13 @@ public class AfterSalesController {
 
     public AfterSalesController(AfterSalesService afterSalesService) {
         this.afterSalesService = afterSalesService;
+    }
+
+    @GetMapping
+    public List<AfterSalesRequest> list(@RequestParam(name = "status", required = false) String status,
+                                        @AuthenticationPrincipal AuthenticatedUser user,
+                                        HttpServletRequest httpRequest) {
+        return afterSalesService.listFor(user, status, httpRequest.getRequestURI());
     }
 
     @PostMapping

@@ -20,6 +20,7 @@ public record AuditEvent(String actor, String actorRole, String action,
     public static final String ACTION_QUERY_ORDER_LIST = "QUERY_ORDER_LIST";
     public static final String ACTION_QUERY_LOGISTICS = "QUERY_LOGISTICS";
     public static final String ACTION_APPLY_AFTER_SALES = "APPLY_AFTER_SALES";
+    public static final String ACTION_QUERY_AFTER_SALES_LIST = "QUERY_AFTER_SALES_LIST";
     public static final String ACTION_REVIEW_AFTER_SALES = "REVIEW_AFTER_SALES";
     public static final String ACTION_READ_AUDIT = "READ_AUDIT";
 

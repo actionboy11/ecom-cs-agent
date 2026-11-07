@@ -211,6 +211,7 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | `QUERY_ORDER_LIST` | 查订单列表 | ✅ 已实现 |
 | `QUERY_LOGISTICS` | 查物流 | ✅ 已实现 |
 | `APPLY_AFTER_SALES` | 发起售后申请 | ✅ 已实现（落库） |
+| `QUERY_AFTER_SALES_LIST` | 查询售后列表 | ✅ 已实现 |
 | `REVIEW_AFTER_SALES` | 坐席审批售后申请 | ✅ 已实现 |
 | `READ_AUDIT` | 坐席读取审计 | ✅ 已实现 |
 | `LOGIN` | 登录成功 / 失败 | ⏳ 切片 6 |
