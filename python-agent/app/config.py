@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # --- 鉴权：与 Java 服务共用同一密钥，用于校验对话接口的 JWT ---
     jwt_secret: str = ""
 
+    # --- 会话数据保留期（天）：超期会话与轨迹会被清理 ---
+    session_ttl_days: int = 30
+
     # --- 模型调用超时（秒）；测试里可调小以便快速降级 ---
     llm_timeout_seconds: float = 60.0
 

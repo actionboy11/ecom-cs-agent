@@ -80,6 +80,24 @@ docs/            SPEC / 每日记录 / 简历
 - **越权返回 404 而不是 403**：403 会泄露资源是否存在，可被用来枚举。
 - **关键词规则只做降级兜底，不计入质量指标**：规则一旦参与评测，就会变成为评测集调参。
 
+## 会话数据保留（TTL）
+
+Agent 会话与轨迹默认保留 **30 天**（`SESSION_TTL_DAYS`），业务审计不受影响（审计在 MySQL，按 365 天保留）。
+
+- 服务启动时自动清理一次；
+- 手动执行（先预览，再真删）：
+
+```bash
+uv run python -m app.session.retention --dry-run   # 只统计
+uv run python -m app.session.retention             # 实际删除
+```
+
+- 每日定时：Windows 用任务计划程序，Linux 用 cron：
+
+```cron
+30 3 * * * cd /path/to/python-agent && uv run python -m app.session.retention >> retention.log 2>&1
+```
+
 ## 常见问题
 
 | 现象 | 原因 | 处理 |

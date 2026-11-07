@@ -4,6 +4,8 @@
 CORS 现在放开的是本地开发来源；后续接 React 前端时改 ALLOWED_ORIGINS 即可。
 """
 
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -14,13 +16,26 @@ from app.api.routes import router
 from app.config import settings
 from app.graph.builder import build_graph, set_graph
 from app.graph.checkpointer import sqlite_checkpointer
+from app.session.retention import purge_expired
 from app.session.thread_store import ThreadOwnerStore
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = await ThreadOwnerStore.open(settings.agent_state_db)
     app.state.thread_store = store
+
+    # 启动时清理过期会话：默认 30 天；失败不应阻塞启动
+    try:
+        purged = await asyncio.to_thread(
+            purge_expired, settings.agent_state_db, None, settings.session_ttl_days, False
+        )
+        logger.info("会话清理: %s", purged.as_dict())
+    except Exception:  # noqa: BLE001
+        logger.exception("会话清理失败，继续启动")
+
     async with sqlite_checkpointer(settings.agent_state_db) as checkpointer:
         set_graph(build_graph(checkpointer))
         try:
