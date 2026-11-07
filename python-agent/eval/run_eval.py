@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 from langchain_core.messages import HumanMessage
+from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.builder import build_graph
 from app.tools import business_api
@@ -137,7 +138,8 @@ async def main() -> None:
 
     cases = load_cases(Path(args.cases), args.limit, args.split, args.holdout)
     backend_ok = await business_api.healthy()
-    graph = build_graph()
+    # 评测是批处理：用内存 checkpointer，避免把评测会话写进生产状态库
+    graph = build_graph(MemorySaver())
 
     rows = []
     for case in cases:

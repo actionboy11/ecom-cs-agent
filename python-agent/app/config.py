@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # --- Agent 会话状态（SQLite，与业务数据分离：ADR-0002） ---
     agent_state_db: str = "data/agent_state.db"
 
+    # --- 模型调用超时（秒）；测试里可调小以便快速降级 ---
+    llm_timeout_seconds: float = 60.0
+
 
 @lru_cache
 def get_settings() -> Settings:

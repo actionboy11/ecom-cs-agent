@@ -212,11 +212,13 @@ async def handoff_prepare(state: AgentState) -> dict[str, Any]:
     """
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     with node_span(thread_id, "handoff_prepare"):
+        text = "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。"
         return {
             "needs_human": True,
             "handoff_reason": state.get("intent", "complaint"),
             "handoff_summary": _last_user_text(state["messages"]),
-            "reply": "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。",
+            "reply": text,
+            "messages": [AIMessage(content=text)],
         }
 
 
@@ -290,7 +292,8 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
     if state.get("needs_human"):
         # 转人工的答复已在 handoff_prepare 里写好；这里只在「人工驳回」时改写。
         if state.get("handoff_approved") is False:
-            return {"reply": "已记录您的投诉，我们会安排专员在 24 小时内回访，感谢您的反馈。"}
+            text = "已记录您的投诉，我们会安排专员在 24 小时内回访，感谢您的反馈。"
+            return {"reply": text, "messages": [AIMessage(content=text)]}
         return {}
 
     context = {
@@ -316,8 +319,10 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                 ]
             )
             info["source"] = "llm"
-            return {"reply": str(msg.content).strip() or template}
+            text = str(msg.content).strip() or template
+            # 回复必须写回 messages，否则下一轮上下文里只有用户的话，没有 Agent 的答复
+            return {"reply": text, "messages": [AIMessage(content=text)]}
         except Exception as exc:  # noqa: BLE001 - 模型不可用仍要能答
             info["source"] = "template"
             info["fallback_reason"] = str(exc)[:200]
-            return {"reply": template}
+            return {"reply": template, "messages": [AIMessage(content=template)]}

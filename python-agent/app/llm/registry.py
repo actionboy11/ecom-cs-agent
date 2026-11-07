@@ -51,7 +51,7 @@ def get_chat_model(task: str = "reasoning", *, temperature: float = 0.0, **kwarg
         base_url=spec.base_url,
         api_key=spec.api_key,
         temperature=temperature,
-        timeout=60,
+        timeout=settings.llm_timeout_seconds,
         max_retries=1,
         **kwargs,
     )

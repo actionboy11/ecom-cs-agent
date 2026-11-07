@@ -6,13 +6,14 @@
 import asyncio
 
 from langchain_core.messages import HumanMessage
+from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.builder import build_graph
 from app.graph.nodes import _keyword_classify, handoff_prepare, route_after_classify
 
 
 def test_graph_builds() -> None:
-    graph = build_graph()
+    graph = build_graph(MemorySaver())
     assert graph is not None
 
 

@@ -4,19 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from app.graph import nodes
 from app.graph.state import AgentState
 
 
-def build_graph(checkpointer: Any = None):
+def build_graph(checkpointer: Any):
     """编译状态机。
 
-    checkpointer 选择：
-    - 开发：MemorySaver（进程内，重启即丢）
-    - 演示/生产：SqliteSaver（W2 切换，演示「服务重启后会话还能续上」）
+    checkpointer 必须显式传入：生产用 SQLite（`app.graph.checkpointer`），
+    批处理/单测可用 `MemorySaver`。刻意不设默认值——避免生产误用内存实现。
     """
     graph = StateGraph(AgentState)
 
@@ -45,7 +43,7 @@ def build_graph(checkpointer: Any = None):
     graph.add_edge("await_human", "respond")
     graph.add_edge("respond", END)
 
-    return graph.compile(checkpointer=checkpointer or MemorySaver())
+    return graph.compile(checkpointer=checkpointer)
 
 
 _graph: Any = None
