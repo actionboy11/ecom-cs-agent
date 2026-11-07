@@ -14,16 +14,21 @@ from app.api.routes import router
 from app.config import settings
 from app.graph.builder import build_graph, set_graph
 from app.graph.checkpointer import sqlite_checkpointer
+from app.session.thread_store import ThreadOwnerStore
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    store = await ThreadOwnerStore.open(settings.agent_state_db)
+    app.state.thread_store = store
     async with sqlite_checkpointer(settings.agent_state_db) as checkpointer:
         set_graph(build_graph(checkpointer))
         try:
             yield
         finally:
             set_graph(None)
+            app.state.thread_store = None
+            await store.close()
 
 
 app = FastAPI(

@@ -12,7 +12,7 @@ import json
 import time
 from typing import Any, AsyncIterator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
@@ -20,9 +20,38 @@ from pydantic import BaseModel, Field
 
 from app.graph.builder import get_graph
 from app.observability.trace import trace_event
+from app.security.auth import CurrentUser, require_user
+from app.session.thread_store import ThreadOwnerStore
 from app.tools import business_api
 
 router = APIRouter(prefix="/api/v1", tags=["agent"])
+
+
+def get_thread_store(request: Request) -> ThreadOwnerStore:
+    store = getattr(request.app.state, "thread_store", None)
+    if store is None:
+        raise HTTPException(status_code=503, detail="服务未就绪")
+    return store
+
+
+async def _ensure_thread_access(
+    store: ThreadOwnerStore,
+    thread_id: str,
+    user: CurrentUser,
+    *,
+    bind_if_new: bool,
+    allow_agent: bool,
+) -> None:
+    """会话归属校验：不存在与不属于当前用户统一 404（ADR-0001）。"""
+    owner = await store.owner_of(thread_id)
+    if owner is None:
+        if bind_if_new:
+            await store.bind(thread_id, user.user_id)
+            return
+        raise HTTPException(status_code=404, detail="会话不存在")
+    if owner != user.user_id and not (allow_agent and user.is_agent):
+        raise HTTPException(status_code=404, detail="会话不存在")
+    await store.touch(thread_id)
 
 
 class ChatRequest(BaseModel):
@@ -69,7 +98,12 @@ async def health() -> dict[str, Any]:
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest) -> ChatResponse:
+async def chat(
+    req: ChatRequest,
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> ChatResponse:
+    await _ensure_thread_access(store, req.thread_id, user, bind_if_new=True, allow_agent=False)
     graph = get_graph()
     trace_event(req.thread_id, "api", "chat_request", {"message": req.message[:200]})
 
@@ -93,7 +127,12 @@ async def chat(req: ChatRequest) -> ChatResponse:
 
 
 @router.post("/chat/stream")
-async def chat_stream(req: ChatRequest) -> StreamingResponse:
+async def chat_stream(
+    req: ChatRequest,
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> StreamingResponse:
+    await _ensure_thread_access(store, req.thread_id, user, bind_if_new=True, allow_agent=False)
     graph = get_graph()
 
     async def gen() -> AsyncIterator[str]:
@@ -118,7 +157,14 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
 
 @router.post("/threads/{thread_id}/resume", response_model=ChatResponse)
-async def resume(thread_id: str, req: ResumeRequest) -> ChatResponse:
+async def resume(
+    thread_id: str,
+    req: ResumeRequest,
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> ChatResponse:
+    # 坐席审批恢复不受归属限制；买家只能恢复自己的会话
+    await _ensure_thread_access(store, thread_id, user, bind_if_new=False, allow_agent=True)
     graph = get_graph()
     try:
         result = await graph.ainvoke(
