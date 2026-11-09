@@ -13,13 +13,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-  ai:
-    mcp:
-      server:
-        name: cs-agent-business
-        version: 0.1.0
-        # Streamable HTTP：客户端以 POST /mcp 完成 initialize / tools/list / tools/call
-        protocol: STREAMABLE
 
 mybatis-plus:
   configuration:
