@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any, Literal
 
@@ -151,23 +152,7 @@ def route_after_classify(state: AgentState) -> str:
         return "handoff"
     if intent in ("order_query", "logistics", "refund", "product_info"):
         return "tools"
-    if intent == "policy":
-        return "knowledge"
     return "respond"
-
-
-async def knowledge_node(state: AgentState) -> dict[str, Any]:
-    thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    with node_span(thread_id, "knowledge") as info:
-        query = _last_user_text(state["messages"])
-        policies = knowledge_store.search(query, k=3)
-        info["hits"] = [p.policy_id for p in policies]
-        if not policies:
-            return {"knowledge": POLICY_TEXT, "citations": []}
-        return {
-            "knowledge": "\n\n".join(p.as_document() for p in policies),
-            "citations": [p.policy_id for p in policies],
-        }
 
 
 async def tool_node(state: AgentState) -> dict[str, Any]:
@@ -293,10 +278,11 @@ def _template_reply(state: AgentState) -> str:
             f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日处理。"
         )
     if intent == "policy" and state.get("knowledge"):
-        cites = state.get("citations") or []
-        suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in cites)}" if cites else ""
+        refs = state.get("policy_refs") or []
+        suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in refs)}" if refs else ""
         return f"{state['knowledge']}{suffix}"
-    return state.get("knowledge", POLICY_TEXT)
+    # 检索无命中时 knowledge 为 None，必须回落到政策摘要，不能把 None 塞给模型
+    return state.get("knowledge") or POLICY_TEXT
 
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
@@ -308,16 +294,24 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             return {"reply": text, "messages": [AIMessage(content=text)]}
         return {}
 
+    # SPEC §8：生成回复前先检索；只有分数过阈值的片段进入上下文
+    retrieval = await asyncio.to_thread(knowledge_store.retrieve, _last_user_text(state["messages"]))
+    knowledge = retrieval.knowledge
+    policy_refs = retrieval.policy_refs
+    view: AgentState = {**state, "knowledge": knowledge, "policy_refs": policy_refs}
+
     context = {
         "intent": state.get("intent"),
         "order_no": state.get("order_no"),
         "tool_result": state.get("tool_result"),
-        "knowledge": state.get("knowledge"),
+        "knowledge": knowledge,
         "policy": POLICY_TEXT,
     }
-    template = _template_reply(state)
+    template = _template_reply(view)
 
     with node_span(thread_id, "respond", intent=state.get("intent")) as info:
+        info["retrieval"] = retrieval.source
+        info["policy_refs"] = policy_refs
         try:
             msg = await ainvoke_with_fallback(
                 [
@@ -334,8 +328,18 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             info["source"] = "llm"
             text = str(msg.content).strip() or template
             # 回复必须写回 messages，否则下一轮上下文里只有用户的话，没有 Agent 的答复
-            return {"reply": text, "messages": [AIMessage(content=text)]}
+            return {
+                "reply": text,
+                "messages": [AIMessage(content=text)],
+                "knowledge": knowledge,
+                "policy_refs": policy_refs,
+            }
         except Exception as exc:  # noqa: BLE001 - 模型不可用仍要能答
             info["source"] = "template"
             info["fallback_reason"] = str(exc)[:200]
-            return {"reply": template, "messages": [AIMessage(content=template)]}
+            return {
+                "reply": template,
+                "messages": [AIMessage(content=template)],
+                "knowledge": knowledge,
+                "policy_refs": policy_refs,
+            }

@@ -24,7 +24,7 @@ class AgentState(TypedDict, total=False):
     # 中间结果
     tool_result: dict[str, Any] | None
     knowledge: str | None
-    citations: list[str]
+    policy_refs: list[str]
 
     # 人工介入
     needs_human: bool

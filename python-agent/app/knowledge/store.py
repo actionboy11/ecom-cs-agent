@@ -1,8 +1,13 @@
-"""向量检索：Chroma（本地持久化）+ Ollama bge-m3，失败时退化为关键词检索。"""
+"""向量检索：Chroma（本地持久化）+ Ollama bge-m3，失败时退化为关键词检索。
+
+对外只暴露 `retrieve()`：按 SPEC §8，检索发生在「生成回复之前」，
+且只有相似度达到阈值（默认 0.35）的政策片段才进入上下文。
+"""
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +18,7 @@ from app.paths import ensure_writable_temp, resolve_under_repo
 logger = logging.getLogger(__name__)
 
 COLLECTION = "policies"
+MIN_SCORE = 0.35
 
 
 def _ollama_host() -> str:
@@ -26,8 +32,10 @@ def default_embeddings() -> Any:
     import os
 
     # 系统代理会劫持 localhost（表现为 502），这里显式放行
-    os.environ.setdefault("NO_PROXY", "localhost,127.0.0.1")
-    os.environ.setdefault("no_proxy", "localhost,127.0.0.1")
+    for var in ("NO_PROXY", "no_proxy"):
+        current = os.environ.get(var, "")
+        if "127.0.0.1" not in current:
+            os.environ[var] = ",".join(filter(None, [current, "localhost,127.0.0.1"]))
 
     from langchain_ollama import OllamaEmbeddings
 
@@ -35,10 +43,7 @@ def default_embeddings() -> Any:
 
 
 def build_store(embeddings: Any = None, persist_directory: str | Path | None = None) -> Any:
-    """本地持久化 Chroma。
-
-    注意：Chroma 的 Rust SQLite 依赖可写的临时目录，因此先修正 TMP/TEMP。
-    """
+    """本地持久化 Chroma（Chroma 的 Rust SQLite 依赖可写的临时目录）。"""
     import chromadb
     from chromadb.config import Settings as ChromaSettings
     from langchain_chroma import Chroma
@@ -46,7 +51,7 @@ def build_store(embeddings: Any = None, persist_directory: str | Path | None = N
     ensure_writable_temp()
     path = resolve_under_repo(persist_directory or settings.chroma_dir)
     Path(path).mkdir(parents=True, exist_ok=True)
-    # 关闭遥测：内网/受限网络下匿名上报会拖慢甚至阻塞启动与查询
+    # 关闭遥测：受限网络下匿名上报会拖慢甚至阻塞查询
     client = chromadb.PersistentClient(
         path=str(path), settings=ChromaSettings(anonymized_telemetry=False)
     )
@@ -57,10 +62,13 @@ def build_store(embeddings: Any = None, persist_directory: str | Path | None = N
     )
 
 
-def index_policies(store: Any, policies: list[Policy] | None = None) -> int:
-    """重建索引：先清空集合，再写入，保证可重复执行。"""
+def index_policies(
+    store: Any, policies: list[Policy] | None = None, *, reset: bool = True
+) -> int:
+    """写入索引。`reset=True` 时先清空集合（重建语义）。"""
     items = policies if policies is not None else load_policies()
-    store.reset_collection()
+    if reset:
+        store.reset_collection()
     if not items:
         return 0
     store.add_texts(
@@ -87,23 +95,45 @@ def get_store() -> Any:
     return _store
 
 
-def search(query: str, k: int = 3) -> list[Policy]:
-    """先走向量检索；任何失败（Chroma/Ollama 不可用、索引为空）都退化为关键词。"""
+def _from_document(doc: Any) -> Policy:
+    return Policy(
+        policy_id=str(doc.metadata.get("policy_id", "")),
+        title=str(doc.metadata.get("title", "")),
+        body=doc.page_content,
+    )
+
+
+@dataclass
+class RetrievalResult:
+    knowledge: str | None
+    policy_refs: list[str]
+    source: str  # vector / keyword / none
+
+
+def retrieve(query: str, k: int = 3, min_score: float = MIN_SCORE) -> RetrievalResult:
+    """按相关性阈值检索；不可用时退化关键词，仍无结果则返回空。"""
     try:
         store = get_store()
         if store._collection.count() == 0:  # noqa: SLF001 - langchain-chroma 无公开计数接口
-            return keyword_search(query, k)
-        hits = store.similarity_search(query, k=k)
-        found = [
-            Policy(
-                policy_id=str(doc.metadata.get("policy_id", "")),
-                title=str(doc.metadata.get("title", "")),
-                body=doc.page_content,
-            )
-            for doc in hits
-            if doc.metadata.get("policy_id")
-        ]
-        return found or keyword_search(query, k)
+            hits = keyword_search(query, k)
+            return _build(hits, "keyword")
+
+        pairs = store.similarity_search_with_relevance_scores(query, k=k)
+        kept = [(doc, float(score)) for doc, score in pairs if float(score) >= min_score]
+        if not kept:
+            logger.info("检索无命中（阈值 %.2f）: %s", min_score, query[:40])
+            return RetrievalResult(None, [], "none")
+        return _build([_from_document(doc) for doc, _ in kept], "vector")
     except Exception as exc:  # noqa: BLE001 - 检索不可用时不能拖垮对话
         logger.warning("向量检索不可用，退化为关键词: %s", str(exc)[:200])
-        return keyword_search(query, k)
+        return _build(keyword_search(query, k), "keyword")
+
+
+def _build(policies: list[Policy], source: str) -> RetrievalResult:
+    if not policies:
+        return RetrievalResult(None, [], "none")
+    return RetrievalResult(
+        knowledge="\n\n".join(p.as_document() for p in policies),
+        policy_refs=[p.policy_id for p in policies],
+        source=source,
+    )

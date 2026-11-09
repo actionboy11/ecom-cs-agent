@@ -44,7 +44,7 @@ def test_refund_variants() -> None:
 def test_route_complaint_goes_to_handoff() -> None:
     assert route_after_classify({"intent": "complaint"}) == "handoff"
     assert route_after_classify({"intent": "logistics"}) == "tools"
-    assert route_after_classify({"intent": "policy"}) == "knowledge"
+    assert route_after_classify({"intent": "policy"}) == "respond"
     assert route_after_classify({"intent": "other"}) == "respond"
 
 
