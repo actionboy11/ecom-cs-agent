@@ -26,6 +26,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.graph.builder import build_graph
 from app.tools import business_api
 
+try:  # 作为包导入（pytest / python -m eval.run_eval）
+    from eval.metrics import citation_stats, extract_citations
+except ImportError:  # 作为脚本运行（python eval/run_eval.py）
+    from metrics import citation_stats, extract_citations
+
 HERE = Path(__file__).parent
 REPORT_DIR = HERE / "reports"
 
@@ -66,6 +71,10 @@ async def run_case(graph, case: dict) -> dict:
         tool_ok = bool(tool_result) and not tool_result.get("error")
     conformance = all(token in reply for token in case.get("must_contain", []))
 
+    # 引用命中：状态里的主引用 + 回复正文里出现的编号，取并集
+    citations = list(dict.fromkeys((result.get("policy_refs") or []) + extract_citations(reply)))
+    expected = case.get("expect_citation")
+
     return {
         "id": case["id"],
         "input": case["input"],
@@ -74,6 +83,9 @@ async def run_case(graph, case: dict) -> dict:
         "tool_ok": tool_ok,
         "reply": reply[:200],
         "reply_ok": conformance,
+        "citations": citations,
+        "citation_expected": expected,
+        "citation_ok": (expected in citations) if expected else None,
         "handoff": bool(interrupt),
         "elapsed_ms": elapsed_ms,
     }
@@ -81,7 +93,7 @@ async def run_case(graph, case: dict) -> dict:
 
 def summarize(rows: list[dict]) -> dict:
     n = max(len(rows), 1)
-    return {
+    summary = {
         "cases": len(rows),
         "intent_accuracy": round(sum(r["intent_ok"] for r in rows) / n, 3),
         "tool_success": round(sum(r["tool_ok"] for r in rows) / n, 3),
@@ -89,6 +101,8 @@ def summarize(rows: list[dict]) -> dict:
         "avg_latency_ms": round(sum(r["elapsed_ms"] for r in rows) / n, 1),
         "handoff_cases": sum(r["handoff"] for r in rows),
     }
+    summary.update(citation_stats(rows))
+    return summary
 
 
 def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
@@ -104,17 +118,36 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
         f"- 意图准确率：{summary['intent_accuracy']:.1%}",
         f"- 工具成功率：{summary['tool_success']:.1%}",
         f"- 回复符合率：{summary['reply_conformance']:.1%}",
+        f"- 引用命中率："
+        + (
+            f"{summary['citation_hit_rate']:.1%}（{summary['citation_hits']}/{summary['citation_cases']}）"
+            if summary.get("citation_hit_rate") is not None
+            else "无标注用例"
+        ),
         f"- 平均耗时：{summary['avg_latency_ms']} ms",
         "",
-        "| id | 输入 | 意图 | 意图✓ | 工具✓ | 回复✓ | 转人工 | 耗时ms |",
-        "|---|---|---|---|---|---|---|---|",
+        "| id | 输入 | 意图 | 意图✓ | 工具✓ | 回复✓ | 引用 | 转人工 | 耗时ms |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
+        cite = r.get("citation_expected") or ""
+        if r.get("citation_ok") is False:
+            cite = f"✗ 期望{cite} 实际{'/'.join(r.get('citations') or []) or '无'}"
+        elif r.get("citation_ok") is True:
+            cite = f"✓ {cite}"
         lines.append(
             f"| {r['id']} | {r['input'][:18]} | {r['intent']} | "
             f"{'✓' if r['intent_ok'] else '✗'} | {'✓' if r['tool_ok'] else '✗'} | "
-            f"{'✓' if r['reply_ok'] else '✗'} | {'是' if r['handoff'] else ''} | {r['elapsed_ms']} |"
+            f"{'✓' if r['reply_ok'] else '✗'} | {cite} | "
+            f"{'是' if r['handoff'] else ''} | {r['elapsed_ms']} |"
         )
+    lines += ["", "## 引用错例", ""]
+    mismatches = summary.get("citation_mismatches") or []
+    if mismatches:
+        for m in mismatches:
+            lines.append(f"- **{m['id']}** 期望 `{m['expected']}`，实际 `{'/'.join(m['actual']) or '无'}`")
+    else:
+        lines.append("- 无")
     lines += ["", "## 失败 case 原文", ""]
     for r in rows:
         if not (r["intent_ok"] and r["tool_ok"] and r["reply_ok"]):
