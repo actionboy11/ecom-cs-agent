@@ -5,30 +5,43 @@ import com.example.csagent.security.AuthenticatedUser;
 /**
  * MCP 请求级身份上下文。
  *
- * <p>身份来自请求头 JWT（由 {@link McpAuthFilter} 解析），工具内部只能读取，
- * 模型无法通过工具参数指定用户——这是「身份不可由模型决定」在 MCP 侧的落地。
+ * <p>身份来源：HTTP 端点由 Spring Security 解析的登录用户注入；stdio 由进程启动参数
+ * `MCP_USER_TOKEN` 注入。工具内部只能读取，**模型无法通过参数指定用户**。
+ *
+ * <p>令牌在注入时校验一次；这里额外记住过期时间，长驻进程里过期后调用会被拒绝。
  */
 public final class McpAuthContext {
 
-    private static final ThreadLocal<AuthenticatedUser> CURRENT = new ThreadLocal<>();
+    private static final ThreadLocal<Holder> CURRENT = new ThreadLocal<>();
+
+    private record Holder(AuthenticatedUser user, long expiresAtMillis) {
+    }
 
     private McpAuthContext() {
     }
 
     public static void set(AuthenticatedUser user) {
-        CURRENT.set(user);
+        set(user, Long.MAX_VALUE);
+    }
+
+    public static void set(AuthenticatedUser user, long expiresAtMillis) {
+        CURRENT.set(new Holder(user, expiresAtMillis));
     }
 
     public static AuthenticatedUser get() {
-        return CURRENT.get();
+        Holder holder = CURRENT.get();
+        return holder == null ? null : holder.user();
     }
 
     public static AuthenticatedUser require() {
-        AuthenticatedUser user = CURRENT.get();
-        if (user == null) {
-            throw new IllegalStateException("MCP 请求缺少身份：请携带 Authorization: Bearer <jwt>");
+        Holder holder = CURRENT.get();
+        if (holder == null) {
+            throw new IllegalStateException("UNAUTHORIZED: MCP 请求缺少身份");
         }
-        return user;
+        if (System.currentTimeMillis() >= holder.expiresAtMillis()) {
+            throw new IllegalStateException("UNAUTHORIZED: 令牌已过期");
+        }
+        return holder.user();
     }
 
     public static void clear() {

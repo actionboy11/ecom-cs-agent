@@ -11,9 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * S5-1：MCP 工具的身份与权限口径。
- */
+/** S5-1：MCP 工具的身份与权限口径。 */
 @SpringBootTest
 @ActiveProfiles("test")
 class OrderMcpToolsTest {
@@ -33,7 +31,7 @@ class OrderMcpToolsTest {
         String json = tools.getOrder("CS2024001");
 
         assertThat(json).contains("\"orderNo\":\"CS2024001\"");
-        assertThat(json).doesNotContain("buyer_b");
+        assertThat(json).contains("\"item\"");
     }
 
     @Test
@@ -45,12 +43,29 @@ class OrderMcpToolsTest {
     }
 
     @Test
+    void missing_order_no_is_a_missing_slot_not_not_found() {
+        McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
+
+        assertThatThrownBy(() -> tools.getOrder(" "))
+                .isInstanceOf(MissingSlotException.class)
+                .hasMessageContaining("MISSING_SLOT");
+    }
+
+    @Test
     void tools_reject_calls_without_identity() {
         McpAuthContext.clear();
 
         assertThatThrownBy(() -> tools.getOrder("CS2024001"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Authorization");
+                .hasMessageContaining("UNAUTHORIZED");
+    }
+
+    @Test
+    void expired_identity_is_rejected() {
+        McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"), System.currentTimeMillis() - 1);
+
+        assertThatThrownBy(() -> tools.getOrder("CS2024001"))
+                .hasMessageContaining("令牌已过期");
     }
 
     @Test

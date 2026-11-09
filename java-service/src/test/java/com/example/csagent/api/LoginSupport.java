@@ -9,12 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 测试辅助：走真实登录接口拿令牌，避免每个测试类各写一份。
  */
-final class LoginSupport {
+public final class LoginSupport {
 
     private LoginSupport() {
     }
 
-    static String tokenFor(MockMvc mockMvc, String username) throws Exception {
+    public static String tokenFor(MockMvc mockMvc, String username) throws Exception {
         String body = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"demo123\"}"))

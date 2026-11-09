@@ -1,5 +1,7 @@
 package com.example.csagent.mcp;
 
+import com.example.csagent.api.NotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -10,10 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 最小 MCP（Model Context Protocol）服务端：JSON-RPC 2.0，stdio 传输。
+ * 最小 MCP（Model Context Protocol）服务端：JSON-RPC 2.0。
  *
  * <p>只实现 Agent 实际用到的子集：initialize / tools/list / tools/call / ping。
- * 与 Spring AI 解耦，协议行为可单测。
+ * 与传输解耦：HTTP `/mcp` 与 stdio 共用这一份实现。
  */
 public class McpProtocol {
 
@@ -27,6 +29,10 @@ public class McpProtocol {
     public record ToolSpec(String name, String description, Map<String, Object> inputSchema, ToolHandler handler) {
     }
 
+    /** HTTP 状态 + 响应体（stdio 只用 body）。 */
+    public record McpResponse(int status, String body) {
+    }
+
     private final List<ToolSpec> tools;
     private final ObjectMapper mapper;
 
@@ -35,42 +41,86 @@ public class McpProtocol {
         this.mapper = mapper;
     }
 
-    /** @return 响应 JSON；通知类消息返回 null（按 MCP 约定不回包）。 */
-    public String handle(String line) throws Exception {
-        JsonNode request = mapper.readTree(line);
-        String method = request.path("method").asText("");
-        JsonNode id = request.get("id");
-
-        if (id == null || id.isNull()) {
-            return null; // notifications/initialized 等通知
+    public McpResponse handle(String line) {
+        JsonNode request;
+        try {
+            request = mapper.readTree(line);
+        } catch (JsonProcessingException exc) {
+            return new McpResponse(400, errorResponse(null, -32700, "Parse error"));
+        }
+        if (request == null || !request.isObject()) {
+            return new McpResponse(400, errorResponse(null, -32600, "Invalid Request"));
         }
 
+        String method = request.path("method").asText("");
+        JsonNode id = request.get("id");
+        if (id == null || id.isNull()) {
+            return new McpResponse(202, null); // 通知不回包
+        }
+
+        return switch (method) {
+            case "initialize" -> new McpResponse(200, okResponse(id, initializeResult()));
+            case "tools/list" -> new McpResponse(200, okResponse(id, toolsListResult()));
+            case "ping" -> new McpResponse(200, okResponse(id, mapper.createObjectNode()));
+            case "tools/call" -> toolsCall(id, request.path("params"));
+            default -> new McpResponse(200, errorResponse(id, -32601, "Method not found: " + method));
+        };
+    }
+
+    private McpResponse toolsCall(JsonNode id, JsonNode params) {
+        String name = params.path("name").asText("");
+        ToolSpec tool = tools.stream().filter(t -> t.name().equals(name)).findFirst().orElse(null);
+        if (tool == null) {
+            return new McpResponse(400, errorResponse(id, -32602, "Unknown tool: " + name));
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> arguments = mapper.convertValue(
+                    params.path("arguments"), LinkedHashMap.class);
+            Object output = tool.handler().call(arguments);
+            return new McpResponse(200, okResponse(id, toolResult(String.valueOf(output), false)));
+        } catch (MissingSlotException exc) {
+            return new McpResponse(400, errorResponse(id, -32001, exc.getMessage()));
+        } catch (NotFoundException exc) {
+            // 与 REST 同口径：越权/不存在都是 404，且不泄露存在性
+            return new McpResponse(404, errorResponse(id, -32004, "订单不存在"));
+        } catch (Exception exc) {
+            return new McpResponse(200, okResponse(id, toolResult("工具执行失败: " + exc.getMessage(), true)));
+        }
+    }
+
+    private String okResponse(JsonNode id, JsonNode result) {
         ObjectNode response = mapper.createObjectNode();
         response.put("jsonrpc", "2.0");
         response.set("id", id);
-
-        switch (method) {
-            case "initialize" -> response.set("result", initializeResult());
-            case "tools/list" -> response.set("result", toolsListResult());
-            case "tools/call" -> response.set("result", toolsCallResult(request.path("params")));
-            case "ping" -> response.set("result", mapper.createObjectNode());
-            default -> response.set("error", error(-32601, "Method not found: " + method));
-        }
-        return mapper.writeValueAsString(response);
+        response.set("result", result);
+        return response.toString();
     }
 
-    private ObjectNode initializeResult() {
+    private String errorResponse(JsonNode id, int code, String message) {
+        ObjectNode response = mapper.createObjectNode();
+        response.put("jsonrpc", "2.0");
+        if (id != null) {
+            response.set("id", id);
+        } else {
+            response.putNull("id");
+        }
+        ObjectNode error = response.putObject("error");
+        error.put("code", code);
+        error.put("message", message);
+        return response.toString();
+    }
+
+    private JsonNode initializeResult() {
         ObjectNode result = mapper.createObjectNode();
         result.put("protocolVersion", PROTOCOL_VERSION);
-        ObjectNode capabilities = result.putObject("capabilities");
-        capabilities.putObject("tools");
-        ObjectNode serverInfo = result.putObject("serverInfo");
-        serverInfo.put("name", "cs-agent-business");
-        serverInfo.put("version", "0.1.0");
+        result.putObject("capabilities").putObject("tools");
+        result.putObject("serverInfo").put("name", "cs-agent-business").put("version", "0.1.0");
         return result;
     }
 
-    private ObjectNode toolsListResult() {
+    private JsonNode toolsListResult() {
         ObjectNode result = mapper.createObjectNode();
         ArrayNode array = result.putArray("tools");
         for (ToolSpec tool : tools) {
@@ -82,36 +132,12 @@ public class McpProtocol {
         return result;
     }
 
-    private ObjectNode toolsCallResult(JsonNode params) {
-        String name = params.path("name").asText("");
-        ToolSpec tool = tools.stream().filter(t -> t.name().equals(name)).findFirst().orElse(null);
-
+    private JsonNode toolResult(String text, boolean isError) {
         ObjectNode result = mapper.createObjectNode();
-        ArrayNode content = result.putArray("content");
-
-        if (tool == null) {
+        result.putArray("content").addObject().put("type", "text").put("text", text);
+        if (isError) {
             result.put("isError", true);
-            content.addObject().put("type", "text").put("text", "未知工具: " + name);
-            return result;
-        }
-
-        try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> arguments = mapper.convertValue(
-                    params.path("arguments"), LinkedHashMap.class);
-            Object output = tool.handler().call(arguments);
-            content.addObject().put("type", "text").put("text", String.valueOf(output));
-        } catch (Exception exc) {
-            result.put("isError", true);
-            content.addObject().put("type", "text").put("text", exc.getMessage());
         }
         return result;
-    }
-
-    private ObjectNode error(int code, String message) {
-        ObjectNode error = mapper.createObjectNode();
-        error.put("code", code);
-        error.put("message", message);
-        return error;
     }
 }
