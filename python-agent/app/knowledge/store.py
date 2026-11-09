@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -65,27 +66,36 @@ def build_store(embeddings: Any = None, persist_directory: str | Path | None = N
 def index_policies(
     store: Any, policies: list[Policy] | None = None, *, reset: bool = True
 ) -> int:
-    """写入索引。`reset=True` 时先清空集合（重建语义）。"""
+    """写入索引。`reset=True` 时先清空集合（重建语义）。
+
+    先算 embedding 再清空：嵌入失败时不会把现有索引清成空库。
+    """
     items = policies if policies is not None else load_policies()
-    if reset:
-        store.reset_collection()
     if not items:
         return 0
+
+    texts = [f"{p.title}\n{p.body}" for p in items]  # 标题也参与向量，提升召回
+    embeddings = store.embeddings.embed_documents(texts)
+    if reset:
+        store.reset_collection()
     store.add_texts(
-        texts=[p.body for p in items],
+        texts=texts,
         metadatas=[{"policy_id": p.policy_id, "title": p.title} for p in items],
         ids=[p.policy_id for p in items],
+        embeddings=embeddings,
     )
     return len(items)
 
 
 _store: Any = None
+_store_failed_until: float = 0.0
 
 
 def configure(store: Any) -> None:
     """测试或启动时注入已构建的向量库。"""
-    global _store
+    global _store, _store_failed_until
     _store = store
+    _store_failed_until = 0.0
 
 
 def get_store() -> Any:
@@ -112,11 +122,14 @@ class RetrievalResult:
 
 def retrieve(query: str, k: int = 3, min_score: float = MIN_SCORE) -> RetrievalResult:
     """按相关性阈值检索；不可用时退化关键词，仍无结果则返回空。"""
+    global _store_failed_until
+    if time.monotonic() < _store_failed_until:
+        return _build(keyword_search(query, k), "keyword")
+
     try:
         store = get_store()
         if store._collection.count() == 0:  # noqa: SLF001 - langchain-chroma 无公开计数接口
-            hits = keyword_search(query, k)
-            return _build(hits, "keyword")
+            return _build(keyword_search(query, k), "keyword")
 
         pairs = store.similarity_search_with_relevance_scores(query, k=k)
         kept = [(doc, float(score)) for doc, score in pairs if float(score) >= min_score]
@@ -125,8 +138,13 @@ def retrieve(query: str, k: int = 3, min_score: float = MIN_SCORE) -> RetrievalR
             return RetrievalResult(None, [], "none")
         return _build([_from_document(doc) for doc, _ in kept], "vector")
     except Exception as exc:  # noqa: BLE001 - 检索不可用时不能拖垮对话
+        # 失败后 60 秒内不再重试，避免每轮都卡在连不上的索引上
+        _store_failed_until = time.monotonic() + 60
         logger.warning("向量检索不可用，退化为关键词: %s", str(exc)[:200])
-        return _build(keyword_search(query, k), "keyword")
+        try:
+            return _build(keyword_search(query, k), "keyword")
+        except Exception:  # noqa: BLE001 - 兜底也失败时宁可没有知识
+            return RetrievalResult(None, [], "none")
 
 
 def _build(policies: list[Policy], source: str) -> RetrievalResult:
@@ -134,6 +152,7 @@ def _build(policies: list[Policy], source: str) -> RetrievalResult:
         return RetrievalResult(None, [], "none")
     return RetrievalResult(
         knowledge="\n\n".join(p.as_document() for p in policies),
-        policy_refs=[p.policy_id for p in policies],
+        # 引用只标首条（主依据），避免把 top-3 全部写成「依据」造成过度声称
+        policy_refs=[policies[0].policy_id],
         source=source,
     )

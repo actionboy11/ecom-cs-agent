@@ -86,8 +86,10 @@ docs/            SPEC / 每日记录 / 简历
 
 ```bash
 ollama pull bge-m3                          # 首次
-uv run python -m app.knowledge.ingest       # 12 条政策入库（可重复执行）
+uv run python -m app.knowledge.ingest --rebuild   # 重建索引（首次或政策更新后）
 ```
+
+- 索引已存在时必须显式 `--rebuild`；重建前会先算好向量，嵌入失败不会清空现有索引
 
 - 向量库为本地持久化 Chroma（`data/chroma`），embedding 用 Ollama `bge-m3`（1024 维）
 - 检索结果带 `[P0x]` 引用，回答里保留编号便于核对

@@ -244,6 +244,14 @@ def _infer_after_sales_type(text: str) -> str:
 def _template_reply(state: AgentState) -> str:
     intent = state.get("intent", "other")
     tool_result = state.get("tool_result") or {}
+
+    # 政策回答优先于上一轮遗留的工具错误：多轮里 tool_result 不会被清空，
+    # 先判 error 会把「退货政策几天」答成「请提供订单号」。
+    if intent == "policy" and state.get("knowledge"):
+        refs = state.get("policy_refs") or []
+        suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in refs)}" if refs else ""
+        return f"{state['knowledge']}{suffix}"
+
     if tool_result.get("error") == "missing_order_no":
         return "请提供您的订单号（例如 CS2024001），我马上帮您查询。"
     if tool_result.get("error") == "missing_sku":
@@ -277,10 +285,6 @@ def _template_reply(state: AgentState) -> str:
             f"您的{type_label}申请已提交，单号 {tool_result.get('requestNo')}，"
             f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日处理。"
         )
-    if intent == "policy" and state.get("knowledge"):
-        refs = state.get("policy_refs") or []
-        suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in refs)}" if refs else ""
-        return f"{state['knowledge']}{suffix}"
     # 检索无命中时 knowledge 为 None，必须回落到政策摘要，不能把 None 塞给模型
     return state.get("knowledge") or POLICY_TEXT
 
