@@ -21,7 +21,6 @@ ROWS = [
         "citations": ["P01"],
         "policy_refs": ["P01"],
         "citation_expected": "P01",
-        "citation_ok": True,
     },
     {
         "id": "b36",
@@ -35,7 +34,6 @@ ROWS = [
         "citations": ["P02"],  # 回答引错了
         "policy_refs": ["P03"],  # 但检索是对的
         "citation_expected": "P03",
-        "citation_ok": False,
     },
     {
         "id": "b01",
@@ -49,7 +47,6 @@ ROWS = [
         "citations": [],
         "policy_refs": [],
         "citation_expected": None,
-        "citation_ok": None,
     },
 ]
 
@@ -82,11 +79,8 @@ def test_summarize_includes_citation_metrics() -> None:
     assert summary["citation_mismatches"][0]["id"] == "b36"
 
 
-def test_report_shows_both_rates_and_actionable_mismatch(tmp_path, monkeypatch) -> None:
-    import eval.run_eval as run_eval
-
-    monkeypatch.setattr(run_eval, "REPORT_DIR", tmp_path)
-    path = write_report(summarize(ROWS), ROWS, backend_ok=True)
+def test_report_shows_both_rates_and_actionable_mismatch(tmp_path) -> None:
+    path = write_report(summarize(ROWS), ROWS, backend_ok=True, report_dir=tmp_path)
     text = path.read_text(encoding="utf-8")
 
     assert "引用命中率（回答正文）：50.0%（1/2）" in text

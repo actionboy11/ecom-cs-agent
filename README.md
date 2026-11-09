@@ -70,8 +70,8 @@ open http://localhost:8501   # Streamlit
 复现引用基线（需要 Java 业务系统在线，否则工具类用例会计为失败）：
 
 ```bash
-uv run python eval/run_eval.py --cases eval/business_cases.jsonl
-uv run python eval/run_eval.py --cases eval/cases.jsonl          # 10 条快速用例
+uv run python -m eval.run_eval --cases eval/business_cases.jsonl
+uv run python -m eval.run_eval --cases eval/cases.jsonl          # 10 条快速用例
 ```
 
 报告写到 `eval/reports/`（不提交）；报告里会分别给出「回答引用」与「检索主依据」两个命中率，并列出每个错例的期望/实际。

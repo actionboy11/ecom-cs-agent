@@ -25,6 +25,11 @@ def _rate(hits: int, total: int) -> float | None:
     return round(hits / total, 3) if total else None
 
 
+def is_citation_hit(row: dict) -> bool:
+    """唯一命中判定：期望编号出现在回答引用里。报告与统计共用这一处。"""
+    return bool(row.get("citation_expected")) and row["citation_expected"] in (row.get("citations") or [])
+
+
 def citation_stats(rows: list[dict]) -> dict:
     """按用例统计：回答引用命中率 + 检索命中率 + 错例。
 
@@ -36,7 +41,7 @@ def citation_stats(rows: list[dict]) -> dict:
     def _hits(field: str) -> int:
         return sum(1 for r in judged if r["citation_expected"] in (r.get(field) or []))
 
-    citation_hits = _hits("citations")
+    citation_hits = sum(1 for r in judged if is_citation_hit(r))
     retrieval_hits = _hits("policy_refs")
 
     return {
@@ -53,6 +58,6 @@ def citation_stats(rows: list[dict]) -> dict:
                 "retrieved": r.get("policy_refs") or [],
             }
             for r in judged
-            if r["citation_expected"] not in (r.get("citations") or [])
+            if not is_citation_hit(r)
         ],
     }

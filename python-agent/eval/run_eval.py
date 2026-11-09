@@ -25,11 +25,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.builder import build_graph
 from app.tools import business_api
-
-try:  # 作为包导入（pytest / python -m eval.run_eval）
-    from eval.metrics import citation_stats, extract_citations
-except ImportError:  # 作为脚本运行（python eval/run_eval.py）
-    from metrics import citation_stats, extract_citations
+from eval.metrics import citation_stats, extract_citations, is_citation_hit
 
 HERE = Path(__file__).parent
 REPORT_DIR = HERE / "reports"
@@ -87,7 +83,6 @@ async def run_case(graph, case: dict) -> dict:
         "citations": citations,
         "policy_refs": retrieved,
         "citation_expected": expected,
-        "citation_ok": (expected in citations) if expected else None,
         "handoff": bool(interrupt),
         "elapsed_ms": elapsed_ms,
     }
@@ -107,31 +102,35 @@ def summarize(rows: list[dict]) -> dict:
     return summary
 
 
-def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+def write_report(summary: dict, rows: list[dict], backend_ok: bool, report_dir: Path | None = None) -> Path:
+    target = report_dir or REPORT_DIR
+    target.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M%S")
-    path = REPORT_DIR / f"report-{ts}.md"
+    path = target / f"report-{ts}.md"
+
+    citation_line = (
+        f"{summary['citation_hit_rate']:.1%}（{summary['citation_hits']}/{summary['citation_cases']}）"
+        if summary.get("citation_hit_rate") is not None
+        else "无标注用例"
+    )
+    retrieval_line = (
+        f"{summary['retrieval_hit_rate']:.1%}（{summary['retrieval_hits']}/{summary['citation_cases']}）"
+        if summary.get("retrieval_hit_rate") is not None
+        else "无标注用例"
+    )
 
     lines = [
         f"# 评测报告 {ts}",
         "",
+        f"- 用例文件：{summary.get('cases_file', '未记录')}",
+        f"- 切分：{summary.get('split', 'all')}",
         f"- 后端业务系统可用：{'是' if backend_ok else '否（工具类 case 会失败）'}",
         f"- case 数：{summary['cases']}",
         f"- 意图准确率：{summary['intent_accuracy']:.1%}",
         f"- 工具成功率：{summary['tool_success']:.1%}",
         f"- 回复符合率：{summary['reply_conformance']:.1%}",
-        f"- 引用命中率（回答正文）："
-        + (
-            f"{summary['citation_hit_rate']:.1%}（{summary['citation_hits']}/{summary['citation_cases']}）"
-            if summary.get("citation_hit_rate") is not None
-            else "无标注用例"
-        ),
-        f"- 检索命中率（主依据）："
-        + (
-            f"{summary['retrieval_hit_rate']:.1%}（{summary['retrieval_hits']}/{summary['citation_cases']}）"
-            if summary.get("retrieval_hit_rate") is not None
-            else "无标注用例"
-        ),
+        f"- 引用命中率（回答正文）：{citation_line}",
+        f"- 检索命中率（主依据）：{retrieval_line}",
         f"- 平均耗时：{summary['avg_latency_ms']} ms",
         "",
         "| id | 输入 | 意图 | 意图✓ | 工具✓ | 回复✓ | 引用 | 转人工 | 耗时ms |",
@@ -139,10 +138,10 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
     ]
     for r in rows:
         cite = r.get("citation_expected") or ""
-        if r.get("citation_ok") is False:
-            cite = f"✗ 期望{cite} 实际{'/'.join(r.get('citations') or []) or '无'}"
-        elif r.get("citation_ok") is True:
+        if r.get("citation_expected") and is_citation_hit(r):
             cite = f"✓ {cite}"
+        elif r.get("citation_expected"):
+            cite = f"✗ 期望{cite} 实际{'/'.join(r.get('citations') or []) or '无'}"
         lines.append(
             f"| {r['id']} | {r['input'][:18]} | {r['intent']} | "
             f"{'✓' if r['intent_ok'] else '✗'} | {'✓' if r['tool_ok'] else '✗'} | "
