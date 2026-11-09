@@ -71,8 +71,9 @@ async def run_case(graph, case: dict) -> dict:
         tool_ok = bool(tool_result) and not tool_result.get("error")
     conformance = all(token in reply for token in case.get("must_contain", []))
 
-    # 引用命中：状态里的主引用 + 回复正文里出现的编号，取并集
-    citations = list(dict.fromkeys((result.get("policy_refs") or []) + extract_citations(reply)))
+    # 回答引用只从回复正文里取；检索主依据单独记录，避免把「检索到了」算成「回答引用了」
+    citations = extract_citations(reply)
+    retrieved = list(result.get("policy_refs") or [])
     expected = case.get("expect_citation")
 
     return {
@@ -84,6 +85,7 @@ async def run_case(graph, case: dict) -> dict:
         "reply": reply[:200],
         "reply_ok": conformance,
         "citations": citations,
+        "policy_refs": retrieved,
         "citation_expected": expected,
         "citation_ok": (expected in citations) if expected else None,
         "handoff": bool(interrupt),
@@ -118,10 +120,16 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
         f"- 意图准确率：{summary['intent_accuracy']:.1%}",
         f"- 工具成功率：{summary['tool_success']:.1%}",
         f"- 回复符合率：{summary['reply_conformance']:.1%}",
-        f"- 引用命中率："
+        f"- 引用命中率（回答正文）："
         + (
             f"{summary['citation_hit_rate']:.1%}（{summary['citation_hits']}/{summary['citation_cases']}）"
             if summary.get("citation_hit_rate") is not None
+            else "无标注用例"
+        ),
+        f"- 检索命中率（主依据）："
+        + (
+            f"{summary['retrieval_hit_rate']:.1%}（{summary['retrieval_hits']}/{summary['citation_cases']}）"
+            if summary.get("retrieval_hit_rate") is not None
             else "无标注用例"
         ),
         f"- 平均耗时：{summary['avg_latency_ms']} ms",
@@ -145,7 +153,11 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool) -> Path:
     mismatches = summary.get("citation_mismatches") or []
     if mismatches:
         for m in mismatches:
-            lines.append(f"- **{m['id']}** 期望 `{m['expected']}`，实际 `{'/'.join(m['actual']) or '无'}`")
+            retrieved = "/".join(m.get("retrieved") or []) or "无"
+            lines.append(
+                f"- **{m['id']}** 期望 `{m['expected']}`，回答引用 `{'/'.join(m['actual']) or '无'}`，"
+                f"检索主依据 `{retrieved}`"
+            )
     else:
         lines.append("- 无")
     lines += ["", "## 失败 case 原文", ""]

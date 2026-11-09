@@ -63,7 +63,18 @@ open http://localhost:8501   # Streamlit
 |---|---|---|---|
 | 标准 | 公开 600 条售后基准 | 任务完成率 | _待填_ |
 | 业务 | 自建 60 条（48 train / 12 holdout） | 意图/工具/回复 | _待填_ |
+| 业务 | 政策类 8 条（标注 `expect_citation`） | **引用命中率（回答正文）** | **100%（8/8）** |
+| 业务 | 政策类 8 条 | 检索命中率（主依据） | 100%（8/8） |
 | 安全 | 越权 4 条 | 拦截率 | _待填_ |
+
+复现引用基线（需要 Java 业务系统在线，否则工具类用例会计为失败）：
+
+```bash
+uv run python eval/run_eval.py --cases eval/business_cases.jsonl
+uv run python eval/run_eval.py --cases eval/cases.jsonl          # 10 条快速用例
+```
+
+报告写到 `eval/reports/`（不提交）；报告里会分别给出「回答引用」与「检索主依据」两个命中率，并列出每个错例的期望/实际。
 
 ## 目录
 

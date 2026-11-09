@@ -289,6 +289,13 @@ def _template_reply(state: AgentState) -> str:
     return state.get("knowledge") or POLICY_TEXT
 
 
+def _with_citation(text: str, refs: list[str]) -> str:
+    """确保回答带引用：模型可能忽略提示词，这里兜底补一行「依据」。"""
+    if not refs or re.search(r"\[P\d{2}\]", text):
+        return text
+    return f"{text}\n\n依据：{'、'.join(f'[{c}]' for c in refs)}"
+
+
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     if state.get("needs_human"):
@@ -330,7 +337,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                 ]
             )
             info["source"] = "llm"
-            text = str(msg.content).strip() or template
+            text = _with_citation(str(msg.content).strip() or template, policy_refs)
             # 回复必须写回 messages，否则下一轮上下文里只有用户的话，没有 Agent 的答复
             return {
                 "reply": text,
