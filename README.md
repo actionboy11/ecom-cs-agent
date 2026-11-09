@@ -80,6 +80,20 @@ docs/            SPEC / 每日记录 / 简历
 - **越权返回 404 而不是 403**：403 会泄露资源是否存在，可被用来枚举。
 - **关键词规则只做降级兜底，不计入质量指标**：规则一旦参与评测，就会变成为评测集调参。
 
+## 知识检索（Chroma）
+
+12 条售后政策放在 `data/policies/policies.md`，建立索引：
+
+```bash
+ollama pull bge-m3                          # 首次
+uv run python -m app.knowledge.ingest       # 12 条政策入库（可重复执行）
+```
+
+- 向量库为本地持久化 Chroma（`data/chroma`），embedding 用 Ollama `bge-m3`（1024 维）
+- 检索结果带 `[P0x]` 引用，回答里保留编号便于核对
+- Chroma 或 Ollama 不可用时自动退化为关键词检索，对话不中断
+- Windows 若报 `unable to open database file (code 14)`：系统临时目录不可写，程序已自动把 `TMP/TEMP` 指向仓库内 `.tmp`
+
 ## 会话数据保留（TTL）
 
 Agent 会话与轨迹默认保留 **30 天**（`SESSION_TTL_DAYS`），业务审计不受影响（审计在 MySQL，按 365 天保留）。

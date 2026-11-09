@@ -2,10 +2,29 @@
 
 from __future__ import annotations
 
+import shutil
+import uuid
+from pathlib import Path
+
 import pytest
 
 from app.config import settings
 from tests.support import TEST_SECRET
+
+
+@pytest.fixture
+def local_tmp() -> Path:
+    """工作区内的临时目录。
+
+    Chroma 的 Rust 绑定在 Windows 的系统临时目录下无法打开 SQLite 文件，
+    因此测试统一用仓库内目录，避免受 TEMP 权限影响。
+    """
+    base = Path(__file__).resolve().parents[1] / ".pytest-tmp" / uuid.uuid4().hex
+    base.mkdir(parents=True)
+    try:
+        yield base
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
 
 
 @pytest.fixture

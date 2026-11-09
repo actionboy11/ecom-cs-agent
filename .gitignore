@@ -41,3 +41,6 @@ eval/reports/
 *.sqlite
 *.sqlite3
 *.log
+.pytest-tmp/
+.tmp/
+data/chroma/

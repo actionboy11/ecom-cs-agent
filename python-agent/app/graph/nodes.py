@@ -16,6 +16,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app.graph.state import AgentState
+from app.knowledge import store as knowledge_store
 from app.llm.registry import ainvoke_with_fallback, with_structured_output
 from app.observability.trace import node_span
 from app.tools import business_api
@@ -157,9 +158,16 @@ def route_after_classify(state: AgentState) -> str:
 
 async def knowledge_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    with node_span(thread_id, "knowledge"):
-        # TODO(W1-D5): 换成 Chroma 检索，现在是整段政策注入
-        return {"knowledge": POLICY_TEXT}
+    with node_span(thread_id, "knowledge") as info:
+        query = _last_user_text(state["messages"])
+        policies = knowledge_store.search(query, k=3)
+        info["hits"] = [p.policy_id for p in policies]
+        if not policies:
+            return {"knowledge": POLICY_TEXT, "citations": []}
+        return {
+            "knowledge": "\n\n".join(p.as_document() for p in policies),
+            "citations": [p.policy_id for p in policies],
+        }
 
 
 async def tool_node(state: AgentState) -> dict[str, Any]:
@@ -284,6 +292,10 @@ def _template_reply(state: AgentState) -> str:
             f"您的{type_label}申请已提交，单号 {tool_result.get('requestNo')}，"
             f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日处理。"
         )
+    if intent == "policy" and state.get("knowledge"):
+        cites = state.get("citations") or []
+        suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in cites)}" if cites else ""
+        return f"{state['knowledge']}{suffix}"
     return state.get("knowledge", POLICY_TEXT)
 
 
@@ -313,6 +325,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                         content=(
                             "你是电商售后客服。根据给定的事实（订单/物流/退款数据、政策）回复用户。"
                             "只能陈述事实里有的信息，不要编造；语气简洁、有同理心，不超过 120 字。"
+                            "引用政策时必须保留 [Pxx] 编号，不要改写或省略。"
                         )
                     ),
                     HumanMessage(content=f"事实：{context}\n\n用户：{_last_user_text(state['messages'])}"),

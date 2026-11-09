@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # --- 鉴权：与 Java 服务共用同一密钥，用于校验对话接口的 JWT ---
     jwt_secret: str = ""
 
+    # --- 知识层（Chroma 本地持久化 + 本地 embedding） ---
+    chroma_dir: str = "data/chroma"
+    embedding_model: str = "bge-m3"
+
     # --- 会话数据保留期（天）：超期会话与轨迹会被清理 ---
     session_ttl_days: int = 30
 
