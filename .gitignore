@@ -44,3 +44,4 @@ eval/reports/
 .pytest-tmp/
 .tmp/
 data/chroma/
+pytest-of-*/

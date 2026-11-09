@@ -12,6 +12,13 @@ from app.config import settings
 from tests.support import TEST_SECRET
 
 
+def pytest_configure(config) -> None:
+    """把 pytest 的 basetemp 固定到仓库内：系统临时目录可能不可写，
+    默认行为会在工作目录下生成 pytest-of-* 垃圾目录。"""
+    if not getattr(config.option, "basetemp", None):
+        config.option.basetemp = str(Path(__file__).resolve().parents[1] / ".pytest-tmp" / "basetemp")
+
+
 @pytest.fixture
 def local_tmp() -> Path:
     """工作区内的临时目录。
