@@ -1,22 +1,26 @@
-"""业务系统工具：经 MCP 调用 Java 侧（产品查询仍走公开 REST）。
+"""业务系统工具：经 MCP 调用 Java 侧（订单 / 物流 / 售后 / 商品）。
 
 工具名与参数遵循 SPEC §7.1；身份通过调用方传入的 JWT 透传。
+UNAVAILABLE 按 SPEC §7.2 重试一次，其余错误直接上抛。
 """
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
 from app.tools import mcp_client
 from app.tools.mcp_client import McpError
 
+logger = logging.getLogger(__name__)
+
 
 class BusinessAPIError(RuntimeError):
-    """业务系统不可用或返回错误。"""
+    """业务系统不可用或返回错误（message 带 SPEC §7.2 错误码前缀）。"""
 
 
 def _client() -> httpx.AsyncClient:
@@ -29,10 +33,17 @@ def _client() -> httpx.AsyncClient:
 
 
 async def _mcp(name: str, arguments: dict[str, Any], token: str) -> Any:
-    try:
-        return await mcp_client.call_tool(name, arguments, token)
-    except McpError as exc:
-        raise BusinessAPIError(str(exc)) from exc
+    for attempt in (1, 2):
+        try:
+            return await mcp_client.call_tool(name, arguments, token)
+        except McpError as exc:
+            message = str(exc)
+            if attempt == 1 and message.startswith(("UNAVAILABLE", "TIMEOUT")):
+                await asyncio.sleep(0.2)
+                continue
+            logger.warning("MCP 工具调用失败 %s: %s", name, message[:200])
+            raise BusinessAPIError(message) from exc
+    raise BusinessAPIError("UNAVAILABLE: 重试后仍失败")  # pragma: no cover
 
 
 async def get_order(order_no: str, token: str) -> dict[str, Any]:
@@ -54,24 +65,9 @@ async def apply_after_sales(
     )
 
 
-@retry(
-    retry=retry_if_exception_type(httpx.TransportError),
-    stop=stop_after_attempt(2),
-    wait=wait_exponential(multiplier=0.2, max=1),
-    reraise=True,
-)
-async def get_product(sku: str) -> dict[str, Any]:
-    """商品查询是公开数据，仍走 REST（MCP 工具清单里暂未包含）。"""
-    try:
-        async with _client() as client:
-            resp = await client.get(f"/api/products/{sku}")
-    except httpx.TransportError as exc:
-        raise BusinessAPIError(f"业务系统连接失败: {exc}") from exc
-    if resp.status_code == 404:
-        raise BusinessAPIError("未找到对应商品")
-    if resp.status_code >= 400:
-        raise BusinessAPIError(f"业务系统错误 {resp.status_code}: {resp.text[:200]}")
-    return resp.json()
+async def get_product(sku: str, token: str = "") -> dict[str, Any]:
+    """商品查询也走 MCP（SPEC §7.1 `get_product_info`）。"""
+    return await _mcp("get_product_info", {"sku": sku}, token)
 
 
 async def healthy() -> bool:

@@ -54,7 +54,7 @@ def _parse(resp: httpx.Response) -> Any:
     if resp.status_code == 401:
         raise _coded("UNAUTHORIZED", "令牌无效或已过期")
     if resp.status_code == 403:
-        raise _coded("FORBIDDEN", _message(resp))
+        raise _coded("DENIED", _message(resp))
     if resp.status_code == 404:
         raise _coded("NOT_FOUND", _message(resp))
     if resp.status_code >= 400:
@@ -72,6 +72,17 @@ def _parse(resp: httpx.Response) -> Any:
         raise _coded("UNAVAILABLE", f"HTTP {resp.status_code} {_message(resp)}")
 
     body = resp.json()
+    if not isinstance(body, dict):
+        raise _coded("UNAVAILABLE", "响应格式异常")
+    if body.get("error"):
+        code = (body.get("error") or {}).get("code")
+        if code == -32004:
+            raise _coded("NOT_FOUND", _message(resp))
+        if code == -32001:
+            raise _coded("MISSING_SLOT", _message(resp))
+        if code == -32602:
+            raise _coded("INVALID_INPUT", _message(resp))
+        raise _coded("UNAVAILABLE", _message(resp))
     result = body.get("result") or {}
     if result.get("isError"):
         text = (result.get("content") or [{}])[0].get("text", "工具执行失败")
@@ -122,6 +133,8 @@ async def call_tool(
     try:
         async with httpx.AsyncClient(**client_kwargs) as client:
             resp = await client.post("/mcp", json=payload, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise McpError(f"TIMEOUT: 业务系统超时: {exc}") from exc
     except httpx.TransportError as exc:
         raise McpError(f"UNAVAILABLE: 业务系统连接失败: {exc}") from exc
 

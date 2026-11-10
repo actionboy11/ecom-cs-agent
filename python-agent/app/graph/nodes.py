@@ -170,7 +170,8 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                 info["result"] = "missing_sku"
                 return {"tool_result": {"tool": intent, "error": "missing_sku", "recoverable": True}}
             try:
-                data = await business_api.get_product(sku)
+                token = (config or {}).get("configurable", {}).get("auth_token") or ""
+                data = await business_api.get_product(sku, token)
                 info["result"] = "ok"
                 return {"tool_result": data}
             except BusinessAPIError as exc:
@@ -264,6 +265,8 @@ def _template_reply(state: AgentState) -> str:
         return "请告诉我具体是哪个商品（例如轻量跑步鞋 / 降噪耳机 / 登机行李箱），我帮您查参数。"
     if "UNAUTHORIZED" in str(tool_result.get("error", "")):
         return "登录状态已过期，请重新登录后再试。"
+    if "MISSING_SLOT" in str(tool_result.get("error", "")):
+        return "请补充订单号或售后原因后再试。"
     if tool_result.get("error"):
         return f"抱歉，暂时查不到该订单：{tool_result['error']}。您可以稍后重试或转人工。"
 

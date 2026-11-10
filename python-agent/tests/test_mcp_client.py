@@ -75,6 +75,29 @@ async def test_missing_slot_maps_to_code() -> None:
 
 
 @pytest.mark.asyncio
+async def test_403_maps_to_denied_code() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403, json={"jsonrpc": "2.0", "id": 1, "error": {"code": -32003, "message": "售后只能由买家发起"}}
+        )
+
+    with pytest.raises(McpError) as excinfo:
+        await call_tool("create_after_sales_request", {}, "jwt", transport=_transport(handler))
+    assert str(excinfo.value).startswith("DENIED")
+
+
+@pytest.mark.asyncio
+async def test_top_level_error_on_200_is_not_silently_ok() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"jsonrpc": "2.0", "id": 1, "error": {"code": -32601, "message": "Method not found"}}
+        )
+
+    with pytest.raises(McpError):
+        await call_tool("query_order", {"order_no": "X"}, "jwt", transport=_transport(handler))
+
+
+@pytest.mark.asyncio
 async def test_codes_are_not_double_prefixed() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

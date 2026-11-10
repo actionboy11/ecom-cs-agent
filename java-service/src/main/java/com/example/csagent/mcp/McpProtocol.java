@@ -85,7 +85,7 @@ public class McpProtocol {
         } catch (MissingSlotException exc) {
             return new McpResponse(400, errorResponse(id, -32001, exc.getMessage()));
         } catch (com.example.csagent.service.ForbiddenOperationException exc) {
-            return new McpResponse(403, errorResponse(id, -32003, "FORBIDDEN: " + exc.getMessage()));
+            return new McpResponse(403, errorResponse(id, -32003, "DENIED: " + exc.getMessage()));
         } catch (com.example.csagent.service.InvalidInputException exc) {
             return new McpResponse(400, errorResponse(id, -32602, "INVALID_INPUT: " + exc.getMessage()));
         } catch (NotFoundException exc) {

@@ -24,9 +24,24 @@ class BusinessMcpToolsTest {
     @Autowired
     private AfterSalesMcpTools afterSalesTools;
 
+    @Autowired
+    private ProductMcpTools productTools;
+
     @AfterEach
     void clearContext() {
         McpAuthContext.clear();
+    }
+
+    @Test
+    void product_lookup_by_sku_returns_details() throws Exception {
+        String json = productTools.getProductInfo("SKU1001", null);
+        assertThat(json).contains("name");
+    }
+
+    @Test
+    void product_requires_sku_or_keyword() {
+        assertThatThrownBy(() -> productTools.getProductInfo(null, " "))
+                .isInstanceOf(MissingSlotException.class);
     }
 
     @Test
