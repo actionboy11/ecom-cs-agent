@@ -82,6 +82,10 @@ public class McpProtocol {
             return new McpResponse(200, okResponse(id, toolResult(String.valueOf(output), false)));
         } catch (MissingSlotException exc) {
             return new McpResponse(400, errorResponse(id, -32001, exc.getMessage()));
+        } catch (ForbiddenException exc) {
+            return new McpResponse(403, errorResponse(id, -32003, exc.getMessage()));
+        } catch (IllegalArgumentException exc) {
+            return new McpResponse(400, errorResponse(id, -32602, exc.getMessage()));
         } catch (NotFoundException exc) {
             // 与 REST 同口径：越权/不存在都是 404，且不泄露存在性
             return new McpResponse(404, errorResponse(id, -32004, "订单不存在"));

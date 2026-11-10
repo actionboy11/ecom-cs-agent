@@ -80,6 +80,40 @@ class McpHttpControllerTest {
     }
 
     @Test
+    void tools_list_exposes_all_four_tools() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        String body = call("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/list\",\"params\":{}}", token);
+
+        assertThat(body)
+                .contains("get_order")
+                .contains("get_logistics")
+                .contains("apply_after_sales")
+                .contains("list_after_sales");
+    }
+
+    @Test
+    void logistics_call_via_mcp() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        String body = call("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"get_logistics\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}", token);
+
+        assertThat(body).contains("CS2024001");
+    }
+
+    @Test
+    void agent_cannot_apply_after_sales_via_mcp() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "cs_agent");
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                                + "\"params\":{\"name\":\"apply_after_sales\","
+                                + "\"arguments\":{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"x\"}}}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value(-32003));
+    }
+
+    @Test
     void missing_token_is_401() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
