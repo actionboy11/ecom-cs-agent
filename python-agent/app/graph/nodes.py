@@ -262,6 +262,8 @@ def _template_reply(state: AgentState) -> str:
         return "请提供您的订单号（例如 CS2024001），我马上帮您查询。"
     if tool_result.get("error") == "missing_sku":
         return "请告诉我具体是哪个商品（例如轻量跑步鞋 / 降噪耳机 / 登机行李箱），我帮您查参数。"
+    if "UNAUTHORIZED" in str(tool_result.get("error", "")):
+        return "登录状态已过期，请重新登录后再试。"
     if tool_result.get("error"):
         return f"抱歉，暂时查不到该订单：{tool_result['error']}。您可以稍后重试或转人工。"
 

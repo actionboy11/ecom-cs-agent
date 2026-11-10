@@ -2,6 +2,9 @@
 
 身份随每次调用以 `Authorization: Bearer <jwt>` 透传；Java 侧从登录上下文注入用户，
 工具参数里没有 user_id，模型无法伪造身份。
+
+失败统一转成带 SPEC §7.2 错误码前缀的 `McpError`：
+UNAUTHORIZED / FORBIDDEN / NOT_FOUND / MISSING_SLOT / INVALID_INPUT / UNAVAILABLE。
 """
 
 from __future__ import annotations
@@ -11,14 +14,25 @@ import json
 from typing import Any
 
 import httpx
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
 _request_id = itertools.count(1)
 
+_CODES = ("UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "MISSING_SLOT", "INVALID_INPUT", "UNAVAILABLE")
+
 
 class McpError(RuntimeError):
     """MCP 调用失败，message 带 SPEC §7.2 的错误码前缀。"""
+
+
+def _coded(code: str, message: str) -> McpError:
+    """避免 Java 与 Python 重复加前缀（`INVALID_INPUT: INVALID_INPUT: ...`）。"""
+    text = str(message).strip()
+    if text.startswith(tuple(f"{c}:" for c in _CODES)):
+        return McpError(text)
+    return McpError(f"{code}: {text}")
 
 
 def _message(resp: httpx.Response) -> str:
@@ -38,24 +52,30 @@ def _message(resp: httpx.Response) -> str:
 
 def _parse(resp: httpx.Response) -> Any:
     if resp.status_code == 401:
-        raise McpError("UNAUTHORIZED: 令牌无效或已过期")
+        raise _coded("UNAUTHORIZED", "令牌无效或已过期")
     if resp.status_code == 403:
-        raise McpError(f"FORBIDDEN: {_message(resp)}")
+        raise _coded("FORBIDDEN", _message(resp))
     if resp.status_code == 404:
-        raise McpError(f"NOT_FOUND: {_message(resp)}")
+        raise _coded("NOT_FOUND", _message(resp))
     if resp.status_code >= 400:
-        code = (resp.json().get("error") or {}).get("code")
+        try:
+            body = resp.json()
+        except ValueError:
+            body = {}
+        code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
         if code == -32001:
-            raise McpError(f"MISSING_SLOT: {_message(resp)}")
+            raise _coded("MISSING_SLOT", _message(resp))
         if code == -32602:
-            raise McpError(f"INVALID_INPUT: {_message(resp)}")
-        raise McpError(f"UNAVAILABLE: HTTP {resp.status_code} {_message(resp)}")
+            raise _coded("INVALID_INPUT", _message(resp))
+        if code == -32002:
+            raise _coded("UNAVAILABLE", _message(resp))
+        raise _coded("UNAVAILABLE", f"HTTP {resp.status_code} {_message(resp)}")
 
     body = resp.json()
     result = body.get("result") or {}
     if result.get("isError"):
         text = (result.get("content") or [{}])[0].get("text", "工具执行失败")
-        raise McpError(str(text))
+        raise _coded("UNAVAILABLE", text)
 
     content = result.get("content") or []
     if not content:
@@ -67,6 +87,12 @@ def _parse(resp: httpx.Response) -> Any:
         return text
 
 
+@retry(
+    retry=retry_if_exception_type(httpx.TransportError),
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=0.2, max=1),
+    reraise=True,
+)
 async def call_tool(
     name: str,
     arguments: dict[str, Any],

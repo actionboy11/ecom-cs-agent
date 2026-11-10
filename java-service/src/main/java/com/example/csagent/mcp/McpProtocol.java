@@ -94,7 +94,9 @@ public class McpProtocol {
                     ? "资源不存在" : exc.getMessage();
             return new McpResponse(404, errorResponse(id, -32004, message));
         } catch (Exception exc) {
-            return new McpResponse(200, okResponse(id, toolResult("工具执行失败: " + exc.getMessage(), true)));
+            // 未预期异常：给客户端一个可编程的错误码，而不是自由文本
+            return new McpResponse(500, errorResponse(id, -32002,
+                    "UNAVAILABLE: 工具执行失败: " + exc.getMessage()));
         }
     }
 

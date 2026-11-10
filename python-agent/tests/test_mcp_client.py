@@ -75,6 +75,50 @@ async def test_missing_slot_maps_to_code() -> None:
 
 
 @pytest.mark.asyncio
+async def test_codes_are_not_double_prefixed() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            json={"jsonrpc": "2.0", "id": 1,
+                  "error": {"code": -32602, "message": "INVALID_INPUT: 不支持的售后类型"}},
+        )
+
+    with pytest.raises(McpError) as excinfo:
+        await call_tool("create_after_sales_request", {}, "jwt", transport=_transport(handler))
+    assert str(excinfo.value) == "INVALID_INPUT: 不支持的售后类型"
+
+
+@pytest.mark.asyncio
+async def test_tool_node_reads_token_from_config(monkeypatch) -> None:
+    from app.graph import nodes
+
+    captured: dict[str, str] = {}
+
+    async def fake_get_order(order_no, token):
+        captured["token"] = token
+        return {"orderNo": order_no}
+
+    monkeypatch.setattr(nodes.business_api, "get_order", fake_get_order)
+
+    result = await nodes.tool_node(
+        {"messages": [], "thread_id": "t", "intent": "order_query", "order_no": "CS2024001"},
+        {"configurable": {"thread_id": "t", "auth_token": "jwt-from-config"}},
+    )
+
+    assert captured["token"] == "jwt-from-config"
+    assert result["tool_result"]["orderNo"] == "CS2024001"
+
+
+def test_unauthorized_reply_asks_for_relogin() -> None:
+    from app.graph.nodes import _template_reply
+
+    reply = _template_reply(
+        {"intent": "order_query", "tool_result": {"error": "UNAUTHORIZED: 令牌无效或已过期"}}
+    )
+    assert "重新登录" in reply
+
+
+@pytest.mark.asyncio
 async def test_business_api_wraps_mcp_errors(monkeypatch) -> None:
     async def boom(*_args, **_kwargs):
         raise McpError("NOT_FOUND: 订单不存在")

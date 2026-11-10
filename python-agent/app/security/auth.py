@@ -6,7 +6,7 @@ Java 服务签发 JWT（HS256，claims: sub / userId / role / exp），Python �
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import jwt
 from fastapi import Header, HTTPException
@@ -19,7 +19,8 @@ class CurrentUser:
     username: str
     user_id: int
     role: str
-    token: str = ""
+    # repr=False：避免日志/异常把 JWT 打印出来
+    token: str = field(default="", repr=False)
 
     @property
     def is_agent(self) -> bool:
