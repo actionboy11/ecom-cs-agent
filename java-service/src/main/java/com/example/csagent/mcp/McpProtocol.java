@@ -87,8 +87,10 @@ public class McpProtocol {
         } catch (IllegalArgumentException exc) {
             return new McpResponse(400, errorResponse(id, -32602, exc.getMessage()));
         } catch (NotFoundException exc) {
-            // 与 REST 同口径：越权/不存在都是 404，且不泄露存在性
-            return new McpResponse(404, errorResponse(id, -32004, "订单不存在"));
+            // 与 REST 同口径：404 + 服务层原始文案（订单不存在 / 物流信息不存在）
+            String message = (exc.getMessage() == null || exc.getMessage().isBlank())
+                    ? "资源不存在" : exc.getMessage();
+            return new McpResponse(404, errorResponse(id, -32004, message));
         } catch (Exception exc) {
             return new McpResponse(200, okResponse(id, toolResult("工具执行失败: " + exc.getMessage(), true)));
         }

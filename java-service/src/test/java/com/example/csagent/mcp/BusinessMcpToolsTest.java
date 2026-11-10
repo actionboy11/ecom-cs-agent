@@ -82,10 +82,29 @@ class BusinessMcpToolsTest {
 
     @Test
     void agent_lists_all_after_sales() throws Exception {
+        McpAuthContext.set(new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"));
+        afterSalesTools.applyAfterSales("CS2024005", "RETURN", "买家B的退货");
+
         McpAuthContext.set(new AuthenticatedUser("cs_agent", 4L, "CS_AGENT"));
+        String json = afterSalesTools.listAfterSales("PENDING");
+
+        assertThat(json).contains("CS2024005");
+    }
+
+    @Test
+    void buyer_without_after_sales_gets_empty_list() throws Exception {
+        McpAuthContext.set(new AuthenticatedUser("buyer_c", 3L, "CUSTOMER"));
+
+        assertThat(afterSalesTools.listAfterSales(null)).isEqualTo("[]");
+    }
+
+    @Test
+    void status_filter_excludes_other_statuses() throws Exception {
+        McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
+        afterSalesTools.applyAfterSales("CS2024003", "EXCHANGE", "换货");
 
         String json = afterSalesTools.listAfterSales("PENDING");
 
-        assertThat(json).contains("PENDING");
+        assertThat(json).contains("PENDING").doesNotContain("APPROVED");
     }
 }

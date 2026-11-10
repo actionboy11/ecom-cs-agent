@@ -6,7 +6,6 @@ import com.example.csagent.service.AfterSalesService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +17,8 @@ public class AfterSalesMcpTools {
     public static final String APPLY = "apply_after_sales";
     public static final String LIST = "list_after_sales";
     private static final Set<String> VALID_TYPES = Set.of("REFUND", "RETURN", "EXCHANGE");
+    /** 与 REST 的 @Size(max = 200) 保持一致。 */
+    private static final int MAX_REASON_LENGTH = 200;
 
     private final AfterSalesService afterSalesService;
     private final ObjectMapper objectMapper;
@@ -42,28 +43,18 @@ public class AfterSalesMcpTools {
         if (reason == null || reason.isBlank()) {
             throw new MissingSlotException("MISSING_SLOT: 缺少售后原因 reason");
         }
+        if (reason.length() > MAX_REASON_LENGTH) {
+            throw new IllegalArgumentException("INVALID_INPUT: 售后原因超过 " + MAX_REASON_LENGTH + " 字");
+        }
 
         AfterSalesRequest created = afterSalesService.create(orderNo, normalized, reason, user, "/mcp");
-        return objectMapper.writeValueAsString(toView(created));
+        return objectMapper.writeValueAsString(created);
     }
 
     public String listAfterSales(String status) throws Exception {
         AuthenticatedUser user = McpAuthContext.require();
-        List<Map<String, Object>> rows = afterSalesService.listFor(user, status, "/mcp").stream()
-                .map(AfterSalesMcpTools::toView)
-                .toList();
+        List<AfterSalesRequest> rows = afterSalesService.listFor(user, status, "/mcp");
         return objectMapper.writeValueAsString(rows);
-    }
-
-    private static Map<String, Object> toView(AfterSalesRequest request) {
-        Map<String, Object> view = new LinkedHashMap<>();
-        view.put("requestNo", request.requestNo());
-        view.put("orderNo", request.orderNo());
-        view.put("type", request.type());
-        view.put("status", request.status());
-        view.put("reason", request.reason());
-        view.put("createdAt", String.valueOf(request.createdAt()));
-        return view;
     }
 
     public static Map<String, Object> applySchema() {
@@ -72,7 +63,7 @@ public class AfterSalesMcpTools {
                 "properties", Map.of(
                         "orderNo", Map.of("type", "string", "description", "订单号"),
                         "type", Map.of("type", "string", "enum", List.of("REFUND", "RETURN", "EXCHANGE")),
-                        "reason", Map.of("type", "string", "description", "售后原因")),
+                        "reason", Map.of("type", "string", "maxLength", 200, "description", "售后原因")),
                 "required", List.of("orderNo", "type", "reason"),
                 "additionalProperties", false);
     }

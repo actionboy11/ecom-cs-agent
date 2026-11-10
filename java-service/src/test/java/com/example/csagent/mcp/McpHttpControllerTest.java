@@ -114,6 +114,37 @@ class McpHttpControllerTest {
     }
 
     @Test
+    void buyer_can_create_after_sales_via_mcp() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        String body = call("{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"apply_after_sales\","
+                + "\"arguments\":{\"orderNo\":\"CS2024002\",\"type\":\"REFUND\",\"reason\":\"尺码不合适\"}}}", token);
+
+        // 工具结果是一段文本，内部才是 JSON，因此按子串断言
+        assertThat(body).contains("PENDING").contains("reviewedBy");
+    }
+
+    @Test
+    void logistics_of_another_buyer_is_404_via_mcp() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_b");
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
+                                + "\"params\":{\"name\":\"get_logistics\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void buyer_without_after_sales_gets_empty_array() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_c");
+        String body = call("{\"jsonrpc\":\"2.0\",\"id\":12,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"list_after_sales\",\"arguments\":{}}}", token);
+
+        assertThat(body).contains("[]");
+    }
+
+    @Test
     void missing_token_is_401() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
