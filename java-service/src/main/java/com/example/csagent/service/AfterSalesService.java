@@ -53,10 +53,17 @@ public class AfterSalesService {
     @Transactional
     public AfterSalesRequest create(String orderNo, String type, String reason,
                                     AuthenticatedUser user, String requestPath) {
+        // 买家限定放在服务层：任何调用方（REST / MCP / 内部）都绕不过去
+        if (user.isCustomerServiceAgent()) {
+            throw new ForbiddenOperationException("售后只能由买家发起");
+        }
         // 与 V3 的 ENUM('REFUND','RETURN','EXCHANGE') 保持一致；新增类型需同时改迁移与客户端
         String normalizedType = type == null ? "" : type.trim().toUpperCase(java.util.Locale.ROOT);
         if (!VALID_TYPES.contains(normalizedType)) {
-            throw new IllegalArgumentException("不支持的售后类型: " + type);
+            throw new InvalidInputException("不支持的售后类型: " + type);
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new InvalidInputException("售后原因不能为空");
         }
 
         OrderEntity order = orderAccessGuard.requireVisible(orderNo, user,
@@ -129,7 +136,7 @@ public class AfterSalesService {
         if (status != null && !status.isBlank()) {
             statusFilter = status.trim().toUpperCase(java.util.Locale.ROOT);
             if (!VALID_STATUSES.contains(statusFilter)) {
-                throw new IllegalArgumentException("不支持的售后状态: " + status);
+                throw new InvalidInputException("不支持的售后状态: " + status);
             }
             query.eq(AfterSalesRequestEntity::getStatus, statusFilter);
         }

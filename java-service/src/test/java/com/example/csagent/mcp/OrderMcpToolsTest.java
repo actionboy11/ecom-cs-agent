@@ -28,7 +28,7 @@ class OrderMcpToolsTest {
     void returns_the_callers_own_order() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
 
-        String json = tools.getOrder("CS2024001");
+        String json = tools.queryOrder("CS2024001");
 
         assertThat(json).contains("\"orderNo\":\"CS2024001\"");
         assertThat(json).contains("\"item\"");
@@ -38,7 +38,7 @@ class OrderMcpToolsTest {
     void another_buyers_order_is_reported_as_not_found() {
         McpAuthContext.set(new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"));
 
-        assertThatThrownBy(() -> tools.getOrder("CS2024001"))
+        assertThatThrownBy(() -> tools.queryOrder("CS2024001"))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -46,7 +46,7 @@ class OrderMcpToolsTest {
     void missing_order_no_is_a_missing_slot_not_not_found() {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
 
-        assertThatThrownBy(() -> tools.getOrder(" "))
+        assertThatThrownBy(() -> tools.queryOrder(" "))
                 .isInstanceOf(MissingSlotException.class)
                 .hasMessageContaining("MISSING_SLOT");
     }
@@ -55,7 +55,7 @@ class OrderMcpToolsTest {
     void tools_reject_calls_without_identity() {
         McpAuthContext.clear();
 
-        assertThatThrownBy(() -> tools.getOrder("CS2024001"))
+        assertThatThrownBy(() -> tools.queryOrder("CS2024001"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("UNAUTHORIZED");
     }
@@ -64,7 +64,7 @@ class OrderMcpToolsTest {
     void expired_identity_is_rejected() {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"), System.currentTimeMillis() - 1);
 
-        assertThatThrownBy(() -> tools.getOrder("CS2024001"))
+        assertThatThrownBy(() -> tools.queryOrder("CS2024001"))
                 .hasMessageContaining("令牌已过期");
     }
 
@@ -72,6 +72,6 @@ class OrderMcpToolsTest {
     void agent_can_read_any_order() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("cs_agent", 4L, "CS_AGENT"));
 
-        assertThat(tools.getOrder("CS2024001")).contains("CS2024001");
+        assertThat(tools.queryOrder("CS2024001")).contains("CS2024001");
     }
 }

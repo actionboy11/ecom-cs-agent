@@ -34,6 +34,22 @@ public class ApiExceptionHandler {
                 .body(Map.of("error", "BAD_REQUEST", "message", ex.getMessage()));
     }
 
+    /** 参数非法（非法枚举值等）：与 400 对齐，但错误码用 INVALID_INPUT（SPEC §7.2）。 */
+    @ExceptionHandler(com.example.csagent.service.InvalidInputException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidInput(
+            com.example.csagent.service.InvalidInputException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", "INVALID_INPUT", "message", ex.getMessage()));
+    }
+
+    /** 角色不允许（如坐席发起售后）：403。 */
+    @ExceptionHandler(com.example.csagent.service.ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(
+            com.example.csagent.service.ForbiddenOperationException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "FORBIDDEN", "message", ex.getMessage()));
+    }
+
     /** 状态冲突（如重复审批）。S2-2 决定不约定具体状态码，这里取 409。 */
     @ExceptionHandler(com.example.csagent.service.StateConflictException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(com.example.csagent.service.StateConflictException ex) {

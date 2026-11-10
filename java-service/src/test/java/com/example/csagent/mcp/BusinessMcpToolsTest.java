@@ -2,6 +2,8 @@ package com.example.csagent.mcp;
 
 import com.example.csagent.api.NotFoundException;
 import com.example.csagent.security.AuthenticatedUser;
+import com.example.csagent.service.ForbiddenOperationException;
+import com.example.csagent.service.InvalidInputException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,7 @@ class BusinessMcpToolsTest {
     void logistics_returns_own_order_traces() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
 
-        String json = logisticsTools.getLogistics("CS2024001");
+        String json = logisticsTools.queryLogistics("CS2024001");
 
         assertThat(json).contains("CS2024001").contains("traces");
     }
@@ -40,7 +42,7 @@ class BusinessMcpToolsTest {
     void logistics_of_another_buyer_is_not_found() {
         McpAuthContext.set(new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"));
 
-        assertThatThrownBy(() -> logisticsTools.getLogistics("CS2024001"))
+        assertThatThrownBy(() -> logisticsTools.queryLogistics("CS2024001"))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -48,7 +50,7 @@ class BusinessMcpToolsTest {
     void buyer_can_apply_for_after_sales() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
 
-        String json = afterSalesTools.applyAfterSales("CS2024002", "REFUND", "尺码不合适");
+        String json = afterSalesTools.createAfterSalesRequest("CS2024002", "REFUND", "尺码不合适");
 
         assertThat(json).contains("requestNo").contains("PENDING");
     }
@@ -57,22 +59,22 @@ class BusinessMcpToolsTest {
     void agent_cannot_create_after_sales() {
         McpAuthContext.set(new AuthenticatedUser("cs_agent", 4L, "CS_AGENT"));
 
-        assertThatThrownBy(() -> afterSalesTools.applyAfterSales("CS2024002", "REFUND", "代申请"))
-                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> afterSalesTools.createAfterSalesRequest("CS2024002", "REFUND", "代申请"))
+                .isInstanceOf(ForbiddenOperationException.class);
     }
 
     @Test
     void invalid_after_sales_type_is_rejected() {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
 
-        assertThatThrownBy(() -> afterSalesTools.applyAfterSales("CS2024002", "FREE", "x"))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> afterSalesTools.createAfterSalesRequest("CS2024002", "FREE", "x"))
+                .isInstanceOf(InvalidInputException.class);
     }
 
     @Test
     void buyer_only_lists_their_own_after_sales() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
-        afterSalesTools.applyAfterSales("CS2024001", "RETURN", "质量问题");
+        afterSalesTools.createAfterSalesRequest("CS2024001", "RETURN", "质量问题");
 
         String json = afterSalesTools.listAfterSales(null);
 
@@ -83,7 +85,7 @@ class BusinessMcpToolsTest {
     @Test
     void agent_lists_all_after_sales() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"));
-        afterSalesTools.applyAfterSales("CS2024005", "RETURN", "买家B的退货");
+        afterSalesTools.createAfterSalesRequest("CS2024005", "RETURN", "买家B的退货");
 
         McpAuthContext.set(new AuthenticatedUser("cs_agent", 4L, "CS_AGENT"));
         String json = afterSalesTools.listAfterSales("PENDING");
@@ -101,7 +103,7 @@ class BusinessMcpToolsTest {
     @Test
     void status_filter_excludes_other_statuses() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
-        afterSalesTools.applyAfterSales("CS2024003", "EXCHANGE", "换货");
+        afterSalesTools.createAfterSalesRequest("CS2024003", "EXCHANGE", "换货");
 
         String json = afterSalesTools.listAfterSales("PENDING");
 

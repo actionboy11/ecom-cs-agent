@@ -8,16 +8,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-/** MCP 工具：售后申请（发起 / 列表）。 */
+/** MCP 工具：售后申请（SPEC §7.1 `create_after_sales_request`，另加只读列表）。 */
 @Component
-public class AfterSalesMcpTools {
+public class AfterSalesMcpTools implements McpTool {
 
-    public static final String APPLY = "apply_after_sales";
+    public static final String CREATE = "create_after_sales_request";
     public static final String LIST = "list_after_sales";
-    private static final Set<String> VALID_TYPES = Set.of("REFUND", "RETURN", "EXCHANGE");
-    /** 与 REST 的 @Size(max = 200) 保持一致。 */
     private static final int MAX_REASON_LENGTH = 200;
 
     private final AfterSalesService afterSalesService;
@@ -28,26 +25,20 @@ public class AfterSalesMcpTools {
         this.objectMapper = objectMapper;
     }
 
-    public String applyAfterSales(String orderNo, String type, String reason) throws Exception {
+    public String createAfterSalesRequest(String orderNo, String type, String reason) throws Exception {
         AuthenticatedUser user = McpAuthContext.require();
-        if (user.isCustomerServiceAgent()) {
-            throw new ForbiddenException("FORBIDDEN: 售后只能由买家发起");
-        }
         if (orderNo == null || orderNo.isBlank()) {
-            throw new MissingSlotException("MISSING_SLOT: 缺少订单号 orderNo");
-        }
-        String normalized = type == null ? "" : type.trim().toUpperCase(java.util.Locale.ROOT);
-        if (!VALID_TYPES.contains(normalized)) {
-            throw new IllegalArgumentException("INVALID_INPUT: 不支持的售后类型 " + type);
+            throw new MissingSlotException("MISSING_SLOT: 缺少订单号 order_no");
         }
         if (reason == null || reason.isBlank()) {
             throw new MissingSlotException("MISSING_SLOT: 缺少售后原因 reason");
         }
         if (reason.length() > MAX_REASON_LENGTH) {
-            throw new IllegalArgumentException("INVALID_INPUT: 售后原因超过 " + MAX_REASON_LENGTH + " 字");
+            throw new com.example.csagent.service.InvalidInputException(
+                    "售后原因超过 " + MAX_REASON_LENGTH + " 字");
         }
-
-        AfterSalesRequest created = afterSalesService.create(orderNo, normalized, reason, user, "/mcp");
+        // 类型校验与「仅买家」都在 AfterSalesService 里，REST 与 MCP 共用同一份规则
+        AfterSalesRequest created = afterSalesService.create(orderNo, type, reason, user, "/mcp");
         return objectMapper.writeValueAsString(created);
     }
 
@@ -57,22 +48,35 @@ public class AfterSalesMcpTools {
         return objectMapper.writeValueAsString(rows);
     }
 
-    public static Map<String, Object> applySchema() {
-        return Map.of(
-                "type", "object",
-                "properties", Map.of(
-                        "orderNo", Map.of("type", "string", "description", "订单号"),
-                        "type", Map.of("type", "string", "enum", List.of("REFUND", "RETURN", "EXCHANGE")),
-                        "reason", Map.of("type", "string", "maxLength", 200, "description", "售后原因")),
-                "required", List.of("orderNo", "type", "reason"),
-                "additionalProperties", false);
-    }
-
-    public static Map<String, Object> listSchema() {
-        return Map.of(
-                "type", "object",
-                "properties", Map.of(
-                        "status", Map.of("type", "string", "enum", List.of("PENDING", "APPROVED", "REJECTED"))),
-                "additionalProperties", false);
+    @Override
+    public List<McpProtocol.ToolSpec> specs() {
+        return List.of(
+                new McpProtocol.ToolSpec(
+                        CREATE,
+                        "发起售后申请（退款/退货/换货）；仅买家可用",
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "order_no", Map.of("type", "string", "description", "订单号"),
+                                        "type", Map.of("type", "string", "enum",
+                                                List.of("REFUND", "RETURN", "EXCHANGE")),
+                                        "reason", Map.of("type", "string", "maxLength", 200,
+                                                "description", "售后原因")),
+                                "required", List.of("order_no", "type", "reason"),
+                                "additionalProperties", false),
+                        args -> createAfterSalesRequest(
+                                (String) args.get("order_no"),
+                                (String) args.get("type"),
+                                (String) args.get("reason"))),
+                new McpProtocol.ToolSpec(
+                        LIST,
+                        "查询售后列表；买家仅自己，坐席可看全部，可按状态过滤",
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "status", Map.of("type", "string", "enum",
+                                                List.of("PENDING", "APPROVED", "REJECTED"))),
+                                "additionalProperties", false),
+                        args -> listAfterSales((String) args.get("status"))));
     }
 }

@@ -75,17 +75,19 @@ public class McpProtocol {
         }
 
         try {
+            JsonNode argumentsNode = params.get("arguments");
             @SuppressWarnings("unchecked")
-            Map<String, Object> arguments = mapper.convertValue(
-                    params.path("arguments"), LinkedHashMap.class);
+            Map<String, Object> arguments = (argumentsNode == null || argumentsNode.isNull())
+                    ? new LinkedHashMap<>()
+                    : mapper.convertValue(argumentsNode, LinkedHashMap.class);
             Object output = tool.handler().call(arguments);
             return new McpResponse(200, okResponse(id, toolResult(String.valueOf(output), false)));
         } catch (MissingSlotException exc) {
             return new McpResponse(400, errorResponse(id, -32001, exc.getMessage()));
-        } catch (ForbiddenException exc) {
-            return new McpResponse(403, errorResponse(id, -32003, exc.getMessage()));
-        } catch (IllegalArgumentException exc) {
-            return new McpResponse(400, errorResponse(id, -32602, exc.getMessage()));
+        } catch (com.example.csagent.service.ForbiddenOperationException exc) {
+            return new McpResponse(403, errorResponse(id, -32003, "FORBIDDEN: " + exc.getMessage()));
+        } catch (com.example.csagent.service.InvalidInputException exc) {
+            return new McpResponse(400, errorResponse(id, -32602, "INVALID_INPUT: " + exc.getMessage()));
         } catch (NotFoundException exc) {
             // 与 REST 同口径：404 + 服务层原始文案（订单不存在 / 物流信息不存在）
             String message = (exc.getMessage() == null || exc.getMessage().isBlank())

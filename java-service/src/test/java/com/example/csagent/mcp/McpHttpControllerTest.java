@@ -49,20 +49,17 @@ class McpHttpControllerTest {
     @Test
     void tools_list_via_post_mcp() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
-        mockMvc.perform(post("/mcp")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tools[0].name").value("get_order"))
-                .andExpect(jsonPath("$.result.tools[0].inputSchema.required[0]").value("orderNo"));
+        String body = call("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}", token);
+
+        assertThat(body).contains("query_order");
+        assertThat(body).contains("\"required\":[\"order_no\"]");
     }
 
     @Test
     void tools_call_returns_own_order() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String body = call("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"get_order\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}", token);
+                + "\"params\":{\"name\":\"query_order\",\"arguments\":{\"order_no\":\"CS2024001\"}}}", token);
 
         assertThat(body).contains("CS2024001").doesNotContain("isError");
     }
@@ -74,7 +71,7 @@ class McpHttpControllerTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\","
-                                + "\"params\":{\"name\":\"get_order\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}"))
+                                + "\"params\":{\"name\":\"query_order\",\"arguments\":{\"order_no\":\"CS2024001\"}}}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value(-32004));
     }
@@ -85,9 +82,9 @@ class McpHttpControllerTest {
         String body = call("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/list\",\"params\":{}}", token);
 
         assertThat(body)
-                .contains("get_order")
-                .contains("get_logistics")
-                .contains("apply_after_sales")
+                .contains("query_order")
+                .contains("query_logistics")
+                .contains("create_after_sales_request")
                 .contains("list_after_sales");
     }
 
@@ -95,7 +92,7 @@ class McpHttpControllerTest {
     void logistics_call_via_mcp() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String body = call("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"get_logistics\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}", token);
+                + "\"params\":{\"name\":\"query_logistics\",\"arguments\":{\"order_no\":\"CS2024001\"}}}", token);
 
         assertThat(body).contains("CS2024001");
     }
@@ -107,8 +104,8 @@ class McpHttpControllerTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
-                                + "\"params\":{\"name\":\"apply_after_sales\","
-                                + "\"arguments\":{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"x\"}}}"))
+                                + "\"params\":{\"name\":\"create_after_sales_request\","
+                                + "\"arguments\":{\"order_no\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"x\"}}}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value(-32003));
     }
@@ -117,8 +114,8 @@ class McpHttpControllerTest {
     void buyer_can_create_after_sales_via_mcp() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String body = call("{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"apply_after_sales\","
-                + "\"arguments\":{\"orderNo\":\"CS2024002\",\"type\":\"REFUND\",\"reason\":\"尺码不合适\"}}}", token);
+                + "\"params\":{\"name\":\"create_after_sales_request\","
+                + "\"arguments\":{\"order_no\":\"CS2024002\",\"type\":\"REFUND\",\"reason\":\"尺码不合适\"}}}", token);
 
         // 工具结果是一段文本，内部才是 JSON，因此按子串断言
         assertThat(body).contains("PENDING").contains("reviewedBy");
@@ -131,7 +128,7 @@ class McpHttpControllerTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
-                                + "\"params\":{\"name\":\"get_logistics\",\"arguments\":{\"orderNo\":\"CS2024001\"}}}"))
+                                + "\"params\":{\"name\":\"query_logistics\",\"arguments\":{\"order_no\":\"CS2024001\"}}}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -142,6 +139,18 @@ class McpHttpControllerTest {
                 + "\"params\":{\"name\":\"list_after_sales\",\"arguments\":{}}}", token);
 
         assertThat(body).contains("[]");
+    }
+
+    @Test
+    void omitted_arguments_do_not_crash_the_protocol() throws Exception {
+        String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"id\":13,\"method\":\"tools/call\","
+                                + "\"params\":{\"name\":\"query_order\"}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value(-32001));
     }
 
     @Test
@@ -170,7 +179,7 @@ class McpHttpControllerTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
-                                + "\"params\":{\"name\":\"get_order\",\"arguments\":{}}}"))
+                                + "\"params\":{\"name\":\"query_order\",\"arguments\":{}}}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value(-32001));
     }
