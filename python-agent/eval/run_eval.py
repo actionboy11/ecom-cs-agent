@@ -72,9 +72,8 @@ async def run_case(graph, case: dict, token: str = "") -> dict:
     thread_id = f"eval-{case['id']}-{int(time.time() * 1000)}"
     started = time.perf_counter()
     result = await graph.ainvoke(
-        {"messages": [HumanMessage(content=case["input"])], "thread_id": thread_id,
-         "auth_token": token},
-        {"configurable": {"thread_id": thread_id}},
+        {"messages": [HumanMessage(content=case["input"])], "thread_id": thread_id},
+        {"configurable": {"thread_id": thread_id, "auth_token": token}},
     )
     elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
 

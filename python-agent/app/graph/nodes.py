@@ -13,6 +13,7 @@ import re
 from typing import Any, Literal
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
@@ -155,7 +156,7 @@ def route_after_classify(state: AgentState) -> str:
     return "respond"
 
 
-async def tool_node(state: AgentState) -> dict[str, Any]:
+async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     intent = state.get("intent", "other")
     order_no = state.get("order_no")
@@ -180,7 +181,7 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
         if not order_no:
             info["result"] = "missing_order_no"
             return {"tool_result": {"tool": intent, "error": "missing_order_no", "recoverable": True}}
-        token = state.get("auth_token") or ""
+        token = (config or {}).get("configurable", {}).get("auth_token") or ""
         if not token:
             info["result"] = "unauthorized"
             return {"tool_result": {"tool": intent, "error": "UNAUTHORIZED: 缺少登录令牌",

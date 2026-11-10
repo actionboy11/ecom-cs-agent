@@ -89,8 +89,9 @@ class ResumeRequest(BaseModel):
     note: str | None = None
 
 
-def _config(thread_id: str) -> dict[str, Any]:
-    return {"configurable": {"thread_id": thread_id}}
+def _config(thread_id: str, token: str = "") -> dict[str, Any]:
+    """会话配置：auth_token 只走 config，不进 state，避免被 checkpointer 落盘。"""
+    return {"configurable": {"thread_id": thread_id, "auth_token": token}}
 
 
 def _extract_interrupt(result: dict[str, Any]) -> dict[str, Any] | None:
@@ -125,9 +126,8 @@ async def chat(
         {
             "messages": [HumanMessage(content=req.message)],
             "thread_id": req.thread_id,
-            "auth_token": user.token,
         },
-        _config(req.thread_id),
+        _config(req.thread_id, user.token),
     )
     interrupt = _extract_interrupt(result)
     return ChatResponse(
@@ -153,9 +153,8 @@ async def chat_stream(
     async def gen() -> AsyncIterator[str]:
         try:
             async for chunk in graph.astream(
-                {"messages": [HumanMessage(content=req.message)], "thread_id": req.thread_id,
-                 "auth_token": user.token},
-                _config(req.thread_id),
+                {"messages": [HumanMessage(content=req.message)], "thread_id": req.thread_id},
+                _config(req.thread_id, user.token),
                 stream_mode="updates",
             ):
                 for node, update in chunk.items():
@@ -185,7 +184,7 @@ async def resume(
     try:
         result = await graph.ainvoke(
             Command(resume={"approved": req.approved, "note": req.note}),
-            _config(thread_id),
+            _config(thread_id, user.token),
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=409, detail=f"该会话当前没有待处理的人工任务: {exc}") from exc

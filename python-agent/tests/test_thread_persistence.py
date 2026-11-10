@@ -111,3 +111,27 @@ def test_relative_db_path_resolves_to_repo_root() -> None:
     resolved = resolve_db_path("data/agent_state.db")
     assert resolved.is_absolute()
     assert resolved == REPO_ROOT / "data" / "agent_state.db"
+
+
+@pytest.mark.asyncio
+async def test_auth_token_is_not_persisted_in_checkpoint(monkeypatch) -> None:
+    """JWT 只走 config，不能进 state——否则会被 checkpointer 落盘保存。"""
+    from langgraph.checkpoint.memory import MemorySaver
+
+    from app.config import settings
+    from app.graph.builder import build_graph
+
+    monkeypatch.setattr(settings, "deepseek_base_url", "http://127.0.0.1:9/v1")
+    monkeypatch.setattr(settings, "qwen_base_url", "http://127.0.0.1:9/v1")
+    monkeypatch.setattr(settings, "deepseek_api_key", "test")
+    monkeypatch.setattr(settings, "qwen_api_key", "test")
+    monkeypatch.setattr(settings, "llm_timeout_seconds", 0.5)
+
+    graph = build_graph(MemorySaver())
+    config = {"configurable": {"thread_id": "t-token", "auth_token": "jwt-secret"}}
+    await graph.ainvoke(
+        {"messages": [HumanMessage(content="退货政策几天")], "thread_id": "t-token"}, config
+    )
+
+    snapshot = await graph.aget_state(config)
+    assert "auth_token" not in snapshot.values, "令牌不应出现在被持久化的状态里"
