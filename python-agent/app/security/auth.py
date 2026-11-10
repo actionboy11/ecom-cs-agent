@@ -19,6 +19,7 @@ class CurrentUser:
     username: str
     user_id: int
     role: str
+    token: str = ""
 
     @property
     def is_agent(self) -> bool:
@@ -46,6 +47,7 @@ def require_user(authorization: str | None = Header(default=None)) -> CurrentUse
             username=str(claims["sub"]),
             user_id=int(claims["userId"]),
             role=str(claims.get("role", "CUSTOMER")),
+            token=token,
         )
     except (jwt.PyJWTError, KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=401, detail="缺少或无效的令牌") from exc

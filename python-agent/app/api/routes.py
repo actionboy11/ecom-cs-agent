@@ -125,6 +125,7 @@ async def chat(
         {
             "messages": [HumanMessage(content=req.message)],
             "thread_id": req.thread_id,
+            "auth_token": user.token,
         },
         _config(req.thread_id),
     )
@@ -152,7 +153,8 @@ async def chat_stream(
     async def gen() -> AsyncIterator[str]:
         try:
             async for chunk in graph.astream(
-                {"messages": [HumanMessage(content=req.message)], "thread_id": req.thread_id},
+                {"messages": [HumanMessage(content=req.message)], "thread_id": req.thread_id,
+                 "auth_token": user.token},
                 _config(req.thread_id),
                 stream_mode="updates",
             ):

@@ -180,14 +180,19 @@ async def tool_node(state: AgentState) -> dict[str, Any]:
         if not order_no:
             info["result"] = "missing_order_no"
             return {"tool_result": {"tool": intent, "error": "missing_order_no", "recoverable": True}}
+        token = state.get("auth_token") or ""
+        if not token:
+            info["result"] = "unauthorized"
+            return {"tool_result": {"tool": intent, "error": "UNAUTHORIZED: 缺少登录令牌",
+                                    "recoverable": False}}
         try:
             if intent == "order_query":
-                data = await business_api.get_order(order_no)
+                data = await business_api.get_order(order_no, token)
             elif intent == "logistics":
-                data = await business_api.get_logistics(order_no)
+                data = await business_api.get_logistics(order_no, token)
             else:
                 as_type = _infer_after_sales_type(_last_user_text(state["messages"]))
-                data = await business_api.apply_after_sales(order_no, as_type, reason)
+                data = await business_api.apply_after_sales(order_no, as_type, reason, token)
             info["result"] = "ok"
             return {"tool_result": data}
         except BusinessAPIError as exc:

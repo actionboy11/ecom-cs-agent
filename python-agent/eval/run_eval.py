@@ -48,11 +48,32 @@ def load_cases(path: Path, limit: int | None = None, split: str = "all", holdout
     return cases[:limit] if limit else cases
 
 
-async def run_case(graph, case: dict) -> dict:
+async def login(username: str, password: str = "demo123") -> str:
+    """评测用固定账号登录，拿 JWT 注入每次对话（MCP 工具需要）。"""
+    import httpx
+
+    from app.config import settings
+
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.business_api_base, timeout=5, trust_env=False
+        ) as client:
+            resp = await client.post(
+                "/api/auth/login", json={"username": username, "password": password}
+            )
+            resp.raise_for_status()
+            return str(resp.json().get("token", ""))
+    except Exception as exc:  # noqa: BLE001 - 登录失败时工具类用例会明确报 UNAUTHORIZED
+        print(f"[warn] 登录失败，工具类用例将失败: {exc}")
+        return ""
+
+
+async def run_case(graph, case: dict, token: str = "") -> dict:
     thread_id = f"eval-{case['id']}-{int(time.time() * 1000)}"
     started = time.perf_counter()
     result = await graph.ainvoke(
-        {"messages": [HumanMessage(content=case["input"])], "thread_id": thread_id},
+        {"messages": [HumanMessage(content=case["input"])], "thread_id": thread_id,
+         "auth_token": token},
         {"configurable": {"thread_id": thread_id}},
     )
     elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
@@ -175,6 +196,7 @@ async def main() -> None:
     parser.add_argument("--split", choices=["all", "train", "holdout"], default="all")
     parser.add_argument("--holdout", type=float, default=0.0, help="holdout 比例，如 0.2")
     parser.add_argument("--json", action="store_true", help="只输出 JSON 汇总")
+    parser.add_argument("--username", default="buyer_a", help="评测登录账号（默认 buyer_a）")
     args = parser.parse_args()
 
     if args.split != "all" and args.holdout <= 0:
@@ -182,12 +204,13 @@ async def main() -> None:
 
     cases = load_cases(Path(args.cases), args.limit, args.split, args.holdout)
     backend_ok = await business_api.healthy()
+    token = await login(args.username) if backend_ok else ""
     # 评测是批处理：用内存 checkpointer，避免把评测会话写进生产状态库
     graph = build_graph(MemorySaver())
 
     rows = []
     for case in cases:
-        row = await run_case(graph, case)
+        row = await run_case(graph, case, token)
         rows.append(row)
         print(f"[{row['id']}] intent={row['intent']} intent_ok={row['intent_ok']} tool_ok={row['tool_ok']}")
 
