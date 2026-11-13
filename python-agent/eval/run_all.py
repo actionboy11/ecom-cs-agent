@@ -17,7 +17,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.config import settings
 from app.graph.builder import build_graph
 from app.tools import business_api
-from eval.run_eval import REPORT_DIR, load_cases, login, run_case, summarize
+from eval.run_eval import REPORT_DIR, apply_judge, load_cases, login, run_case, summarize
 from eval.security_check import check as security_check
 
 LAYERS = (
@@ -77,6 +77,13 @@ def write_combined(
     lines.append(
         f"- security 层：4 条越权，新增 DENIED 审计覆盖 {security['denied_audits'] if security else 0} 个目标资源。"
     )
+    business = results.get("business", {}).get("summary", {})
+    if business.get("judge_rate") is not None:
+        lines.append(
+            f"- business 第二轨（judge）：{business['judge_rate']:.1%}"
+            f"（{business['judge_resolved']}/{business['judge_cases']}），"
+            f"失败 {business.get('judge_failed', 0)}，模板跳过 {business.get('judge_skipped_template', 0)}"
+        )
     lines += ["", "## 引用命中", ""]
     for name_, meta in results.items():
         summary = meta["summary"]
@@ -103,6 +110,8 @@ async def main() -> None:
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--out-dir", default=None, help="报告目录（默认 eval/reports）")
     parser.add_argument("--name", default=None, help="报告文件名")
+    parser.add_argument("--judge", action="store_true", help="业务层启用 LLM judge 第二轨")
+    parser.add_argument("--judge-limit", type=int, default=0, help="judge 抽样条数（0=全量）")
     args = parser.parse_args()
 
     backend_ok = await business_api.healthy()
@@ -115,6 +124,14 @@ async def main() -> None:
         results[layer] = await run_layer(graph, Path(path), token, limit, args.split, args.holdout)
 
     security = await security_check() if backend_ok else None
+
+    if args.judge:
+        business = results["business"]
+        business["summary"].update(
+            await apply_judge(business["rows"], business["cases"], limit=args.judge_limit)
+        )
+        if business["summary"].get("judge_cases"):
+            business["summary"]["judge_model"] = settings.model_reasoning
 
     if args.json:
         payload = {name: r["summary"] for name, r in results.items()}

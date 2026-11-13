@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import random
 import time
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.config import settings
 from app.graph.builder import build_graph
 from app.tools import business_api
+from eval.judge import JudgeUnavailable, aggregate, judge_reply
 from eval.metrics import citation_stats, extract_citations, is_citation_hit
 
 HERE = Path(__file__).parent
@@ -101,6 +103,8 @@ async def run_case(graph, case: dict, token: str = "") -> dict:
         "intent_ok": intent == case["expect_intent"],
         "tool_ok": tool_ok,
         "reply": reply[:200],
+        # judge 必须看完整回复；截断版本只用于报告展示
+        "reply_full": reply,
         "reply_ok": conformance,
         "citations": citations,
         "policy_refs": retrieved,
@@ -135,6 +139,46 @@ def summarize(rows: list[dict]) -> dict:
     if by_category:
         summary["safety_by_category"] = by_category
     return summary
+
+
+async def apply_judge(
+    rows: list[dict], cases: list[dict], limit: int = 0, seed: int = 0
+) -> dict:
+    """第二轨：只判 LLM 链路的回复（ADR-0003），模板兜底不计入质量。"""
+    eligible = [r for r in rows if r.get("chain") == "llm"]
+    skipped_template = len(rows) - len(eligible)
+    if limit and limit < len(eligible):
+        eligible = random.Random(seed).sample(eligible, limit)
+
+    judged: dict[str, object] = {}
+    failures: list[str] = []
+    for row in eligible:
+        reference = next((c.get("must_contain") or [] for c in cases if c["id"] == row["id"]), [])
+        context = json.dumps(row.get("tool_result") or {}, ensure_ascii=False)[:800]
+        try:
+            judged[row["id"]] = await judge_reply(
+                row["input"], row.get("reply_full", row["reply"]), reference, context
+            )
+        except JudgeUnavailable as exc:
+            failures.append(f"{row['id']}: {exc}")
+
+    updates = aggregate(list(judged.values()), failed=len(failures))
+    updates["judge_skipped_template"] = skipped_template
+    if failures:
+        updates["judge_failures"] = failures[:5]
+    if not judged and failures:
+        updates["judge_skipped"] = failures[0]
+    details = [
+        {"id": rid, "solved": result.solved, "reason": result.reason}
+        for rid, result in judged.items()
+    ]
+    if details:
+        updates["judge_details"] = details
+        for row in rows:
+            if row["id"] in judged:
+                result = judged[row["id"]]
+                row["judge"] = {"solved": result.solved, "reason": result.reason}
+    return updates
 
 
 def write_report(summary: dict, rows: list[dict], backend_ok: bool, report_dir: Path | None = None) -> Path:
@@ -189,12 +233,16 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool, report_dir: 
         lines.append(
             f"- 解决率：{summary['judge_rate']:.1%}（{summary['judge_resolved']}/{summary['judge_cases']}）"
         )
+        lines.append(f"- 模板兜底跳过：{summary.get('judge_skipped_template', 0)} 条（ADR-0003）")
+        if summary.get("judge_failed"):
+            lines.append(f"- 判定失败：{summary['judge_failed']} 条（未计入解决率）")
         lines += ["", "| id | 是否解决 | 理由 |", "|---|---|---|"]
         for r in rows:
             judged = r.get("judge")
             if judged:
+                reason = str(judged["reason"]).replace("|", "\\|").replace("\n", " ")
                 lines.append(
-                    f"| {r['id']} | {'✓' if judged['resolved'] else '✗'} | {judged['reason']} |"
+                    f"| {r['id']} | {'✓' if judged['solved'] else '✗'} | {reason} |"
                 )
     elif summary.get("judge_skipped"):
         lines.append(f"- 已跳过：{summary['judge_skipped']}（未配置模型 Key 或输出无法解析）")
@@ -237,7 +285,8 @@ async def main() -> None:
     parser.add_argument("--json", action="store_true", help="只输出 JSON 汇总")
     parser.add_argument("--username", default="buyer_a", help="评测登录账号（默认 buyer_a）")
     parser.add_argument("--judge", action="store_true", help="启用 LLM judge 第二轨（需模型 Key，会产生调用）")
-    parser.add_argument("--judge-limit", type=int, default=0, help="judge 抽样条数，0 表示全量")
+    parser.add_argument("--judge-limit", type=int, default=0, help="judge 抽样条数（随机抽样，0 表示全量）")
+    parser.add_argument("--judge-seed", type=int, default=0, help="judge 抽样随机种子，保证可复现")
     args = parser.parse_args()
 
     if args.split != "all" and args.holdout <= 0:
@@ -253,38 +302,24 @@ async def main() -> None:
     for case in cases:
         row = await run_case(graph, case, token)
         rows.append(row)
-        print(f"[{row['id']}] intent={row['intent']} intent_ok={row['intent_ok']} tool_ok={row['tool_ok']}")
+        if not args.json:
+            print(
+                f"[{row['id']}] intent={row['intent']} "
+                f"intent_ok={row['intent_ok']} tool_ok={row['tool_ok']}"
+            )
 
     summary = summarize(rows)
     summary["split"] = args.split
     summary["cases_file"] = Path(args.cases).name
 
     if args.judge:
-        from eval.judge import JudgeUnavailable, aggregate, judge_reply
-
-        judged = {}
-        failures: list[str] = []
-        selected = rows[: args.judge_limit] if args.judge_limit else rows
-        for row in selected:
-            reference = next(
-                (c.get("must_contain") or [] for c in cases if c["id"] == row["id"]), []
-            )
-            try:
-                judged[row["id"]] = await judge_reply(row["input"], row["reply"], reference)
-            except JudgeUnavailable as exc:
-                failures.append(f"{row['id']}: {exc}")
-        if judged:
-            summary.update(aggregate(list(judged.values())))
+        summary.update(
+            await apply_judge(rows, cases, limit=args.judge_limit, seed=args.judge_seed)
+        )
+        if summary.get("judge_cases"):
             summary["judge_model"] = settings.model_reasoning
-            for row in rows:
-                if row["id"] in judged:
-                    result = judged[row["id"]]
-                    row["judge"] = {"resolved": result.resolved, "reason": result.reason}
-        if failures:
-            summary["judge_failed"] = len(failures)
-            print(f"judge 跳过 {len(failures)} 条：{failures[0]}")
-        if not judged:
-            summary["judge_skipped"] = failures[0] if failures else "无可判定用例"
+        if summary.get("judge_failures"):
+            print(f"judge 失败 {summary['judge_failed']} 条：{summary['judge_failures'][0]}")
 
     if args.json:
         print(json.dumps(summary, ensure_ascii=False))

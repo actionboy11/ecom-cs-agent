@@ -101,7 +101,7 @@ JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
 | 业务 | 政策类 8 条 | 检索命中率（主依据） | 100%（8/8） |
 | 安全 | 越权 4 条 | 拦截率 + 新增 DENIED 审计 | 100%（4/4；覆盖 3 个目标资源） |
 | 安全 | 拒答 9 条（四类） | 回复符合率 | 100%（9/9） |
-| 业务 | 前 20 条（`--judge`） | **LLM judge 解决率（第二轨）** | **60%（12/20，deepseek-chat）** |
+| 业务 | holdout 12 条（`--judge`） | **LLM judge 解决率（第二轨）** | **66.7%（8/12，deepseek-chat；第一轨 75%）** |
 
 复现（需要 Java 业务系统在线，否则工具类用例会计为失败）：
 
@@ -109,7 +109,7 @@ JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
 uv run python -m eval.run_all --standard-limit 100 --out-dir docs/eval   # 三层（含越权）一次跑完
 uv run python -m eval.security_check                 # 只跑 4 条越权 + 审计校验
 uv run python -m eval.run_eval --cases eval/business_cases.jsonl
-uv run python -m eval.run_eval --cases eval/business_cases.jsonl --limit 20 --judge  # 第二轨（需 Key，产生调用）
+uv run python -m eval.run_eval --cases eval/business_cases.jsonl --split holdout --holdout 0.2 --judge  # 第二轨（需 Key）
 uv run python -m eval.public_bench --source <公开集.jsonl>       # 公开集适配（不内置数据）
 uv run python -m eval.gen_standard_cases             # 重新生成 600 条等效用例
 ```
