@@ -8,7 +8,7 @@ services:
       MYSQL_USER: csagent
       MYSQL_PASSWORD: csagent
     ports:
-      # 宿主机 3308 → 容器 3306：本机 3306 被 MySQL 服务、3307 被视网膜项目的容器占用
+      # 宿主机 3308 → 容器 3306：本机 3306/3307 常被其他服务占用
       - "3308:3306"
     volumes:
       - ./data/mysql:/var/lib/mysql
@@ -27,13 +27,24 @@ services:
     env_file:
       - .env
     environment:
+      # 容器内用服务名连 MySQL，端口是容器端口 3306（不是宿主机的 3308）
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
       mysql:
         condition: service_healthy
+    healthcheck:
+      # JRE 镜像没有 curl，用 bash 的 /dev/tcp 做端口探活
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
 
   python-agent:
     build: ./python-agent
+    image: cs-agent-python:local
     container_name: cs-agent-python
     ports:
       - "8000:8000"
@@ -41,14 +52,32 @@ services:
       - .env
     environment:
       BUSINESS_API_BASE: http://java-service:8080
+      # 语义检索用宿主机的 Ollama；容器内的 localhost 指的是容器自己
+      OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
+      AGENT_STATE_DB: data/state/agent_state.db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      # 会话状态库与 Chroma 索引需要跨重启保留
-      - ./data:/app/data
+      # 只挂 Agent 自己的数据，不暴露 MySQL 数据目录（ADR-0002）
+      - ./data/state:/app/data/state
+      - ./data/chroma:/app/data/chroma
+      - ./data/traces:/app/traces
     depends_on:
-      - java-service
+      java-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=2).status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   workbench:
-    build: ./python-agent
+    image: cs-agent-python:local
     container_name: cs-agent-ui
     command:
       - streamlit
@@ -59,11 +88,22 @@ services:
       - --server.headless=true
     ports:
       - "8501:8501"
-    env_file:
-      - .env
     environment:
+      # UI 只需要这两个地址，不注入模型/审计密钥
       JAVA_BASE: http://java-service:8080
       AGENT_BASE: http://python-agent:8000
     depends_on:
-      - java-service
-      - python-agent
+      java-service:
+        condition: service_healthy
+      python-agent:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2).status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s

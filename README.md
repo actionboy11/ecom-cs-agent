@@ -52,10 +52,22 @@ Java: Spring Boot 3 + Spring Security(JWT) + MyBatis-Plus
 ```bash
 cp .env.example .env        # 填 DEEPSEEK_API_KEY / JWT_SECRET / INTERNAL_AUDIT_TOKEN
 docker compose up -d         # MySQL + Java + Python Agent + 工作台
-open http://localhost:8501   # 双栏工作台
+# 浏览器打开 http://localhost:8501
 ```
 
-演示流程见 [docs/DEMO.md](docs/DEMO.md)；本地开发（不用容器）见 [SPEC 第 12 节](docs/SPEC.md)。
+演示流程见 [docs/DEMO.md](docs/DEMO.md)；开发排期见 [SPEC 第 12 节](docs/SPEC.md)。
+
+## 录屏清单（5 分钟）
+
+1. 终端 `docker compose ps`：mysql / java-service / python-agent / workbench 四个 healthy
+2. 买家登录 + S1 查物流
+3. S2 退款申请（展示售后请求编号与 PENDING）
+4. S3 投诉 → 「已转接人工坐席」
+5. S4 商品咨询（建过索引时放大 `[P0x]`）
+6. S5 越权 → 统一「没有找到对应的记录」
+7. 坐席侧审计面板 + 结尾一页评测数字
+
+详细输入、预期与兜底见 [docs/DEMO.md](docs/DEMO.md)。
 
 ## 工作台（Streamlit）
 
@@ -73,7 +85,7 @@ JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
 
 - 演示账号：`buyer_a` / `cs_agent`，密码均为 `demo123`（种子数据）
 - 非坐席账号登录时，审批区显示「不可用」而不是只隐藏按钮
-- 买家侧转人工后可点「人工已处理，继续会话」（调用 `/resume`）
+- 人工转接后可点「人工已处理，继续会话」（调用 `/resume`）
 - UI 只做编排：接口逻辑在 `ui/api_client.py`，纯逻辑在 `ui/logic.py`，都有单测；页面用 `streamlit.testing` 做加载测试
 
 

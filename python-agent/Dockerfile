@@ -9,6 +9,8 @@ COPY pyproject.toml ./
 COPY app ./app
 COPY eval ./eval
 COPY ui ./ui
+# 政策库是运行时数据，容器里也必须存在（data/chroma 由 volume 持久化）
+COPY data/policies ./data/policies
 
 RUN pip install --no-cache-dir .
 
