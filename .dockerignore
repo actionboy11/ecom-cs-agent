@@ -1,0 +1,19 @@
+# Python 镜像的构建上下文是仓库根（Dockerfile 需要 data/policies）
+.git/
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest-tmp/
+.pytest_cache/
+data/mysql/
+data/chroma/
+data/state/
+data/traces/
+traces/
+eval/reports/
+**/eval/reports/
+.tmp/
+java-service/target/
+node_modules/

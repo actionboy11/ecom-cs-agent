@@ -39,6 +39,7 @@
 | `refactor` | 重构（不改行为） |
 | `test` | 测试与评测用例 |
 | `chore` | 构建、依赖、配置 |
+| `ci` | CI / 流水线配置 |
 
 示例：
 
@@ -54,7 +55,7 @@ docs(daily): 2026-11-02 记录代理劫持 localhost 的排查
 
 - 单人开发：**main 直推**，不建 feature 分支（避免自欺欺人的 PR 流程）
 - 里程碑打 tag：`v0.1-skeleton`（已完成）、`v0.2-auth`、`v0.3-rag-mcp`、`v0.4-eval`、`v1.0-release`
-- 不做 GitHub Actions（时间成本高于收益，已在 SPEC 记录该决策）
+- **CI**：`.github/workflows/ci.yml` 跑 Python（ruff + pytest）、Java（mvn test + MySQL service）、Compose 配置校验。早期「不做 GitHub Actions」的决策已被 P0-3 取代
 
 ## 4. 每周复盘（周日 10 分钟）
 
@@ -80,5 +81,7 @@ docs(daily): 2026-11-02 记录代理劫持 localhost 的排查
 ```bash
 git status --short          # 有没有误加文件
 git diff --cached --stat    # 这次改了哪些
-python -m pytest -q         # 本地测试是否绿
+uv run ruff check .         # lint 必须为 0
+uv run pytest -q            # 本地测试是否绿
+uv lock --check             # 锁文件是否与 pyproject 一致
 ```

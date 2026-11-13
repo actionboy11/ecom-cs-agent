@@ -1,6 +1,6 @@
 # 电商售后客服 Agent（E-commerce After-Sales Support Agent）
 
-![CI](https://github.com/actionboy11/ecom-cs-agent/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/actionboy11/ecom-cs-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/actionboy11/ecom-cs-agent/actions/workflows/ci.yml)
 
 **一个能上生产的售后客服 Agent 参考实现**：LangGraph 编排 + MCP 工具化 + 资源级鉴权 + 三层可复现评测。
 

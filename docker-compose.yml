@@ -43,7 +43,10 @@ services:
       start_period: 40s
 
   python-agent:
-    build: ./python-agent
+    build:
+      # 上下文是仓库根：Dockerfile 需要 data/policies
+      context: .
+      dockerfile: python-agent/Dockerfile
     image: cs-agent-python:local
     container_name: cs-agent-python
     ports:
