@@ -104,6 +104,14 @@ def test_handoffs_and_my_after_sales_endpoints() -> None:
     assert seen["path"].endswith("/api/after-sales")
 
 
+def test_network_error_becomes_workbench_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    with pytest.raises(WorkbenchError):
+        _api(handler).handoffs("jwt")
+
+
 def test_pending_and_audit_hit_java_endpoints() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if "after-sales" in str(request.url):

@@ -1,6 +1,7 @@
 """工作台 API 客户端：同步 httpx，可注入 transport 以便单测。
 
 买家对话走 Python Agent（`/api/v1/chat`），审批与审计走 Java（`/api/after-sales`、`/api/audit`）。
+网络错误统一转成 `WorkbenchError`，UI 只需要处理一种异常。
 """
 
 from __future__ import annotations
@@ -33,6 +34,13 @@ class WorkbenchApi:
             kwargs["transport"] = self.transport
         return httpx.Client(**kwargs)
 
+    def _request(self, base: str, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        try:
+            with self._client(base) as client:
+                return client.request(method, url, **kwargs)
+        except httpx.HTTPError as exc:
+            raise WorkbenchError(f"无法连接服务：{exc}") from exc
+
     @staticmethod
     def _json(resp: httpx.Response) -> Any:
         if resp.status_code >= 400:
@@ -53,63 +61,74 @@ class WorkbenchApi:
         return {"Authorization": f"Bearer {token}"}
 
     def login(self, username: str, password: str) -> dict:
-        with self._client(self.java_base) as client:
-            resp = client.post(
-                "/api/auth/login", json={"username": username, "password": password}
-            )
+        resp = self._request(
+            self.java_base,
+            "POST",
+            "/api/auth/login",
+            json={"username": username, "password": password},
+        )
         return self._json(resp)
 
     def chat(self, token: str, thread_id: str, message: str) -> dict:
-        with self._client(self.agent_base) as client:
-            resp = client.post(
-                "/api/v1/chat",
-                json={"thread_id": thread_id, "message": message},
-                headers=self._auth(token),
-            )
+        resp = self._request(
+            self.agent_base,
+            "POST",
+            "/api/v1/chat",
+            json={"thread_id": thread_id, "message": message},
+            headers=self._auth(token),
+        )
         return self._json(resp)
 
     def resume(self, token: str, thread_id: str, approved: bool, note: str = "") -> dict:
-        with self._client(self.agent_base) as client:
-            resp = client.post(
-                f"/api/v1/threads/{thread_id}/resume",
-                json={"approved": approved, "note": note},
-                headers=self._auth(token),
-            )
+        resp = self._request(
+            self.agent_base,
+            "POST",
+            f"/api/v1/threads/{thread_id}/resume",
+            json={"approved": approved, "note": note},
+            headers=self._auth(token),
+        )
+        return self._json(resp)
+
+    def handoffs(self, token: str) -> list[dict]:
+        """坐席转接待办（Python 侧按 pending 标记扫描 interrupt）。"""
+        resp = self._request(
+            self.agent_base, "GET", "/api/v1/handoffs", headers=self._auth(token)
+        )
         return self._json(resp)
 
     def pending_after_sales(self, token: str, status: str = "PENDING") -> list[dict]:
-        with self._client(self.java_base) as client:
-            resp = client.get(
-                "/api/after-sales",
-                params={"status": status},
-                headers=self._auth(token),
-            )
+        resp = self._request(
+            self.java_base,
+            "GET",
+            "/api/after-sales",
+            params={"status": status},
+            headers=self._auth(token),
+        )
         return self._json(resp)
 
     def my_after_sales(self, token: str) -> list[dict]:
         """买家查自己的售后请求（Java 侧按 user_id 过滤）。"""
-        with self._client(self.java_base) as client:
-            resp = client.get("/api/after-sales", headers=self._auth(token))
-        return self._json(resp)
-
-    def handoffs(self, token: str) -> list[dict]:
-        """坐席转接待办（Python 侧扫描 interrupt）。"""
-        with self._client(self.agent_base) as client:
-            resp = client.get("/api/v1/handoffs", headers=self._auth(token))
+        resp = self._request(
+            self.java_base, "GET", "/api/after-sales", headers=self._auth(token)
+        )
         return self._json(resp)
 
     def review(self, token: str, request_no: str, approved: bool, note: str) -> dict:
-        with self._client(self.java_base) as client:
-            resp = client.post(
-                f"/api/after-sales/{request_no}/review",
-                json={"approved": approved, "note": note},
-                headers=self._auth(token),
-            )
+        resp = self._request(
+            self.java_base,
+            "POST",
+            f"/api/after-sales/{request_no}/review",
+            json={"approved": approved, "note": note},
+            headers=self._auth(token),
+        )
         return self._json(resp)
 
     def audit(self, token: str, limit: int = 20) -> list[dict]:
-        with self._client(self.java_base) as client:
-            resp = client.get(
-                "/api/audit", params={"limit": limit}, headers=self._auth(token)
-            )
+        resp = self._request(
+            self.java_base,
+            "GET",
+            "/api/audit",
+            params={"limit": limit},
+            headers=self._auth(token),
+        )
         return self._json(resp)

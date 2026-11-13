@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ui.logic import audit_row, can_review, format_reply, is_customer
+from ui.logic import audit_row, can_review, format_reply, handoff_label, is_customer
 
 
 def test_only_agent_can_review() -> None:
@@ -11,6 +11,13 @@ def test_only_agent_can_review() -> None:
     assert can_review("cs_agent") is True
     assert can_review("CUSTOMER") is False
     assert can_review(None) is False
+
+
+def test_handoff_label_maps_reason() -> None:
+    assert handoff_label("complaint") == "投诉"
+    assert handoff_label("turn_limit") == "轮次上限"
+    assert handoff_label(None) == "人工转接"
+    assert handoff_label("custom_reason") == "custom_reason"
 
 
 def test_only_customer_sees_my_after_sales() -> None:

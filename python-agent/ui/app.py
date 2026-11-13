@@ -16,10 +16,10 @@ import streamlit as st
 
 try:  # 作为包导入（pytest / 其他模块）
     from ui.api_client import WorkbenchApi, WorkbenchError
-    from ui.logic import audit_row, can_review, format_reply, is_customer
+    from ui.logic import audit_row, can_review, format_reply, handoff_label, is_customer
 except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
     from api_client import WorkbenchApi, WorkbenchError
-    from logic import audit_row, can_review, format_reply, is_customer
+    from logic import audit_row, can_review, format_reply, handoff_label, is_customer
 
 JAVA_BASE = os.getenv("JAVA_BASE", "http://localhost:8080")
 AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8000")
@@ -184,7 +184,7 @@ def render_agent_pane() -> None:
         handoff_thread = manual_thread.strip()
         if handoffs:
             options = {
-                f"{row['thread_id']} · {row.get('reason') or '投诉'}": row["thread_id"]
+                f"{row['thread_id']} · {handoff_label(row.get('reason'))}": row["thread_id"]
                 for row in handoffs
             }
             selected_handoff = st.selectbox(

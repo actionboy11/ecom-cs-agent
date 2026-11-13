@@ -16,6 +16,16 @@ def is_customer(role: str | None) -> bool:
     return bool(role) and role.upper().removeprefix("ROLE_") == ROLE_CUSTOMER
 
 
+_HANDOFF_REASONS = {"complaint": "投诉", "turn_limit": "轮次上限"}
+
+
+def handoff_label(reason: str | None) -> str:
+    """待办原因：未知原因不要硬说成「投诉」。"""
+    if not reason:
+        return "人工转接"
+    return _HANDOFF_REASONS.get(reason, str(reason))
+
+
 def format_reply(reply: dict) -> str:
     """把 Agent 响应拼成展示文本：正文 + 人工转接提示（买家只能等待）。"""
     content = str(reply.get("reply") or "")
