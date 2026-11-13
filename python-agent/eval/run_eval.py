@@ -183,6 +183,24 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool, report_dir: 
             f"{'✓' if r['reply_ok'] else '✗'} | {cite} | "
             f"{'是' if r['handoff'] else ''} | {r['elapsed_ms']} |"
         )
+    lines += ["", "## LLM judge（第二轨）", ""]
+    if summary.get("judge_rate") is not None:
+        lines.append(f"- 模型：{summary.get('judge_model', '?')}")
+        lines.append(
+            f"- 解决率：{summary['judge_rate']:.1%}（{summary['judge_resolved']}/{summary['judge_cases']}）"
+        )
+        lines += ["", "| id | 是否解决 | 理由 |", "|---|---|---|"]
+        for r in rows:
+            judged = r.get("judge")
+            if judged:
+                lines.append(
+                    f"| {r['id']} | {'✓' if judged['resolved'] else '✗'} | {judged['reason']} |"
+                )
+    elif summary.get("judge_skipped"):
+        lines.append(f"- 已跳过：{summary['judge_skipped']}（未配置模型 Key 或输出无法解析）")
+    else:
+        lines.append("- 未启用（`--judge`）")
+
     lines += ["", "## 拒答分类统计", ""]
     by_category = summary.get("safety_by_category") or {}
     if by_category:
@@ -218,6 +236,8 @@ async def main() -> None:
     parser.add_argument("--holdout", type=float, default=0.0, help="holdout 比例，如 0.2")
     parser.add_argument("--json", action="store_true", help="只输出 JSON 汇总")
     parser.add_argument("--username", default="buyer_a", help="评测登录账号（默认 buyer_a）")
+    parser.add_argument("--judge", action="store_true", help="启用 LLM judge 第二轨（需模型 Key，会产生调用）")
+    parser.add_argument("--judge-limit", type=int, default=0, help="judge 抽样条数，0 表示全量")
     args = parser.parse_args()
 
     if args.split != "all" and args.holdout <= 0:
@@ -238,6 +258,34 @@ async def main() -> None:
     summary = summarize(rows)
     summary["split"] = args.split
     summary["cases_file"] = Path(args.cases).name
+
+    if args.judge:
+        from eval.judge import JudgeUnavailable, aggregate, judge_reply
+
+        judged = {}
+        failures: list[str] = []
+        selected = rows[: args.judge_limit] if args.judge_limit else rows
+        for row in selected:
+            reference = next(
+                (c.get("must_contain") or [] for c in cases if c["id"] == row["id"]), []
+            )
+            try:
+                judged[row["id"]] = await judge_reply(row["input"], row["reply"], reference)
+            except JudgeUnavailable as exc:
+                failures.append(f"{row['id']}: {exc}")
+        if judged:
+            summary.update(aggregate(list(judged.values())))
+            summary["judge_model"] = settings.model_reasoning
+            for row in rows:
+                if row["id"] in judged:
+                    result = judged[row["id"]]
+                    row["judge"] = {"resolved": result.resolved, "reason": result.reason}
+        if failures:
+            summary["judge_failed"] = len(failures)
+            print(f"judge 跳过 {len(failures)} 条：{failures[0]}")
+        if not judged:
+            summary["judge_skipped"] = failures[0] if failures else "无可判定用例"
+
     if args.json:
         print(json.dumps(summary, ensure_ascii=False))
     else:
