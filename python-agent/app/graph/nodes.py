@@ -33,6 +33,10 @@ POLICY_TEXT = """【售后政策摘要】
 ORDER_NO_PATTERN = re.compile(r"(CS\d{7,})", re.IGNORECASE)
 SKU_PATTERN = re.compile(r"(SKU\d{4})", re.IGNORECASE)
 
+# SPEC §8：单会话最多 10 轮，超过后不再调用模型/工具，直接转人工兜底
+MAX_TURNS = 10
+TURN_LIMIT_REPLY = "本次会话轮次已达上限（10 轮），已为您转接人工坐席，请稍候。"
+
 # 用户很少报 SKU，多数说商品名；这里做一层最简映射（真实系统应查商品目录）
 PRODUCT_SKU_HINTS: dict[str, str] = {
     "跑步鞋": "SKU1001",
@@ -145,6 +149,25 @@ async def classify(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     text = _last_user_text(state["messages"])
 
+    # SPEC §8：turn_count > 10 走转人工兜底，且不再调用模型/工具
+    turn_count = int(state.get("turn_count") or 0) + 1
+    if turn_count > MAX_TURNS:
+        with node_span(thread_id, "classify", user_text=text[:200]) as info:
+            info["source"] = "turn_limit"
+            info["turn_count"] = turn_count
+        return {
+            "turn_count": turn_count,
+            "turn_limit": True,
+            "intent": "other",
+            "needs_human": True,
+            "refusal": None,
+            "safety_reply": None,
+            "order_no": None,
+            "sku": None,
+            "reason": None,
+            "confidence": 1.0,
+        }
+
     # SPEC §9：拒答在分类之前、模型之前判定，避免为拒答问题调用模型
     refusal = _refusal(text)
     if refusal:
@@ -152,6 +175,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["source"] = "refusal"
             info["intent"] = "other"
         return {
+            "turn_count": turn_count,
+            "turn_limit": False,
             "intent": "other",
             "refusal": refusal,
             "safety_reply": None,
@@ -186,6 +211,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
         info["intent"] = parsed.intent
         return {
             "intent": parsed.intent,
+            "turn_count": turn_count,
+            "turn_limit": False,
             # 每轮清空拒答状态，避免上一轮的拒答话术粘住后续对话
             "refusal": None,
             "safety_reply": None,
@@ -206,6 +233,8 @@ async def refuse(state: AgentState) -> dict[str, Any]:
 
 
 def route_after_classify(state: AgentState) -> str:
+    if state.get("turn_limit"):
+        return "respond"
     if state.get("refusal"):
         return "refuse"
     intent = state.get("intent", "other")
@@ -381,6 +410,12 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    if state.get("turn_limit"):
+        text = TURN_LIMIT_REPLY
+        with node_span(thread_id, "respond", intent="turn_limit") as info:
+            info["source"] = "template"
+            info["reason"] = "turn_limit"
+        return {"reply": text, "messages": [AIMessage(content=text)]}
     if state.get("refusal") and state.get("safety_reply"):
         text = str(state["safety_reply"])
         with node_span(thread_id, "respond", intent="refusal") as info:
