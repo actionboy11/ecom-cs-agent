@@ -62,9 +62,11 @@ uv run streamlit run ui/app.py   # 工作台（当前本地运行，S7-2 并入 
 左右两栏：左栏买家对话（走 Agent），右栏坐席审批与审计（走 Java REST）。
 
 ```bash
-JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8010 \
+JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
   uv run streamlit run ui/app.py
 ```
+
+> 本地用 uvicorn 跑 Agent（端口 8010）时，把 `AGENT_BASE` 改成 `http://localhost:8010`。
 
 - 演示账号：`buyer_a` / `cs_agent`，密码均为 `demo123`（种子数据）
 - 非坐席账号登录时，审批区显示「不可用」而不是只隐藏按钮

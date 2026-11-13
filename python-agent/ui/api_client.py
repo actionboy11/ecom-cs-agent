@@ -37,10 +37,13 @@ class WorkbenchApi:
     def _json(resp: httpx.Response) -> Any:
         if resp.status_code >= 400:
             try:
-                detail = resp.json().get("message") or resp.json().get("detail")
+                payload = resp.json()
             except ValueError:
-                detail = resp.text[:200]
-            raise WorkbenchError(f"HTTP {resp.status_code}: {detail}")
+                payload = None
+            detail = None
+            if isinstance(payload, dict):
+                detail = payload.get("message") or payload.get("detail")
+            raise WorkbenchError(f"HTTP {resp.status_code}: {detail or resp.text[:200]}")
         return resp.json()
 
     def login(self, username: str, password: str) -> dict:

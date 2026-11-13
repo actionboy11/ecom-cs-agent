@@ -14,7 +14,12 @@ import time
 
 import streamlit as st
 
-from api_client import WorkbenchApi, WorkbenchError
+try:  # 作为包导入（pytest）
+    from ui.api_client import WorkbenchApi, WorkbenchError
+    from ui.logic import audit_row, can_review, format_reply
+except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
+    from api_client import WorkbenchApi, WorkbenchError
+    from logic import audit_row, can_review, format_reply
 
 JAVA_BASE = os.getenv("JAVA_BASE", "http://localhost:8080")
 AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8010")
@@ -35,15 +40,16 @@ for key, default in (
     ("thread_id", None),
     ("messages", []),
     ("notice", ""),
+    ("chat_seq", 0),
 ):
     st.session_state.setdefault(key, default)
 
 
 def logout() -> None:
-    st.session_state.token = None
-    st.session_state.user = None
-    st.session_state.thread_id = None
-    st.session_state.messages = []
+    for key in ("token", "user", "thread_id", "messages", "notice"):
+        st.session_state[key] = None if key != "messages" else []
+        if key == "notice":
+            st.session_state[key] = ""
 
 
 def login_form() -> None:
@@ -59,6 +65,9 @@ def login_form() -> None:
             # 不区分「用户不存在」与「密码错误」
             st.sidebar.error("用户名或密码错误")
             return
+        except Exception:  # noqa: BLE001 - 后端不可用/网络故障
+            st.sidebar.error("无法连接业务系统，请确认 Java 服务已启动")
+            return
         st.session_state.token = result["token"]
         st.session_state.user = result
         st.session_state.thread_id = f"ui-{username}-{int(time.time())}"
@@ -72,28 +81,31 @@ def render_chat() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    text = st.text_input("输入问题", key="chat_input", placeholder="例如：CS2024001 到哪了")
+    # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
+    text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
     if st.button("发送", type="primary") and text.strip():
         st.session_state.messages.append({"role": "user", "content": text})
         try:
             reply = api.chat(st.session_state.token, st.session_state.thread_id, text)
-            content = reply.get("reply", "")
-            if reply.get("needs_human"):
-                content += "\n\n_（已转人工，坐席可在右侧处理）_"
+            content = format_reply(reply)
         except WorkbenchError as exc:
             content = f"调用失败：{exc}"
+        except Exception:  # noqa: BLE001
+            content = "调用失败：无法连接 Agent 服务"
         st.session_state.messages.append({"role": "assistant", "content": content})
+        st.session_state.chat_seq += 1
         st.rerun()
 
 
 def render_agent_pane() -> None:
     st.subheader("坐席侧审批与审计")
-    if st.session_state.user.get("role") != "CS_AGENT":
+    if not can_review(st.session_state.user.get("role")):
         st.info("当前账号不是坐席，审批与审计不可用。")
         return
 
-    if st.button("刷新待办"):
-        st.rerun()
+    if st.session_state.notice:
+        st.success(st.session_state.notice)
+        st.session_state.notice = ""
 
     try:
         pending = api.pending_after_sales(st.session_state.token)
@@ -109,15 +121,20 @@ def render_agent_pane() -> None:
             for row in pending
         }
         selected = st.selectbox("待办", list(labels))
+        request_no = labels[selected]
         approved = st.radio("处理结果", ["通过", "驳回"], horizontal=True) == "通过"
-        note = st.text_input("备注（可选）", key="review_note")
+        # key 绑定到具体申请，切换待办时备注不会串到另一条
+        note = st.text_input("备注（驳回时必填）", key=f"review_note_{request_no}")
         if st.button("提交审批", type="primary"):
-            try:
-                api.review(st.session_state.token, labels[selected], approved, note)
-                st.success("已提交，列表将刷新")
-                st.rerun()
-            except WorkbenchError as exc:
-                st.error(f"审批失败：{exc}")
+            if not approved and not note.strip():
+                st.error("驳回需要填写备注")
+            else:
+                try:
+                    api.review(st.session_state.token, request_no, approved, note)
+                    st.session_state.notice = "已提交审批，列表已刷新"
+                    st.rerun()
+                except WorkbenchError as exc:
+                    st.error(f"审批失败：{exc}")
 
     with st.expander("最近审计", expanded=False):
         try:
@@ -127,16 +144,7 @@ def render_agent_pane() -> None:
             rows = []
         if rows:
             st.dataframe(
-                [
-                    {
-                        "时间": row.get("createdAt", ""),
-                        "操作者": row.get("actor", ""),
-                        "动作": row.get("action", ""),
-                        "资源": row.get("resourceId", ""),
-                        "结果": row.get("result", ""),
-                    }
-                    for row in rows
-                ],
+                [audit_row(row) for row in rows],
                 use_container_width=True,
                 hide_index=True,
             )
