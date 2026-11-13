@@ -72,6 +72,21 @@ def test_agent_review_calls_review_endpoint() -> None:
     assert "true" in seen["body"]
 
 
+def test_resume_posts_to_thread_endpoint() -> None:
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["body"] = request.content.decode()
+        return httpx.Response(200, json={"reply": "已恢复", "needs_human": False})
+
+    reply = _api(handler).resume("jwt", "t-9", True, "同意")
+
+    assert reply["reply"] == "已恢复"
+    assert "/api/v1/threads/t-9/resume" in seen["url"]
+    assert "true" in seen["body"]
+
+
 def test_pending_and_audit_hit_java_endpoints() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if "after-sales" in str(request.url):

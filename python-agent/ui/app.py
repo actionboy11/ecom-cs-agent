@@ -1,20 +1,20 @@
 """Streamlit 双栏工作台：左栏买家对话，右栏坐席审批与审计。
 
-运行：
+运行（在 python-agent/ 目录下）：
     streamlit run ui/app.py
 环境变量：
     JAVA_BASE（默认 http://localhost:8080）
-    AGENT_BASE（默认 http://localhost:8010）
+    AGENT_BASE（默认 http://localhost:8000；本地 uvicorn 用 8010）
 """
 
 from __future__ import annotations
 
 import os
-import time
+import uuid
 
 import streamlit as st
 
-try:  # 作为包导入（pytest）
+try:  # 作为包导入（pytest / 其他模块）
     from ui.api_client import WorkbenchApi, WorkbenchError
     from ui.logic import audit_row, can_review, format_reply
 except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
@@ -22,7 +22,7 @@ except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
     from logic import audit_row, can_review, format_reply
 
 JAVA_BASE = os.getenv("JAVA_BASE", "http://localhost:8080")
-AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8010")
+AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8000")
 
 
 @st.cache_resource
@@ -41,22 +41,32 @@ for key, default in (
     ("messages", []),
     ("notice", ""),
     ("chat_seq", 0),
+    ("pending_handoff", False),
 ):
     st.session_state.setdefault(key, default)
 
 
 def logout() -> None:
-    for key in ("token", "user", "thread_id", "messages", "notice"):
-        st.session_state[key] = None if key != "messages" else []
-        if key == "notice":
-            st.session_state[key] = ""
+    st.session_state.token = None
+    st.session_state.user = None
+    st.session_state.thread_id = None
+    st.session_state.messages = []
+    st.session_state.notice = ""
+    st.session_state.pending_handoff = False
+
+
+def expired() -> None:
+    """令牌过期：清空登录态并提示重新登录。"""
+    logout()
+    st.session_state.notice = "登录已过期，请重新登录"
+    st.rerun()
 
 
 def login_form() -> None:
     st.sidebar.title("登录")
     with st.sidebar.form("login"):
         username = st.text_input("用户名", value="buyer_a")
-        password = st.text_input("密码", type="password", value="demo123")
+        password = st.text_input("密码", type="password", placeholder="演示密码见 README")
         submitted = st.form_submit_button("登录")
     if submitted:
         try:
@@ -70,7 +80,7 @@ def login_form() -> None:
             return
         st.session_state.token = result["token"]
         st.session_state.user = result
-        st.session_state.thread_id = f"ui-{username}-{int(time.time())}"
+        st.session_state.thread_id = f"ui-{username}-{uuid.uuid4().hex[:12]}"
         st.session_state.messages = []
         st.rerun()
 
@@ -81,6 +91,18 @@ def render_chat() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
+    if st.session_state.pending_handoff:
+        if st.button("人工已处理，继续会话"):
+            try:
+                reply = api.resume(st.session_state.token, st.session_state.thread_id, True)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": format_reply(reply)}
+                )
+                st.session_state.pending_handoff = False
+                st.rerun()
+            except WorkbenchError as exc:
+                st.error(f"恢复失败：{exc}")
+
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
     text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
     if st.button("发送", type="primary") and text.strip():
@@ -88,7 +110,11 @@ def render_chat() -> None:
         try:
             reply = api.chat(st.session_state.token, st.session_state.thread_id, text)
             content = format_reply(reply)
+            if reply.get("needs_human"):
+                st.session_state.pending_handoff = True
         except WorkbenchError as exc:
+            if "HTTP 401" in str(exc):
+                expired()
             content = f"调用失败：{exc}"
         except Exception:  # noqa: BLE001
             content = "调用失败：无法连接 Agent 服务"
@@ -143,9 +169,11 @@ def render_agent_pane() -> None:
             st.error(f"审计加载失败：{exc}")
             rows = []
         if rows:
+            denied = sum(1 for row in rows if row.get("result") == "DENIED")
+            st.metric("累计拦截越权（最近 100 条内）", denied)
             st.dataframe(
                 [audit_row(row) for row in rows],
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
@@ -154,6 +182,8 @@ if st.session_state.token is None:
     login_form()
     st.title("电商售后客服工作台")
     st.caption("请先在左侧登录：买家账号看对话，坐席账号可审批售后。")
+    if st.session_state.notice:
+        st.info(st.session_state.notice)
 else:
     user = st.session_state.user
     st.sidebar.success(f"{user.get('displayName')}（{user.get('role')}）")

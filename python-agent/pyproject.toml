@@ -20,7 +20,7 @@ dependencies = [
     "langchain-ollama>=0.2",
     "chromadb>=0.5",
     "tenacity>=9.0",
-    "streamlit>=1.40",
+    "streamlit>=1.49",
 ]
 
 [dependency-groups]

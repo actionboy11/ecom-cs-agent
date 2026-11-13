@@ -14,12 +14,12 @@ def test_only_agent_can_review() -> None:
 def test_format_reply_appends_transfer_hint() -> None:
     assert format_reply({"reply": "已查询", "needs_human": False}) == "已查询"
     text = format_reply({"reply": "已转接", "needs_human": True})
-    assert "已转接" in text and "转人工" in text
+    assert "已转接" in text and "转接人工" in text
 
 
 def test_format_reply_handles_empty_reply() -> None:
     assert format_reply({}) == ""
-    assert format_reply({"reply": None, "needs_human": True}).startswith("\n\n_（已转人工")
+    assert format_reply({"reply": None, "needs_human": True}).startswith("\n\n_（已转接人工")
 
 
 def test_audit_row_uses_java_ts_field() -> None:

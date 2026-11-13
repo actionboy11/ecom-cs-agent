@@ -13,7 +13,7 @@ def format_reply(reply: dict) -> str:
     """把 Agent 响应拼成展示文本：正文 + 转人工提示。"""
     content = str(reply.get("reply") or "")
     if reply.get("needs_human"):
-        content += "\n\n_（已转人工，坐席可在右侧处理）_"
+        content += "\n\n_（已转接人工坐席，可在右侧处理）_"
     return content
 
 

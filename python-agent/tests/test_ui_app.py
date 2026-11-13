@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
@@ -12,9 +11,6 @@ APP = ROOT / "ui" / "app.py"
 
 
 def test_login_page_renders_without_backend() -> None:
-    if str(ROOT / "ui") not in sys.path:
-        sys.path.insert(0, str(ROOT / "ui"))
-
     app = AppTest.from_file(str(APP)).run(timeout=15)
 
     assert not app.exception, app.exception

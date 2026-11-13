@@ -44,7 +44,13 @@ class WorkbenchApi:
             if isinstance(payload, dict):
                 detail = payload.get("message") or payload.get("detail")
             raise WorkbenchError(f"HTTP {resp.status_code}: {detail or resp.text[:200]}")
-        return resp.json()
+        try:
+            return resp.json()
+        except ValueError as exc:
+            raise WorkbenchError("响应不是合法 JSON") from exc
+
+    def _auth(self, token: str) -> dict[str, str]:
+        return {"Authorization": f"Bearer {token}"}
 
     def login(self, username: str, password: str) -> dict:
         with self._client(self.java_base) as client:
@@ -58,7 +64,16 @@ class WorkbenchApi:
             resp = client.post(
                 "/api/v1/chat",
                 json={"thread_id": thread_id, "message": message},
-                headers={"Authorization": f"Bearer {token}"},
+                headers=self._auth(token),
+            )
+        return self._json(resp)
+
+    def resume(self, token: str, thread_id: str, approved: bool, note: str = "") -> dict:
+        with self._client(self.agent_base) as client:
+            resp = client.post(
+                f"/api/v1/threads/{thread_id}/resume",
+                json={"approved": approved, "note": note},
+                headers=self._auth(token),
             )
         return self._json(resp)
 
@@ -67,7 +82,7 @@ class WorkbenchApi:
             resp = client.get(
                 "/api/after-sales",
                 params={"status": status},
-                headers={"Authorization": f"Bearer {token}"},
+                headers=self._auth(token),
             )
         return self._json(resp)
 
@@ -76,13 +91,13 @@ class WorkbenchApi:
             resp = client.post(
                 f"/api/after-sales/{request_no}/review",
                 json={"approved": approved, "note": note},
-                headers={"Authorization": f"Bearer {token}"},
+                headers=self._auth(token),
             )
         return self._json(resp)
 
     def audit(self, token: str, limit: int = 20) -> list[dict]:
         with self._client(self.java_base) as client:
             resp = client.get(
-                "/api/audit", params={"limit": limit}, headers={"Authorization": f"Bearer {token}"}
+                "/api/audit", params={"limit": limit}, headers=self._auth(token)
             )
         return self._json(resp)

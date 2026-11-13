@@ -52,7 +52,7 @@ Java: Spring Boot 3 + Spring Security(JWT) + MyBatis-Plus
 ```bash
 cp .env.example .env        # 填 DEEPSEEK_API_KEY / JWT_SECRET / INTERNAL_AUDIT_TOKEN
 docker compose up -d         # MySQL + Java + Python Agent
-uv run streamlit run ui/app.py   # 工作台（当前本地运行，S7-2 并入 compose）
+cd python-agent && uv run streamlit run ui/app.py   # 工作台（本地运行，S7-2 并入 compose）
 ```
 
 本地开发见 [SPEC 第 12 节](docs/SPEC.md)。
