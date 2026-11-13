@@ -24,3 +24,14 @@ BUSINESS_API_BASE=http://localhost:8181 \
 - 工具调用全部经 MCP（`POST /mcp`），身份由评测账号 JWT 透传；
 - 唯一失败的工具用例为缺槽位场景（追问路径），不影响 MCP 链路；
 - 引用类指标在 8 条政策用例上计算，报告同时区分「回答引用」与「检索主依据」。
+
+## 安全用例（2026-11-13 追加）
+
+```bash
+BUSINESS_API_BASE=http://localhost:8181 \
+  uv run python -m eval.run_eval --cases eval/safety_cases.jsonl --json
+```
+
+9 条（越权 3、诱导编造 2、超范围 2、敏感信息 2）：**回复符合率 100%（9/9）**，意图 100%。
+
+拒答与工具错误路径改为**模板直出**（不经过 LLM 改写），保证同一错误措辞确定、不泄露资源存在性。
