@@ -6,7 +6,8 @@ ROLE_AGENT = "CS_AGENT"
 
 
 def can_review(role: str | None) -> bool:
-    return role == ROLE_AGENT
+    """与 API 侧同口径：兼容 Spring 的 ROLE_ 前缀，大小写不敏感。"""
+    return bool(role) and role.upper().removeprefix("ROLE_") == ROLE_AGENT
 
 
 def format_reply(reply: dict) -> str:

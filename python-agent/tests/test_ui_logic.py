@@ -7,6 +7,8 @@ from ui.logic import audit_row, can_review, format_reply
 
 def test_only_agent_can_review() -> None:
     assert can_review("CS_AGENT") is True
+    assert can_review("ROLE_CS_AGENT") is True
+    assert can_review("cs_agent") is True
     assert can_review("CUSTOMER") is False
     assert can_review(None) is False
 

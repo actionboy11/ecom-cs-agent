@@ -143,7 +143,7 @@ START → classify ─┬─ product_info ───────────→ t
 | GET | `/api/audit?limit=` | CS_AGENT | 审计列表 |
 | POST | `/api/v1/chat` | 登录用户 | 对话（含 thread_id） |
 | POST | `/api/v1/chat/stream` | 登录用户 | SSE 流式 |
-| POST | `/api/v1/threads/{id}/resume` | 登录用户 | 审批后恢复 |
+| POST | `/api/v1/threads/{id}/resume` | CS_AGENT（买家调用按越权 404 + DENIED） | 审批后恢复 |
 | GET | `/api/v1/health` | 公开 | Agent + 依赖连通性 |
 
 ---

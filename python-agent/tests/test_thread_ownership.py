@@ -72,8 +72,8 @@ def test_buyer_cannot_resume_someone_elses_thread(app_env) -> None:
             json={"approved": True},
             headers=_auth(_token("buyer_b", 2)),
         )
-        # 恢复是坐席权限：买家一律 403，不区分会话归属，避免成为存在性探针
-        assert resp.status_code == 403
+        # 恢复是坐席权限：买家按越权处理，统一 404（不区分会话归属）
+        assert resp.status_code == 404
 
 
 def test_agent_may_resume_for_approval(app_env) -> None:
@@ -126,15 +126,14 @@ def test_stream_endpoint_requires_auth(app_env) -> None:
         assert resp.status_code == 401
 
 
-def test_unknown_thread_resume_is_403_for_buyer(app_env) -> None:
-    """买家连恢复权限都没有，所以「会话是否存在」也不该被区分。"""
+def test_unknown_thread_resume_is_404_for_buyer(app_env) -> None:
     with TestClient(app) as client:
         resp = client.post(
             "/api/v1/threads/never-existed/resume",
             json={"approved": True},
             headers=_auth(_token("buyer_a", 1)),
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 404
 
 
 def test_owner_cannot_resume_their_own_handoff(app_env) -> None:
@@ -154,7 +153,51 @@ def test_owner_cannot_resume_their_own_handoff(app_env) -> None:
             json={"approved": True},
             headers=_auth(buyer_a),
         )
-        assert resumed.status_code == 403
+        # 越权统一 404（ADR-0001），而不是 403
+        assert resumed.status_code == 404
+
+
+def test_resume_denial_is_audited(app_env, monkeypatch) -> None:
+    """买家越权调用 resume 也要写 DENIED 审计（与订单类越权同口径）。"""
+    import app.api.routes as routes
+
+    calls: list[dict] = []
+
+    async def fake_record(**kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(routes.audit_client, "record_thread_denied", fake_record)
+
+    with TestClient(app) as client:
+        assert _chat(client, "t-resume-audit", _token("buyer_a", 1)) == 200
+        resp = client.post(
+            "/api/v1/threads/t-resume-audit/resume",
+            json={"approved": True},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        assert resp.status_code == 404
+
+    assert calls, "越权恢复应上报 DENIED 审计"
+    assert calls[0]["reason"] == "resume_requires_agent"
+    assert calls[0]["thread_id"] == "t-resume-audit"
+
+
+def test_agent_can_reject_handoff(app_env) -> None:
+    with TestClient(app) as client:
+        chat = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-reject", "message": "我要投诉"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        assert chat.json()["needs_human"] is True
+
+        resp = client.post(
+            "/api/v1/threads/t-reject/resume",
+            json={"approved": False, "note": "已电话沟通"},
+            headers=_auth(_token("cs_agent", 4, "CS_AGENT")),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["needs_human"] is False
 
 
 def test_stream_rejects_other_users_thread(app_env) -> None:

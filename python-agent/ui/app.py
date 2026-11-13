@@ -41,7 +41,6 @@ for key, default in (
     ("messages", []),
     ("notice", ""),
     ("chat_seq", 0),
-    ("pending_handoff", False),
 ):
     st.session_state.setdefault(key, default)
 
@@ -52,7 +51,6 @@ def logout() -> None:
     st.session_state.thread_id = None
     st.session_state.messages = []
     st.session_state.notice = ""
-    st.session_state.pending_handoff = False
 
 
 def expired() -> None:
@@ -91,9 +89,6 @@ def render_chat() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    if st.session_state.pending_handoff:
-        st.info("已转接人工坐席，请等待坐席处理。")
-
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
     text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
     if st.button("发送", type="primary") and text.strip():
@@ -101,8 +96,6 @@ def render_chat() -> None:
         try:
             reply = api.chat(st.session_state.token, st.session_state.thread_id, text)
             content = format_reply(reply)
-            if reply.get("needs_human"):
-                st.session_state.pending_handoff = True
         except WorkbenchError as exc:
             if "HTTP 401" in str(exc):
                 expired()
@@ -139,7 +132,7 @@ def render_agent_pane() -> None:
         }
         selected = st.selectbox("待办", list(labels))
         request_no = labels[selected]
-        approved = st.radio("处理结果", ["通过", "驳回"], horizontal=True) == "通过"
+        approved = st.radio("售后审批结果", ["通过", "驳回"], horizontal=True) == "通过"
         # key 绑定到具体申请，切换待办时备注不会串到另一条
         note = st.text_input("备注（驳回时必填）", key=f"review_note_{request_no}")
         if st.button("提交审批", type="primary"):
@@ -156,7 +149,7 @@ def render_agent_pane() -> None:
     with st.expander("恢复转接会话", expanded=False):
         handoff_thread = st.text_input("会话 ID", key="handoff_thread")
         handoff_approved = st.radio(
-            "审批结果", ["通过", "驳回"], horizontal=True, key="handoff_result"
+            "转接审批结果", ["通过", "驳回"], horizontal=True, key="handoff_result"
         ) == "通过"
         handoff_note = st.text_input("审批备注", key="handoff_note")
         if st.button("恢复会话", key="handoff_submit"):
@@ -170,7 +163,7 @@ def render_agent_pane() -> None:
                         handoff_approved,
                         handoff_note,
                     )
-                    st.session_state.notice = f"已恢复：{format_reply(reply)[:80]}"
+                    st.session_state.notice = f"转接会话已恢复（{'通过' if handoff_approved else '驳回'}）"
                     st.rerun()
                 except WorkbenchError as exc:
                     st.error(f"恢复失败：{exc}")

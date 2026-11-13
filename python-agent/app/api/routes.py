@@ -190,14 +190,14 @@ async def resume(
     user: CurrentUser = Depends(require_user),
     store: ThreadOwnerStore = Depends(get_thread_store),
 ) -> ChatResponse:
-    # SPEC §6.3：resume 是「坐席审批后恢复」。买家不得自行恢复，
-    # 否则买家传 approved=true 就能绕过人工审批（越权）。
+    # SPEC §6.3：resume 是「坐席审批后恢复」，仅坐席可用。
+    # 买家调用按越权处理：统一 404 + DENIED 审计（ADR-0001），不做角色区分提示。
+    path = f"/api/v1/threads/{thread_id}/resume"
     if not user.is_agent:
-        raise HTTPException(status_code=403, detail="已转接人工坐席，请等待处理")
+        await _deny(thread_id, user, "resume_requires_agent", path)
     # 坐席恢复不受会话归属限制
     await _ensure_thread_access(
-        store, thread_id, user, bind_if_new=False, allow_agent=True,
-        path=f"/api/v1/threads/{thread_id}/resume",
+        store, thread_id, user, bind_if_new=False, allow_agent=True, path=path,
     )
     graph = get_graph()
     try:
