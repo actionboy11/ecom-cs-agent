@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 from app.paths import resolve_trace_dir
 
@@ -38,7 +39,7 @@ def node_span(thread_id: str, node: str, **payload: Any) -> Iterator[dict[str, A
     info: dict[str, Any] = {}
     try:
         yield info
-    except Exception as exc:  # noqa: BLE001 - 这里就是要记录所有异常
+    except Exception as exc:
         trace_event(thread_id, node, "error", {"error": str(exc), **payload})
         raise
     finally:

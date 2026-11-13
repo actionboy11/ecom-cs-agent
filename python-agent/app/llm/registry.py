@@ -70,5 +70,5 @@ async def ainvoke_with_fallback(
     """主模型失败 → 降级到 fallback 模型；两次都失败才抛错。"""
     try:
         return await get_chat_model(task, temperature=temperature).ainvoke(messages)
-    except Exception:
+    except Exception:  # noqa: BLE001 - 主模型任何失败都要降级到 fallback
         return await get_chat_model("fallback", temperature=temperature).ainvoke(messages)

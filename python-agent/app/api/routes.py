@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -205,7 +206,7 @@ async def resume(
             Command(resume={"approved": req.approved, "note": req.note}),
             _config(thread_id, user.token),
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=409, detail=f"该会话当前没有待处理的人工任务: {exc}") from exc
 
     interrupt = _extract_interrupt(result)

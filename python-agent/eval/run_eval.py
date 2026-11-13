@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 import time
 from pathlib import Path
 
@@ -41,7 +40,7 @@ def load_cases(path: Path, limit: int | None = None, split: str = "all", holdout
     raw = path.read_text(encoding="utf-8-sig")  # utf-8-sig：容忍 Windows 编辑器写入的 BOM
     cases = [json.loads(line) for line in raw.splitlines() if line.strip()]
     if holdout > 0:
-        step = max(int(round(1 / holdout)), 2)
+        step = max(round(1 / holdout), 2)
         if split == "holdout":
             cases = [c for i, c in enumerate(cases) if i % step == 0]
         elif split == "train":

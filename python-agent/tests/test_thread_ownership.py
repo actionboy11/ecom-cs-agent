@@ -159,7 +159,7 @@ def test_owner_cannot_resume_their_own_handoff(app_env) -> None:
 
 def test_resume_denial_is_audited(app_env, monkeypatch) -> None:
     """买家越权调用 resume 也要写 DENIED 审计（与订单类越权同口径）。"""
-    import app.api.routes as routes
+    from app.api import routes
 
     calls: list[dict] = []
 
@@ -251,7 +251,7 @@ def test_legacy_thread_without_owner_cannot_be_claimed(app_env) -> None:
 
 def test_cross_user_access_reports_denied_to_audit(app_env, monkeypatch) -> None:
     """Agent 侧越权要写 MySQL 审计；这里断言确实向上报了（不校验远端落库）。"""
-    import app.api.routes as routes
+    from app.api import routes
 
     calls: list[dict] = []
 

@@ -25,7 +25,7 @@ MIN_SCORE = 0.35
 def _ollama_host() -> str:
     """OllamaEmbeddings 需要主机名，不接受 OpenAI 兼容的 `/v1` 后缀。"""
     host = settings.ollama_base_url.rstrip("/")
-    return host[:-3] if host.endswith("/v1") else host
+    return host.removesuffix("/v1")
 
 
 def default_embeddings() -> Any:
@@ -128,7 +128,7 @@ def retrieve(query: str, k: int = 3, min_score: float = MIN_SCORE) -> RetrievalR
 
     try:
         store = get_store()
-        if store._collection.count() == 0:  # noqa: SLF001 - langchain-chroma 无公开计数接口
+        if store._collection.count() == 0:
             return _build(keyword_search(query, k), "keyword")
 
         pairs = store.similarity_search_with_relevance_scores(query, k=k)

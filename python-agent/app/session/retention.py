@@ -196,7 +196,7 @@ def main() -> None:
 
     try:
         result = purge_expired(db, args.traces, ttl_days, args.dry_run)
-    except Exception as exc:  # noqa: BLE001 - CLI 必须给出非零退出码
+    except Exception as exc:
         print(f"清理失败: {exc}", file=sys.stderr)
         raise SystemExit(3) from exc
 

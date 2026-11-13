@@ -41,6 +41,10 @@ packages = ["app"]
 line-length = 100
 target-version = "py311"
 
+[tool.ruff.lint]
+# B008 是 FastAPI 的依赖注入写法（Depends(...) 作为默认值），不是缺陷
+ignore = ["B008"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 asyncio_mode = "auto"

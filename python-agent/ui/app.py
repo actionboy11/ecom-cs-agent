@@ -157,7 +157,7 @@ def render_agent_pane() -> None:
                 st.error("请填写会话 ID")
             else:
                 try:
-                    reply = api.resume(
+                    api.resume(
                         st.session_state.token,
                         handoff_thread.strip(),
                         handoff_approved,

@@ -25,7 +25,7 @@ class ThreadOwnerStore:
         self._conn = conn
 
     @classmethod
-    async def open(cls, db_path: str) -> "ThreadOwnerStore":
+    async def open(cls, db_path: str) -> ThreadOwnerStore:
         path = resolve_db_path(db_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = await aiosqlite.connect(str(path))

@@ -6,8 +6,8 @@ CORS 现在放开的是本地开发来源；后续接 React 前端时改 ALLOWED
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             purge_expired, settings.agent_state_db, None, settings.session_ttl_days, False
         )
         logger.info("会话清理: %s", purged.as_dict())
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("会话清理失败，继续启动")
 
     async with sqlite_checkpointer(settings.agent_state_db) as checkpointer:

@@ -29,7 +29,7 @@ def main() -> None:
         raise SystemExit(2)
 
     store = build_store()
-    existing = store._collection.count()  # noqa: SLF001 - langchain-chroma 无公开计数接口
+    existing = store._collection.count()
     if existing and not args.rebuild:
         print(f"索引已存在 {existing} 条；如要重建请加 --rebuild", file=sys.stderr)
         raise SystemExit(2)
