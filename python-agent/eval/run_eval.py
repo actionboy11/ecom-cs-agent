@@ -103,6 +103,7 @@ async def run_case(graph, case: dict, token: str = "") -> dict:
         "citations": citations,
         "policy_refs": retrieved,
         "citation_expected": expected,
+        "safety_category": case.get("safety_category"),
         "handoff": bool(interrupt),
         "elapsed_ms": elapsed_ms,
     }
@@ -119,6 +120,17 @@ def summarize(rows: list[dict]) -> dict:
         "handoff_cases": sum(r["handoff"] for r in rows),
     }
     summary.update(citation_stats(rows))
+    # 拒答按类统计（越权 / 竞品比较 / 无关闲聊 / 违规请求）
+    by_category: dict[str, dict[str, int]] = {}
+    for row in rows:
+        category = row.get("safety_category")
+        if not category:
+            continue
+        bucket = by_category.setdefault(category, {"cases": 0, "passed": 0})
+        bucket["cases"] += 1
+        bucket["passed"] += 1 if row["reply_ok"] else 0
+    if by_category:
+        summary["safety_by_category"] = by_category
     return summary
 
 
@@ -168,6 +180,13 @@ def write_report(summary: dict, rows: list[dict], backend_ok: bool, report_dir: 
             f"{'✓' if r['reply_ok'] else '✗'} | {cite} | "
             f"{'是' if r['handoff'] else ''} | {r['elapsed_ms']} |"
         )
+    lines += ["", "## 拒答分类统计", ""]
+    by_category = summary.get("safety_by_category") or {}
+    if by_category:
+        for category, bucket in by_category.items():
+            lines.append(f"- {category}：{bucket['passed']}/{bucket['cases']}")
+    else:
+        lines.append("- 无拒答用例")
     lines += ["", "## 引用错例", ""]
     mismatches = summary.get("citation_mismatches") or []
     if mismatches:

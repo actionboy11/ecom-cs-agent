@@ -243,7 +243,7 @@ START → classify → route:
 
 检索：**每个需要生成回复的节点前**执行 `retrieve(query, top_k=3)`，相似度 ≥ 0.35 才把政策片段拼进上下文，回复末尾附 `[P0x]`。
 
-State：`thread_id, user_id, role, messages[], intent, order_no, sku, as_type, reason, confidence, tool_result, error_code, knowledge, policy_refs[], needs_human, handoff_approved, reply, turn_count`
+State：`thread_id, user_id, role, messages[], intent, order_no, sku, as_type, reason, confidence, tool_result, error_code, knowledge, policy_refs[], needs_human, handoff_approved, refusal, reply, turn_count`
 
 ---
 

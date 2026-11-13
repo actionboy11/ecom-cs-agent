@@ -71,20 +71,33 @@ def _guess_sku(text: str) -> str | None:
     return None
 
 
-def _safety_refusal(text: str) -> str | None:
-    """四类拒答：越权靠统一 404 文案，这里拦截「敏感信息 / 超范围 / 诱导编造」。"""
-    if any(k in text for k in ("编一个", "编个", "虚构", "随便编", "假设一个订单")):
-        return "我不能编造订单或政策信息；请提供真实单号，我帮您查实际状态。"
+def _refusal(text: str) -> str | None:
+    """SPEC §9 四类拒答，各一句标准话术；判定顺序：违规 → 越权 → 竞品 → 无关。"""
+    privacy = any(k in text for k in ("手机号", "电话", "地址", "身份证", "住哪", "住址", "家住"))
+    about_others = any(
+        k in text for k in ("他的", "她的", "别人的", "对方的", "买家", "客户", "其他人", "buyer_")
+    )
+    fabrication = any(k in text for k in ("编一个", "编个", "虚构", "随便编", "假设一个订单"))
+    ghostwriting = any(k in text for k in ("写作业", "代写", "写论文"))
+    if (privacy and about_others) or fabrication or ghostwriting:
+        return "这个我没法帮您，我们继续处理售后问题吧。"
 
-    if any(k in text for k in ("手机号", "电话", "地址", "身份证")) and any(
-        k in text for k in ("他的", "她的", "别人的", "对方的", "买家", "客户", "其他人")
+    if any(k in text for k in ("别人", "他人", "朋友的")) and any(
+        k in text for k in ("订单", "物流", "售后", "单号")
     ):
-        return "抱歉，我不能提供或确认其他用户的联系方式、地址等个人信息。"
+        return "我这边只能处理您本人订单的问题哦～"
 
+    if any(k in text for k in ("对比", "比怎么样", "比你们", "友商", "竞品")) or "和" in text and "比" in text:
+        return "我只负责售后问题，具体对比建议参考官方参数页。"
+
+    delay_context = any(k in text for k in ("订单", "物流", "单号", "快递", "派送"))
+    if "天气" in text and delay_context:
+        return None  # 「天气原因延误」是合法物流咨询
     if any(
-        k in text for k in ("写诗", "写一首", "写代码", "翻译", "天气", "笑话", "股票", "故事", "做饭")
+        k in text
+        for k in ("天气", "写诗", "写首诗", "写代码", "写个代码", "翻译", "笑话", "股票", "故事", "做饭")
     ):
-        return "我只负责订单、物流和售后政策相关的问题；其他问题建议咨询对应的服务渠道。"
+        return "我是售后客服，可以帮您查订单、物流或办理售后。"
 
     return None
 
@@ -132,6 +145,22 @@ async def classify(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     text = _last_user_text(state["messages"])
 
+    # SPEC §9：拒答在分类之前、模型之前判定，避免为拒答问题调用模型
+    refusal = _refusal(text)
+    if refusal:
+        with node_span(thread_id, "classify", user_text=text[:200]) as info:
+            info["source"] = "refusal"
+            info["intent"] = "other"
+        return {
+            "intent": "other",
+            "refusal": refusal,
+            "safety_reply": None,
+            "order_no": None,
+            "sku": None,
+            "reason": None,
+            "confidence": 1.0,
+        }
+
     with node_span(thread_id, "classify", user_text=text[:200]) as info:
         try:
             model = with_structured_output("fast", Classification)
@@ -155,19 +184,11 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["fallback_reason"] = str(exc)[:200]
 
         info["intent"] = parsed.intent
-        refusal = _safety_refusal(text)
-        if refusal:
-            info["safety"] = "refused"
-            return {
-                "intent": "other",
-                "safety_reply": refusal,
-                "order_no": None,
-                "sku": None,
-                "reason": None,
-                "confidence": parsed.confidence,
-            }
         return {
             "intent": parsed.intent,
+            # 每轮清空拒答状态，避免上一轮的拒答话术粘住后续对话
+            "refusal": None,
+            "safety_reply": None,
             "order_no": parsed.order_no
             or (ORDER_NO_PATTERN.search(text).group(1).upper() if ORDER_NO_PATTERN.search(text) else None),
             "sku": parsed.sku or _guess_sku(text),
@@ -176,7 +197,17 @@ async def classify(state: AgentState) -> dict[str, Any]:
         }
 
 
+async def refuse(state: AgentState) -> dict[str, Any]:
+    """SPEC §8 的 refuse 分支：只写标准话术，交给 respond 输出。"""
+    thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    with node_span(thread_id, "refuse") as info:
+        info["category"] = "refusal"
+    return {"safety_reply": state.get("refusal") or ""}
+
+
 def route_after_classify(state: AgentState) -> str:
+    if state.get("refusal"):
+        return "refuse"
     intent = state.get("intent", "other")
     if intent == "complaint":
         return "handoff"
@@ -292,15 +323,18 @@ def _template_reply(state: AgentState) -> str:
         return "请提供您的订单号（例如 CS2024001），我马上帮您查询。"
     if tool_result.get("error") == "missing_sku":
         return "请告诉我具体是哪个商品（例如轻量跑步鞋 / 降噪耳机 / 登机行李箱），我帮您查参数。"
-    if "UNAUTHORIZED" in str(tool_result.get("error", "")):
-        return "登录状态已过期，请重新登录后再试。"
     if "MISSING_SLOT" in str(tool_result.get("error", "")):
         return "请补充订单号或售后原因后再试。"
-    if "NOT_FOUND" in str(tool_result.get("error", "")):
-        # 越权与不存在同文案（ADR-0001），不确认资源是否存在
-        return "该订单不存在，请核对订单号后重试。"
+    if "NOT_FOUND" in str(tool_result.get("error", "")) or "DENIED" in str(tool_result.get("error", "")):
+        # 越权与不存在同口径（ADR-0001）；不区分订单/物流/商品，避免说错资源名
+        return "没有找到对应的记录，请核对信息后重试。"
+    if "INVALID_INPUT" in str(tool_result.get("error", "")):
+        return "提交的信息不符合要求，请检查后重试。"
+    if "UNAUTHORIZED" in str(tool_result.get("error", "")):
+        return "登录状态已过期，请重新登录后再试。"
     if tool_result.get("error"):
-        return f"抱歉，暂时查不到该订单：{tool_result['error']}。您可以稍后重试或转人工。"
+        # 不把内部错误码/堆栈透给用户
+        return "系统暂时不可用，请稍后重试。"
 
     if intent == "product_info" and tool_result:
         attrs = "，".join(f"{k}{v}" for k, v in (tool_result.get("attrs") or {}).items())
@@ -331,6 +365,9 @@ def _template_reply(state: AgentState) -> str:
     if intent == "policy" and not state.get("knowledge"):
         # 检索无命中时不能拿整段政策摘要冒充答案
         return "没有查到对应的政策条款，建议转人工确认，避免给您错误信息。"
+    if intent == "other" and not state.get("knowledge") and not tool_result:
+        # 闲聊/无法归类的输入：明确说能做什么，而不是倾倒政策摘要
+        return "我是售后客服，可以帮您查订单、物流或办理售后。"
     # 检索无命中时 knowledge 为 None，必须回落到政策摘要，不能把 None 塞给模型
     return state.get("knowledge") or POLICY_TEXT
 
@@ -344,8 +381,11 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    if state.get("safety_reply"):
+    if state.get("refusal") and state.get("safety_reply"):
         text = str(state["safety_reply"])
+        with node_span(thread_id, "respond", intent="refusal") as info:
+            info["source"] = "template"
+            info["reason"] = "refusal"
         return {"reply": text, "messages": [AIMessage(content=text)]}
     if state.get("needs_human"):
         # 转人工的答复已在 handoff_prepare 里写好；这里只在「人工驳回」时改写。
