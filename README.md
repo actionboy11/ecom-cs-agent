@@ -57,7 +57,7 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 # 浏览器打开 http://localhost:8501
 ```
 
-演示流程见 [docs/DEMO.md](docs/DEMO.md)；开发排期见 [SPEC 第 12 节](docs/SPEC.md)。
+演示流程见 [docs/DEMO.md](docs/DEMO.md)；镜像命名、推送与回滚见 [docs/DEPLOY.md](docs/DEPLOY.md)；开发排期见 [SPEC 第 12 节](docs/SPEC.md)。
 
 ## 录屏清单（5 分钟）
 

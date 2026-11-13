@@ -1,3 +1,6 @@
+# 固定 compose 项目名：镜像/网络/卷名不再依赖仓库目录名
+name: cs-agent
+
 services:
   mysql:
     image: mysql:8.4
@@ -21,6 +24,8 @@ services:
 
   java-service:
     build: ./java-service
+    # 固定镜像名 + 版本：部署/推送/回滚都引用这个 tag，不用自动生成的目录名
+    image: ghcr.io/actionboy11/ecom-cs-agent-java:0.1.0
     container_name: cs-agent-java
     ports:
       - "8080:8080"
@@ -47,7 +52,7 @@ services:
       # 上下文是仓库根：Dockerfile 需要 data/policies
       context: .
       dockerfile: python-agent/Dockerfile
-    image: cs-agent-python:local
+    image: ghcr.io/actionboy11/ecom-cs-agent-python:0.1.0
     container_name: cs-agent-python
     ports:
       - "8000:8000"
@@ -80,7 +85,7 @@ services:
       start_period: 30s
 
   workbench:
-    image: cs-agent-python:local
+    image: ghcr.io/actionboy11/ecom-cs-agent-python:0.1.0
     container_name: cs-agent-ui
     command:
       - streamlit
