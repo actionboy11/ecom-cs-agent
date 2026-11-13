@@ -184,6 +184,27 @@ def test_legacy_thread_without_owner_cannot_be_claimed(app_env) -> None:
         assert _chat(client, "t-legacy", _token("buyer_a", 1)) == 404
 
 
+def test_cross_user_access_reports_denied_to_audit(app_env, monkeypatch) -> None:
+    """Agent 侧越权要写 MySQL 审计；这里断言确实向上报了（不校验远端落库）。"""
+    import app.api.routes as routes
+
+    calls: list[dict] = []
+
+    async def fake_record(**kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(routes.audit_client, "record_thread_denied", fake_record)
+
+    with TestClient(app) as client:
+        assert _chat(client, "t-audit", _token("buyer_a", 1)) == 200
+        assert _chat(client, "t-audit", _token("buyer_b", 2)) == 404
+
+    assert calls, "越权时应上报 DENIED 审计"
+    assert calls[0]["thread_id"] == "t-audit"
+    assert calls[0]["reason"] == "not_owner"
+    assert calls[0]["actor"] == "buyer_b"
+
+
 def test_empty_thread_id_is_rejected(app_env) -> None:
     with TestClient(app) as client:
         resp = client.post(

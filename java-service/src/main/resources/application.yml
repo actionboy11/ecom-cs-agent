@@ -21,6 +21,8 @@ mybatis-plus:
     banner: false
 
 app:
+  # 内部审计接口令牌：Agent 上报越权事件用；为空则接口拒绝所有请求
+  internal-audit-token: ${INTERNAL_AUDIT_TOKEN:}
   jwt:
     # 生产必须通过环境变量 JWT_SECRET 注入；留空则进程内生成一次性密钥（重启即失效）
     secret: ${JWT_SECRET:}

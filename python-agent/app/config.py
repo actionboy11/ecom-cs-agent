@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     # --- 鉴权：与 Java 服务共用同一密钥，用于校验对话接口的 JWT ---
     jwt_secret: str = ""
 
+    # --- 内部审计令牌：Python 向 Java 上报越权事件时使用 ---
+    internal_audit_token: str = ""
+
     # --- 知识层（Chroma 本地持久化 + 本地 embedding） ---
     chroma_dir: str = "data/chroma"
     embedding_model: str = "bge-m3"

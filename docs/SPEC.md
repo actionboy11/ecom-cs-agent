@@ -218,7 +218,8 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | `QUERY_AFTER_SALES_LIST` | 查询售后列表 | ✅ 已实现 |
 | `REVIEW_AFTER_SALES` | 坐席审批售后申请 | ✅ 已实现 |
 | `READ_AUDIT` | 坐席读取审计 | ✅ 已实现 |
-| `LOGIN` | 登录成功 / 失败 | ⏳ 切片 6 |
+| `THREAD_ACCESS` | Agent 侧会话越权（他人 thread） | ✅ 已实现（内部审计接口上报） |
+| `LOGIN` | 登录成功 / 失败 | ✅ 已实现 |
 
 **会话保留（§5.5）补充约定**：没有归属记录的遗留会话（升级前产生、已被访问控制拒绝）无法判定活跃时间，因此**不按 TTL 等待，在任何一次清理中直接删除**；它们已不可访问，保留只会占用空间。
 

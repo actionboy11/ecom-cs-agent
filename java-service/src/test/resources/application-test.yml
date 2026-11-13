@@ -7,6 +7,8 @@ spring:
     password: ${MYSQL_PASSWORD:csagent}
 
 app:
+  # 内部审计接口的测试令牌
+  internal-audit-token: test-internal-token
   jwt:
     # 仅测试用固定密钥，保证同一轮测试内令牌可验证；生产走环境变量
     secret: test-only-secret-key-for-ci-32-bytes!

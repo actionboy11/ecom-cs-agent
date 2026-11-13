@@ -34,6 +34,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/health", "/api/products/**", "/error").permitAll()
+                        // 内部审计：由 X-Internal-Token 自行校验，不走用户 JWT
+                        .requestMatchers("/api/internal/**").permitAll()
                         .requestMatchers("/api/audit/**").hasRole("CS_AGENT")
                         // SPEC §6.2：售后只能由买家发起；审批只能由坐席执行
                         .requestMatchers(HttpMethod.POST, "/api/after-sales").hasRole("CUSTOMER")

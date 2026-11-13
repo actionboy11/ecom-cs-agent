@@ -22,7 +22,7 @@ from app.graph.builder import get_graph
 from app.observability.trace import trace_event
 from app.security.auth import CurrentUser, require_user
 from app.session.thread_store import ThreadOwnerStore
-from app.tools import business_api
+from app.tools import audit_client, business_api
 
 router = APIRouter(prefix="/api/v1", tags=["agent"])
 
@@ -34,9 +34,16 @@ def get_thread_store(request: Request) -> ThreadOwnerStore:
     return store
 
 
-def _deny(thread_id: str, user: CurrentUser, reason: str) -> None:
-    """越权与不存在统一 404，并留下 DENIED 轨迹（ADR-0001）。"""
+async def _deny(thread_id: str, user: CurrentUser, reason: str, path: str = "") -> None:
+    """越权与不存在统一 404，并留下 DENIED 轨迹（trace + MySQL 审计）。"""
     trace_event(thread_id, "auth", "denied", {"user": user.username, "role": user.role, "reason": reason})
+    await audit_client.record_thread_denied(
+        actor=user.username,
+        role=user.role,
+        thread_id=thread_id,
+        path=path or "/api/v1/chat",
+        reason=reason,
+    )
     raise HTTPException(status_code=404, detail="会话不存在")
 
 
@@ -47,24 +54,25 @@ async def _ensure_thread_access(
     *,
     bind_if_new: bool,
     allow_agent: bool,
+    path: str = "",
 ) -> None:
     """会话归属校验：不存在与不属于当前用户统一 404（ADR-0001）。"""
     owner = await store.owner_of(thread_id)
     if owner is None:
         if not bind_if_new:
-            _deny(thread_id, user, "resume_unknown")
+            await _deny(thread_id, user, "resume_unknown", path)
         # 历史遗留：checkpointer 里有状态但没有归属记录（#13 之前的会话）。
         # 这种 thread 一律拒绝，避免任何人凭 thread_id 直接接管历史对话。
         if await store.has_checkpoint(thread_id):
-            _deny(thread_id, user, "legacy_unowned")
+            await _deny(thread_id, user, "legacy_unowned", path)
         if not await store.bind(thread_id, user.user_id):
             # 并发首聊：另一方先绑定成功，此时必须按归属重新判定，不能继续
             owner = await store.owner_of(thread_id)
             if owner != user.user_id:
-                _deny(thread_id, user, "bind_race")
+                await _deny(thread_id, user, "bind_race", path)
         return
     if owner != user.user_id and not (allow_agent and user.is_agent):
-        _deny(thread_id, user, "not_owner")
+        await _deny(thread_id, user, "not_owner", path)
     await store.touch(thread_id)
 
 
@@ -118,7 +126,9 @@ async def chat(
     user: CurrentUser = Depends(require_user),
     store: ThreadOwnerStore = Depends(get_thread_store),
 ) -> ChatResponse:
-    await _ensure_thread_access(store, req.thread_id, user, bind_if_new=True, allow_agent=False)
+    await _ensure_thread_access(
+        store, req.thread_id, user, bind_if_new=True, allow_agent=False, path="/api/v1/chat"
+    )
     graph = get_graph()
     trace_event(req.thread_id, "api", "chat_request", {"message": req.message[:200]})
 
@@ -147,7 +157,9 @@ async def chat_stream(
     user: CurrentUser = Depends(require_user),
     store: ThreadOwnerStore = Depends(get_thread_store),
 ) -> StreamingResponse:
-    await _ensure_thread_access(store, req.thread_id, user, bind_if_new=True, allow_agent=False)
+    await _ensure_thread_access(
+        store, req.thread_id, user, bind_if_new=True, allow_agent=False, path="/api/v1/chat/stream"
+    )
     graph = get_graph()
 
     async def gen() -> AsyncIterator[str]:
@@ -179,7 +191,10 @@ async def resume(
     store: ThreadOwnerStore = Depends(get_thread_store),
 ) -> ChatResponse:
     # 坐席审批恢复不受归属限制；买家只能恢复自己的会话
-    await _ensure_thread_access(store, thread_id, user, bind_if_new=False, allow_agent=True)
+    await _ensure_thread_access(
+        store, thread_id, user, bind_if_new=False, allow_agent=True,
+        path=f"/api/v1/threads/{thread_id}/resume",
+    )
     graph = get_graph()
     try:
         result = await graph.ainvoke(
