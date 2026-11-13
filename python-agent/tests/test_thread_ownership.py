@@ -72,7 +72,8 @@ def test_buyer_cannot_resume_someone_elses_thread(app_env) -> None:
             json={"approved": True},
             headers=_auth(_token("buyer_b", 2)),
         )
-        assert resp.status_code == 404
+        # 恢复是坐席权限：买家一律 403，不区分会话归属，避免成为存在性探针
+        assert resp.status_code == 403
 
 
 def test_agent_may_resume_for_approval(app_env) -> None:
@@ -125,17 +126,19 @@ def test_stream_endpoint_requires_auth(app_env) -> None:
         assert resp.status_code == 401
 
 
-def test_unknown_thread_resume_is_404(app_env) -> None:
+def test_unknown_thread_resume_is_403_for_buyer(app_env) -> None:
+    """买家连恢复权限都没有，所以「会话是否存在」也不该被区分。"""
     with TestClient(app) as client:
         resp = client.post(
             "/api/v1/threads/never-existed/resume",
             json={"approved": True},
             headers=_auth(_token("buyer_a", 1)),
         )
-        assert resp.status_code == 404
+        assert resp.status_code == 403
 
 
-def test_owner_can_resume_their_own_handoff(app_env) -> None:
+def test_owner_cannot_resume_their_own_handoff(app_env) -> None:
+    """买家不能自己批准转人工：否则传 approved=true 就绕过人工审批。"""
     with TestClient(app) as client:
         buyer_a = _token("buyer_a", 1)
         chat = client.post(
@@ -151,7 +154,7 @@ def test_owner_can_resume_their_own_handoff(app_env) -> None:
             json={"approved": True},
             headers=_auth(buyer_a),
         )
-        assert resumed.status_code == 200
+        assert resumed.status_code == 403
 
 
 def test_stream_rejects_other_users_thread(app_env) -> None:

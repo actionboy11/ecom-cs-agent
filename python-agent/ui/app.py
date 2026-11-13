@@ -92,16 +92,7 @@ def render_chat() -> None:
             st.write(message["content"])
 
     if st.session_state.pending_handoff:
-        if st.button("人工已处理，继续会话"):
-            try:
-                reply = api.resume(st.session_state.token, st.session_state.thread_id, True)
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": format_reply(reply)}
-                )
-                st.session_state.pending_handoff = False
-                st.rerun()
-            except WorkbenchError as exc:
-                st.error(f"恢复失败：{exc}")
+        st.info("已转接人工坐席，请等待坐席处理。")
 
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
     text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
@@ -161,6 +152,28 @@ def render_agent_pane() -> None:
                     st.rerun()
                 except WorkbenchError as exc:
                     st.error(f"审批失败：{exc}")
+
+    with st.expander("恢复转接会话", expanded=False):
+        handoff_thread = st.text_input("会话 ID", key="handoff_thread")
+        handoff_approved = st.radio(
+            "审批结果", ["通过", "驳回"], horizontal=True, key="handoff_result"
+        ) == "通过"
+        handoff_note = st.text_input("审批备注", key="handoff_note")
+        if st.button("恢复会话", key="handoff_submit"):
+            if not handoff_thread.strip():
+                st.error("请填写会话 ID")
+            else:
+                try:
+                    reply = api.resume(
+                        st.session_state.token,
+                        handoff_thread.strip(),
+                        handoff_approved,
+                        handoff_note,
+                    )
+                    st.session_state.notice = f"已恢复：{format_reply(reply)[:80]}"
+                    st.rerun()
+                except WorkbenchError as exc:
+                    st.error(f"恢复失败：{exc}")
 
     with st.expander("最近审计", expanded=False):
         try:

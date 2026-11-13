@@ -85,7 +85,7 @@ JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
 
 - 演示账号：`buyer_a` / `cs_agent`，密码均为 `demo123`（种子数据）
 - 非坐席账号登录时，审批区显示「不可用」而不是只隐藏按钮
-- 人工转接后可点「人工已处理，继续会话」（调用 `/resume`）
+- 人工转接后买家只能等待；坐席在右栏「恢复转接会话」里审批并恢复（`/resume` 仅坐席可用）
 - UI 只做编排：接口逻辑在 `ui/api_client.py`，纯逻辑在 `ui/logic.py`，都有单测；页面用 `streamlit.testing` 做加载测试
 
 
