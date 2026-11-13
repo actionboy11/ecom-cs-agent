@@ -50,12 +50,26 @@ Java: Spring Boot 3 + Spring Security(JWT) + MyBatis-Plus
 ## 快速开始
 
 ```bash
-cp .env.example .env        # 填 DEEPSEEK_API_KEY
-docker compose up -d         # MySQL + Java + Python + UI
-open http://localhost:8501   # Streamlit
+cp .env.example .env        # 填 DEEPSEEK_API_KEY / JWT_SECRET / INTERNAL_AUDIT_TOKEN
+docker compose up -d         # MySQL + Java + Python Agent
+uv run streamlit run ui/app.py   # 工作台（当前本地运行，S7-2 并入 compose）
 ```
 
 本地开发见 [SPEC 第 12 节](docs/SPEC.md)。
+
+## 工作台（Streamlit）
+
+左右两栏：左栏买家对话（走 Agent），右栏坐席审批与审计（走 Java REST）。
+
+```bash
+JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8010 \
+  uv run streamlit run ui/app.py
+```
+
+- 演示账号：`buyer_a` / `cs_agent`，密码均为 `demo123`（种子数据）
+- 非坐席账号登录时，审批区显示「不可用」而不是只隐藏按钮
+- UI 只做编排，接口逻辑在 `ui/api_client.py`，有 MockTransport 单测；页面本身用 `streamlit.testing` 做加载测试
+
 
 ## 评测（持续更新）
 
