@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from collections.abc import AsyncIterator
 from typing import Any
@@ -26,6 +27,7 @@ from app.session.thread_store import ThreadOwnerStore
 from app.tools import audit_client, business_api
 
 router = APIRouter(prefix="/api/v1", tags=["agent"])
+logger = logging.getLogger(__name__)
 
 
 def get_thread_store(request: Request) -> ThreadOwnerStore:
@@ -119,6 +121,46 @@ async def health() -> dict[str, Any]:
         "business_api": await business_api.healthy(),
         "ts": int(time.time()),
     }
+
+
+@router.get("/handoffs")
+async def list_handoffs(
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> list[dict[str, Any]]:
+    """坐席转接待办：扫描最近会话里处于 interrupt 的那些（只返回元数据）。"""
+    if not user.is_agent:
+        raise HTTPException(status_code=403, detail="仅坐席可查看转接待办")
+
+    graph = get_graph()
+    pending: list[dict[str, Any]] = []
+    for row in await store.list_recent(limit=50):
+        thread_id = row["thread_id"]
+        try:
+            state = await graph.aget_state(_config(thread_id, user.token))
+        except Exception as exc:  # noqa: BLE001 - 单个坏会话不能拖垮列表
+            logger.debug("跳过无法读取的会话 %s: %s", thread_id, exc)
+            continue
+        tasks = getattr(state, "tasks", ()) or ()
+        if not any(getattr(task, "interrupts", ()) for task in tasks):
+            continue
+        values = state.values or {}
+        messages = values.get("messages") or []
+        last_user = next(
+            (m.content for m in reversed(messages) if getattr(m, "type", "") == "human"), ""
+        )
+        pending.append(
+            {
+                "thread_id": thread_id,
+                "user_id": row["user_id"],
+                "reason": values.get("handoff_reason"),
+                "summary": values.get("handoff_summary"),
+                "last_message": str(last_user)[:120],
+                "turn_count": values.get("turn_count", 0),
+                "updated_at": row["updated_at"],
+            }
+        )
+    return pending
 
 
 @router.post("/chat", response_model=ChatResponse)

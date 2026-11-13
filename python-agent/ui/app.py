@@ -89,6 +89,30 @@ def render_chat() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
+    with st.expander("我的售后进度", expanded=False):
+        try:
+            mine = api.my_after_sales(st.session_state.token)
+        except WorkbenchError as exc:
+            st.error(f"售后加载失败：{exc}")
+            mine = []
+        if mine:
+            st.dataframe(
+                [
+                    {
+                        "请求编号": row.get("requestNo", ""),
+                        "订单": row.get("orderNo", ""),
+                        "类型": row.get("type", ""),
+                        "状态": row.get("status", ""),
+                        "创建时间": row.get("createdAt", ""),
+                    }
+                    for row in mine
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+        else:
+            st.caption("暂无售后请求；可在对话里发起退款/退货/换货")
+
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
     text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
     if st.button("发送", type="primary") and text.strip():
@@ -146,15 +170,32 @@ def render_agent_pane() -> None:
                 except WorkbenchError as exc:
                     st.error(f"审批失败：{exc}")
 
-    with st.expander("恢复转接会话", expanded=False):
-        handoff_thread = st.text_input("会话 ID", key="handoff_thread")
+    with st.expander("转接待办（人工转接）", expanded=True):
+        try:
+            handoffs = api.handoffs(st.session_state.token)
+        except WorkbenchError as exc:
+            st.error(f"转接待办加载失败：{exc}")
+            handoffs = []
+
+        if handoffs:
+            options = {
+                f"{row['thread_id']} · {row.get('reason') or '投诉'} · "
+                f"{(row.get('last_message') or '')[:20]}": row["thread_id"]
+                for row in handoffs
+            }
+            selected_handoff = st.selectbox("待恢复会话", list(options))
+            handoff_thread = options[selected_handoff]
+        else:
+            st.caption("暂无转接待办；也可手动输入会话 ID")
+            handoff_thread = st.text_input("会话 ID", key="handoff_thread")
+
         handoff_approved = st.radio(
             "转接审批结果", ["通过", "驳回"], horizontal=True, key="handoff_result"
         ) == "通过"
         handoff_note = st.text_input("审批备注", key="handoff_note")
         if st.button("恢复会话", key="handoff_submit"):
             if not handoff_thread.strip():
-                st.error("请填写会话 ID")
+                st.error("请选择或填写会话 ID")
             else:
                 try:
                     api.resume(

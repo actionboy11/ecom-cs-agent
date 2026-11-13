@@ -86,6 +86,18 @@ class WorkbenchApi:
             )
         return self._json(resp)
 
+    def my_after_sales(self, token: str) -> list[dict]:
+        """买家查自己的售后请求（Java 侧按 user_id 过滤）。"""
+        with self._client(self.java_base) as client:
+            resp = client.get("/api/after-sales", headers=self._auth(token))
+        return self._json(resp)
+
+    def handoffs(self, token: str) -> list[dict]:
+        """坐席转接待办（Python 侧扫描 interrupt）。"""
+        with self._client(self.agent_base) as client:
+            resp = client.get("/api/v1/handoffs", headers=self._auth(token))
+        return self._json(resp)
+
     def review(self, token: str, request_no: str, approved: bool, note: str) -> dict:
         with self._client(self.java_base) as client:
             resp = client.post(

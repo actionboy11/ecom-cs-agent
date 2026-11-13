@@ -87,6 +87,22 @@ def test_resume_posts_to_thread_endpoint() -> None:
     assert "true" in seen["body"]
 
 
+def test_handoffs_and_my_after_sales_endpoints() -> None:
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        if request.url.path.endswith("/handoffs"):
+            return httpx.Response(200, json=[{"thread_id": "t-1", "reason": "complaint"}])
+        return httpx.Response(200, json=[{"requestNo": "AS1", "status": "PENDING"}])
+
+    api = _api(handler)
+
+    assert api.handoffs("jwt")[0]["thread_id"] == "t-1"
+    assert "/api/v1/handoffs" in seen["path"]
+    assert api.my_after_sales("jwt")[0]["requestNo"] == "AS1"
+
+
 def test_pending_and_audit_hit_java_endpoints() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if "after-sales" in str(request.url):

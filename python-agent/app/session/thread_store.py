@@ -76,5 +76,17 @@ class ThreadOwnerStore:
         )
         await self._conn.commit()
 
+    async def list_recent(self, limit: int = 50) -> list[dict]:
+        """最近活跃的会话（供坐席转接待办扫描；只返回元数据）。"""
+        async with self._conn.execute(
+            "SELECT thread_id, user_id, updated_at FROM thread_owner "
+            "ORDER BY updated_at DESC LIMIT ?",
+            (limit,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [
+            {"thread_id": r[0], "user_id": int(r[1]), "updated_at": r[2]} for r in rows
+        ]
+
     async def close(self) -> None:
         await self._conn.close()

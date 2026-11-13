@@ -175,6 +175,7 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | POST | `/api/v1/chat` | `{message, thread_id?}` + Bearer |
 | POST | `/api/v1/chat/stream` | SSE |
 | POST | `/api/v1/threads/{id}/resume` | 坐席审批后恢复 |
+| GET | `/api/v1/handoffs` | 坐席查看转接待办（扫描最近会话的 interrupt，只返回元数据） |
 | GET | `/api/v1/health` | 含 Java/MySQL 连通性 |
 
 ---
