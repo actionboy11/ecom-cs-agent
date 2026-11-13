@@ -32,7 +32,10 @@ dist/
 Thumbs.db
 
 # ---- Runtime data ----
-data/
+# 政策库是代码依赖（检索/演示/测试都要），必须进仓库；其余运行数据忽略
+data/*
+!data/policies/
+!data/policies/**
 traces/
 **/traces/
 eval/reports/

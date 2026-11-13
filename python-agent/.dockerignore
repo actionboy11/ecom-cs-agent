@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .pytest-tmp/
 .pytest_cache/
-data/
+# 政策库要进镜像；其余运行数据不打包
+data/*
+!data/policies/
+!data/policies/**
 traces/
 .tmp/
