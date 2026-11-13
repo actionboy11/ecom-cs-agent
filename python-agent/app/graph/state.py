@@ -36,9 +36,8 @@ class AgentState(TypedDict, total=False):
     refusal: str | None
     safety_reply: str | None
 
-    # 轮次上限：turn_count > 10 时走转人工兜底（SPEC §8）
+    # 轮次上限：turn_count > 10 时转人工兜底（SPEC §8）
     turn_count: int
-    turn_limit: bool
 
     # 最终回复
     reply: str

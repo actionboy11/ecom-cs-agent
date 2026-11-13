@@ -33,9 +33,9 @@ POLICY_TEXT = """【售后政策摘要】
 ORDER_NO_PATTERN = re.compile(r"(CS\d{7,})", re.IGNORECASE)
 SKU_PATTERN = re.compile(r"(SKU\d{4})", re.IGNORECASE)
 
-# SPEC §8：单会话最多 10 轮，超过后不再调用模型/工具，直接转人工兜底
+# SPEC §8：单会话最多 10 轮，超过后不调模型/工具，直接转人工（真实挂起）
 MAX_TURNS = 10
-TURN_LIMIT_REPLY = "本次会话轮次已达上限（10 轮），已为您转接人工坐席，请稍候。"
+TURN_LIMIT_REPLY = f"本次会话轮次已达上限（{MAX_TURNS} 轮），已为您转接人工客服，请稍候。"
 
 # 用户很少报 SKU，多数说商品名；这里做一层最简映射（真实系统应查商品目录）
 PRODUCT_SKU_HINTS: dict[str, str] = {
@@ -148,27 +148,9 @@ def _keyword_classify(text: str) -> Classification:
 async def classify(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     text = _last_user_text(state["messages"])
-
-    # SPEC §8：turn_count > 10 走转人工兜底，且不再调用模型/工具
     turn_count = int(state.get("turn_count") or 0) + 1
-    if turn_count > MAX_TURNS:
-        with node_span(thread_id, "classify", user_text=text[:200]) as info:
-            info["source"] = "turn_limit"
-            info["turn_count"] = turn_count
-        return {
-            "turn_count": turn_count,
-            "turn_limit": True,
-            "intent": "other",
-            "needs_human": True,
-            "refusal": None,
-            "safety_reply": None,
-            "order_no": None,
-            "sku": None,
-            "reason": None,
-            "confidence": 1.0,
-        }
 
-    # SPEC §9：拒答在分类之前、模型之前判定，避免为拒答问题调用模型
+    # SPEC §9：拒答在分类之前、模型之前判定（轮次上限也排在拒答之后）
     refusal = _refusal(text)
     if refusal:
         with node_span(thread_id, "classify", user_text=text[:200]) as info:
@@ -176,10 +158,27 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["intent"] = "other"
         return {
             "turn_count": turn_count,
-            "turn_limit": False,
             "intent": "other",
             "refusal": refusal,
             "safety_reply": None,
+            "tool_result": None,
+            "order_no": None,
+            "sku": None,
+            "reason": None,
+            "confidence": 1.0,
+        }
+
+    # SPEC §8：turn_count > 10 转人工（真实挂起），且不再调用模型/工具
+    if turn_count > MAX_TURNS:
+        with node_span(thread_id, "classify", user_text=text[:200]) as info:
+            info["source"] = "turn_limit"
+            info["turn_count"] = turn_count
+        return {
+            "turn_count": turn_count,
+            "intent": "other",
+            "refusal": None,
+            "safety_reply": None,
+            "tool_result": None,
             "order_no": None,
             "sku": None,
             "reason": None,
@@ -212,10 +211,10 @@ async def classify(state: AgentState) -> dict[str, Any]:
         return {
             "intent": parsed.intent,
             "turn_count": turn_count,
-            "turn_limit": False,
-            # 每轮清空拒答状态，避免上一轮的拒答话术粘住后续对话
+            # 每轮清空拒答状态与上轮工具结果，避免旧数据串到本轮回复
             "refusal": None,
             "safety_reply": None,
+            "tool_result": None,
             "order_no": parsed.order_no
             or (ORDER_NO_PATTERN.search(text).group(1).upper() if ORDER_NO_PATTERN.search(text) else None),
             "sku": parsed.sku or _guess_sku(text),
@@ -233,10 +232,11 @@ async def refuse(state: AgentState) -> dict[str, Any]:
 
 
 def route_after_classify(state: AgentState) -> str:
-    if state.get("turn_limit"):
-        return "respond"
     if state.get("refusal"):
         return "refuse"
+    # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
+    if int(state.get("turn_count") or 0) > MAX_TURNS:
+        return "handoff"
     intent = state.get("intent", "other")
     if intent == "complaint":
         return "handoff"
@@ -300,11 +300,12 @@ async def handoff_prepare(state: AgentState) -> dict[str, Any]:
     正确姿势是「先落盘、再挂起」——这也是生产 Agent 恢复时能无缝续上的关键。
     """
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    with node_span(thread_id, "handoff_prepare"):
-        text = "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。"
+    over_limit = int(state.get("turn_count") or 0) > MAX_TURNS
+    with node_span(thread_id, "handoff_prepare", reason="turn_limit" if over_limit else "complaint"):
+        text = TURN_LIMIT_REPLY if over_limit else "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。"
         return {
             "needs_human": True,
-            "handoff_reason": state.get("intent", "complaint"),
+            "handoff_reason": "turn_limit" if over_limit else state.get("intent", "complaint"),
             "handoff_summary": _last_user_text(state["messages"]),
             "reply": text,
             "messages": [AIMessage(content=text)],
@@ -410,12 +411,6 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
-    if state.get("turn_limit"):
-        text = TURN_LIMIT_REPLY
-        with node_span(thread_id, "respond", intent="turn_limit") as info:
-            info["source"] = "template"
-            info["reason"] = "turn_limit"
-        return {"reply": text, "messages": [AIMessage(content=text)]}
     if state.get("refusal") and state.get("safety_reply"):
         text = str(state["safety_reply"])
         with node_span(thread_id, "respond", intent="refusal") as info:

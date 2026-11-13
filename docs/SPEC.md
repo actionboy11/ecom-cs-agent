@@ -240,8 +240,10 @@ START → classify → route:
   ├─ policy → respond(引用政策)
   ├─ complaint → handoff_prepare → await_human(interrupt) → respond
   ├─ refuse(越权/竞品/无关/违规) → respond(标准话术)
-  └─ turn_count > 10 → respond(转人工兜底)
+  └─ turn_count > 10 → handoff_prepare → await_human(interrupt) → respond(转人工兜底)
 ```
+
+> 拒答优先于轮次上限：拒答不调用模型/工具，不需要提前转人工。轮次上限走**真实挂起**（与投诉同一套 `handoff`），坐席可通过 `/resume` 恢复。
 
 检索：**每个需要生成回复的节点前**执行 `retrieve(query, top_k=3)`，相似度 ≥ 0.35 才把政策片段拼进上下文，回复末尾附 `[P0x]`。
 
