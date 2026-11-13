@@ -8,6 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY pyproject.toml ./
 COPY app ./app
 COPY eval ./eval
+COPY ui ./ui
 
 RUN pip install --no-cache-dir .
 

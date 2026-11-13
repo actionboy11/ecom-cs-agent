@@ -41,5 +41,29 @@ services:
       - .env
     environment:
       BUSINESS_API_BASE: http://java-service:8080
+    volumes:
+      # 会话状态库与 Chroma 索引需要跨重启保留
+      - ./data:/app/data
     depends_on:
       - java-service
+
+  workbench:
+    build: ./python-agent
+    container_name: cs-agent-ui
+    command:
+      - streamlit
+      - run
+      - ui/app.py
+      - --server.port=8501
+      - --server.address=0.0.0.0
+      - --server.headless=true
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      JAVA_BASE: http://java-service:8080
+      AGENT_BASE: http://python-agent:8000
+    depends_on:
+      - java-service
+      - python-agent
