@@ -1,5 +1,7 @@
 # 电商售后客服 Agent（E-commerce After-Sales Support Agent）
 
+![CI](https://github.com/actionboy11/ecom-cs-agent/actions/workflows/ci.yml/badge.svg)
+
 **一个能上生产的售后客服 Agent 参考实现**：LangGraph 编排 + MCP 工具化 + 资源级鉴权 + 三层可复现评测。
 
 > 不是又一个 RAG 客服 demo。这个项目回答一个具体问题：**当 AI 客服出错时，系统怎么办？**
