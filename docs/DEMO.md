@@ -47,6 +47,8 @@ docker compose up -d      # 等 compose ps 里 mysql/java/python/workbench 都 h
 | 审批列表为空 | 先做 S2 生成 PENDING；仍为空则 `docker compose logs java-service` |
 | 右侧报「无法连接」 | `docker compose ps` 看依赖是否 healthy；`docker compose logs python-agent` |
 | 越权演示返回 401 | JWT 2 小时过期，重新登录 |
+| `docker pull` 报 `failed size validation` | 本机代理会损坏 Docker Hub 层；改用镜像源拉取后打 tag：`docker pull swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim && docker tag ... python:3.12-slim`（maven / eclipse-temurin / mysql 同理） |
+| `docker compose up` 后 Java 起不来 | 先 `docker compose logs java-service`；确认 `.env` 里 `JWT_SECRET` 与 `INTERNAL_AUDIT_TOKEN` 已设置，Java 与 Python 必须共用同一个 `JWT_SECRET` |
 
 ## 录屏清单
 
