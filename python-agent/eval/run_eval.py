@@ -23,6 +23,7 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
+from app.config import settings
 from app.graph.builder import build_graph
 from app.tools import business_api
 from eval.metrics import citation_stats, extract_citations, is_citation_hit
@@ -91,6 +92,8 @@ async def run_case(graph, case: dict, token: str = "") -> dict:
     citations = extract_citations(reply)
     retrieved = list(result.get("policy_refs") or [])
     expected = case.get("expect_citation")
+    # 报告必须能区分「模型生成」与「模板兜底」：没有 Key 时整场都是兜底链路
+    chain = "llm" if settings.deepseek_api_key else "template"
 
     return {
         "id": case["id"],
@@ -104,6 +107,7 @@ async def run_case(graph, case: dict, token: str = "") -> dict:
         "policy_refs": retrieved,
         "citation_expected": expected,
         "safety_category": case.get("safety_category"),
+        "chain": chain,
         "handoff": bool(interrupt),
         "elapsed_ms": elapsed_ms,
     }

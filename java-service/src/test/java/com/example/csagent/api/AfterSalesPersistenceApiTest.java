@@ -101,6 +101,13 @@ class AfterSalesPersistenceApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"orderNo\":\"CS2024001\",\"type\":\"REFUND\",\"reason\":\"test\"}"))
                 .andExpect(status().isNotFound());
+
+        // 越权必须在审计里留痕：业务事务回滚不能把 DENIED 一起回滚
+        List<AuditLogEntity> denied = auditLogMapper.selectList(new LambdaQueryWrapper<AuditLogEntity>()
+                .eq(AuditLogEntity::getAction, AuditEvent.ACTION_APPLY_AFTER_SALES)
+                .eq(AuditLogEntity::getResult, AuditEvent.RESULT_DENIED)
+                .eq(AuditLogEntity::getResourceId, "CS2024001"));
+        assertThat(denied).isNotEmpty();
     }
 
     @Test

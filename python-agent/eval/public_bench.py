@@ -36,12 +36,13 @@ def adapt(row: dict, index: int) -> dict:
     question = str(row.get("question") or row.get("input") or "").strip()
     answer = str(row.get("answer") or "")
     tokens = [t for t in ("7", "15", "48", "72", "1-3", "3-7", "工作日", "天") if t in answer][:2]
+    must_contain = tokens if tokens else ([answer[:8]] if answer else [])
     return {
         "id": f"pub-{index:03d}",
         "input": question,
         "expect_intent": guess_intent(question),
         "expect_tool": False,
-        "must_contain": tokens or [answer[:8]] if answer else [],
+        "must_contain": must_contain,
         "provenance": "public",
     }
 

@@ -7,11 +7,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 /**
  * 写审计。只记录操作元数据，调用方负责保证 detail 里不含对话正文。
+ *
+ * <p>审计用独立事务（REQUIRES_NEW）：即使业务事务因越权/校验失败回滚，
+ * DENIED 记录也必须留下来，否则「越权要留痕」无法保证。
  */
 @Service
 public class AuditService {
@@ -42,6 +47,7 @@ public class AuditService {
      * 审计失败不能改变业务结果：否则「审计库挂了」会变成新的存在性探针
      * （越权请求 500、不存在请求 404，两者又可区分了）。
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordQuietly(AuditEvent event) {
         try {
             record(event);
