@@ -71,6 +71,24 @@ def _guess_sku(text: str) -> str | None:
     return None
 
 
+def _safety_refusal(text: str) -> str | None:
+    """四类拒答：越权靠统一 404 文案，这里拦截「敏感信息 / 超范围 / 诱导编造」。"""
+    if any(k in text for k in ("编一个", "编个", "虚构", "随便编", "假设一个订单")):
+        return "我不能编造订单或政策信息；请提供真实单号，我帮您查实际状态。"
+
+    if any(k in text for k in ("手机号", "电话", "地址", "身份证")) and any(
+        k in text for k in ("他的", "她的", "别人的", "对方的", "买家", "客户", "其他人")
+    ):
+        return "抱歉，我不能提供或确认其他用户的联系方式、地址等个人信息。"
+
+    if any(
+        k in text for k in ("写诗", "写一首", "写代码", "翻译", "天气", "笑话", "股票", "故事", "做饭")
+    ):
+        return "我只负责订单、物流和售后政策相关的问题；其他问题建议咨询对应的服务渠道。"
+
+    return None
+
+
 def _keyword_classify(text: str) -> Classification:
     """没有 API Key 或模型超时的兜底路径：保证本地永远能跑通。
 
@@ -137,6 +155,17 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["fallback_reason"] = str(exc)[:200]
 
         info["intent"] = parsed.intent
+        refusal = _safety_refusal(text)
+        if refusal:
+            info["safety"] = "refused"
+            return {
+                "intent": "other",
+                "safety_reply": refusal,
+                "order_no": None,
+                "sku": None,
+                "reason": None,
+                "confidence": parsed.confidence,
+            }
         return {
             "intent": parsed.intent,
             "order_no": parsed.order_no
@@ -267,6 +296,9 @@ def _template_reply(state: AgentState) -> str:
         return "登录状态已过期，请重新登录后再试。"
     if "MISSING_SLOT" in str(tool_result.get("error", "")):
         return "请补充订单号或售后原因后再试。"
+    if "NOT_FOUND" in str(tool_result.get("error", "")):
+        # 越权与不存在同文案（ADR-0001），不确认资源是否存在
+        return "该订单不存在，请核对订单号后重试。"
     if tool_result.get("error"):
         return f"抱歉，暂时查不到该订单：{tool_result['error']}。您可以稍后重试或转人工。"
 
@@ -296,6 +328,9 @@ def _template_reply(state: AgentState) -> str:
             f"您的{type_label}申请已提交，单号 {tool_result.get('requestNo')}，"
             f"当前状态 {tool_result.get('status')}，审核通过后 1-3 个工作日处理。"
         )
+    if intent == "policy" and not state.get("knowledge"):
+        # 检索无命中时不能拿整段政策摘要冒充答案
+        return "没有查到对应的政策条款，建议转人工确认，避免给您错误信息。"
     # 检索无命中时 knowledge 为 None，必须回落到政策摘要，不能把 None 塞给模型
     return state.get("knowledge") or POLICY_TEXT
 
@@ -309,6 +344,9 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    if state.get("safety_reply"):
+        text = str(state["safety_reply"])
+        return {"reply": text, "messages": [AIMessage(content=text)]}
     if state.get("needs_human"):
         # 转人工的答复已在 handoff_prepare 里写好；这里只在「人工驳回」时改写。
         if state.get("handoff_approved") is False:
@@ -330,6 +368,17 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         "policy": POLICY_TEXT,
     }
     template = _template_reply(view)
+
+    # 拒答与工具错误必须措辞确定：不交给模型改写（否则同一错误会出现不同说法）
+    if (state.get("tool_result") or {}).get("error") or (
+        state.get("intent") == "policy" and not knowledge
+    ):
+        return {
+            "reply": template,
+            "messages": [AIMessage(content=template)],
+            "knowledge": knowledge,
+            "policy_refs": policy_refs,
+        }
 
     with node_span(thread_id, "respond", intent=state.get("intent")) as info:
         info["retrieval"] = retrieval.source

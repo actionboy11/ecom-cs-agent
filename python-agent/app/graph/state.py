@@ -32,6 +32,9 @@ class AgentState(TypedDict, total=False):
     handoff_summary: str | None
     handoff_approved: bool | None
 
+    # 安全拒答：命中后直接返回，不进入工具/检索
+    safety_reply: str | None
+
     # 最终回复
     reply: str
 
