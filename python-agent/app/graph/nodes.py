@@ -342,8 +342,8 @@ def _template_reply(state: AgentState) -> str:
     intent = state.get("intent", "other")
     tool_result = state.get("tool_result") or {}
 
-    # 政策回答优先于上一轮遗留的工具错误：多轮里 tool_result 不会被清空，
-    # 先判 error 会把「退货政策几天」答成「请提供订单号」。
+    # 政策回答优先于工具错误：classify 每轮会清空 tool_result，
+    # 但同一轮里工具报错后再问政策的情况仍需兜底，先判 error 会把政策答成「请提供订单号」。
     if intent == "policy" and state.get("knowledge"):
         refs = state.get("policy_refs") or []
         suffix = f"\n\n依据：{'、'.join(f'[{c}]' for c in refs)}" if refs else ""
@@ -418,11 +418,25 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             info["reason"] = "refusal"
         return {"reply": text, "messages": [AIMessage(content=text)]}
     if state.get("needs_human"):
-        # 转人工的答复已在 handoff_prepare 里写好；这里只在「人工驳回」时改写。
+        is_turn_limit = state.get("handoff_reason") == "turn_limit"
         if state.get("handoff_approved") is False:
-            text = "已记录您的投诉，我们会安排专员在 24 小时内回访，感谢您的反馈。"
-            return {"reply": text, "messages": [AIMessage(content=text)]}
-        return {}
+            text = (
+                "人工未接入，请继续描述您的问题。"
+                if is_turn_limit
+                else "已记录您的投诉，我们会安排专员在 24 小时内回访，感谢您的反馈。"
+            )
+        else:
+            text = "人工已接入，请继续描述您的问题。"
+        updates: dict[str, Any] = {
+            "reply": text,
+            "messages": [AIMessage(content=text)],
+            "needs_human": False,
+        }
+        if is_turn_limit:
+            # 重置轮次，避免恢复后第 12 条消息立刻再次挂起
+            updates["turn_count"] = 0
+            updates["handoff_reason"] = None
+        return updates
 
     # SPEC §8：生成回复前先检索；只有分数过阈值的片段进入上下文
     retrieval = await asyncio.to_thread(knowledge_store.retrieve, _last_user_text(state["messages"]))
