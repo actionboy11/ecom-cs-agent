@@ -166,6 +166,7 @@ audit_logs(id BIGINT PK AUTO_INCREMENT, ts DATETIME, actor VARCHAR(50), actor_ro
 | POST | `/api/after-sales/{no}/review` | CS_AGENT | `{approved, note}` |
 | GET | `/api/after-sales?status=` | CUSTOMER / CS_AGENT | 买家仅自己；坐席全部；可按状态过滤（切片 2） |
 | GET | `/api/audit?limit=` | CS_AGENT | 审计列表 |
+| POST | `/api/internal/audit` | 内部服务（`X-Internal-Token`） | 仅接受 `THREAD_ACCESS / THREAD / DENIED`，detail 只含 `reason`；path 必须 `/api/v1/` 开头；未配置令牌一律 401 |
 
 ### 6.3 Agent 接口
 

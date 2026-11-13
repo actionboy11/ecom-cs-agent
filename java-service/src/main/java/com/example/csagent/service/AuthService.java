@@ -29,6 +29,12 @@ public class AuthService {
         this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
     }
 
+    private static final int AUDIT_FIELD_MAX = 50;
+
+    private static String clip(String value) {
+        return value == null || value.length() <= AUDIT_FIELD_MAX ? value : value.substring(0, AUDIT_FIELD_MAX);
+    }
+
     public AuthResponse login(String username, String password) {
         UserEntity user = userMapper.selectOne(
                 new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getUsername, username));
@@ -37,13 +43,13 @@ public class AuthService {
         if (user == null || !passwordMatches) {
             // 失败原因统一为 credentials：不区分「用户不存在」与「密码错误」，避免审计成为枚举渠道
             auditService.recordQuietly(AuditEvent.of(
-                    username, "", "LOGIN", "USER", username,
+                    clip(username), "", AuditEvent.ACTION_LOGIN, "USER", clip(username),
                     AuditEvent.RESULT_DENIED, "/api/auth/login",
                     Map.of("reason", "credentials")));
             throw new InvalidCredentialsException();
         }
         auditService.recordQuietly(AuditEvent.of(
-                user.getUsername(), user.getRole(), "LOGIN", "USER", user.getUsername(),
+                user.getUsername(), "", AuditEvent.ACTION_LOGIN, "USER", user.getUsername(),
                 AuditEvent.RESULT_OK, "/api/auth/login", Map.of()));
         return new AuthResponse(jwtService.issue(user), user.getRole(), user.getDisplayName(), user.getId());
     }

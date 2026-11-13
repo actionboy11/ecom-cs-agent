@@ -11,17 +11,29 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Map;
 
 /**
- * 内部审计写入接口：供 Agent（Python）上报越权等事件。
+ * 内部审计写入接口：供 Agent（Python）上报**会话越权**事件。
  *
- * <p>不是公开 API：必须携带内部令牌（`X-Internal-Token`），令牌为空时接口一律 401。
- * 审计只接收元数据，调用方不得传对话正文/密码/令牌（ADR-0005）。
+ * <p>安全约束（评审后收窄）：
+ * <ul>
+ *   <li>只允许写 `THREAD_ACCESS / DENIED / THREAD`，其它 action 一律 400，
+ *       避免持有内部令牌的调用方伪造 `LOGIN` 等审计；</li>
+ *   <li>path 必须是 `/api/v1/` 开头的业务路径，防止写入假的请求路径；</li>
+ *   <li>detail 只接受 `reason` 一个字段，不接收对话正文；</li>
+ *   <li>令牌常量时间比较；未配置令牌时一律 401。</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/api/internal")
 public class InternalAuditController {
+
+    static final String ALLOWED_ACTION = "THREAD_ACCESS";
+    static final String ALLOWED_RESOURCE = "THREAD";
+    static final String ALLOWED_RESULT = "DENIED";
 
     private final AuditService auditService;
     private final String expectedToken;
@@ -48,14 +60,54 @@ public class InternalAuditController {
     public ResponseEntity<Map<String, String>> record(
             @RequestHeader(name = "X-Internal-Token", required = false) String token,
             @RequestBody InternalAuditRequest request) {
-        if (expectedToken.isBlank() || token == null || !expectedToken.equals(token)) {
+        if (!tokenMatches(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "UNAUTHORIZED", "message", "内部审计令牌无效"));
         }
+        String invalid = validate(request);
+        if (invalid != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", invalid));
+        }
         auditService.recordQuietly(AuditEvent.of(
-                request.actor(), request.actorRole(), request.action(), request.resourceType(),
-                request.resourceId(), request.result(), request.path(),
-                request.detail() == null ? Map.of() : request.detail()));
+                clip(request.actor().trim()), request.actorRole() == null ? "" : clip(request.actorRole()),
+                ALLOWED_ACTION, ALLOWED_RESOURCE, clip(request.resourceId()), ALLOWED_RESULT,
+                request.path(), Map.of("reason", reasonOf(request.detail()))));
         return ResponseEntity.ok(Map.of("status", "recorded"));
+    }
+
+    /** 审计列是 VARCHAR(50)：超长会插入失败并被静默吞掉，这里先截断。 */
+    private static String clip(String value) {
+        return value == null || value.length() <= 50 ? value : value.substring(0, 50);
+    }
+
+    private boolean tokenMatches(String token) {
+        if (expectedToken.isBlank() || token == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                expectedToken.getBytes(StandardCharsets.UTF_8), token.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String validate(InternalAuditRequest request) {
+        if (request.actor() == null || request.actor().isBlank()) {
+            return "actor 不能为空";
+        }
+        if (request.resourceId() == null || request.resourceId().isBlank()) {
+            return "resourceId 不能为空";
+        }
+        if (!ALLOWED_ACTION.equals(request.action())
+                || !ALLOWED_RESOURCE.equals(request.resourceType())
+                || !ALLOWED_RESULT.equals(request.result())) {
+            return "该接口只接受 THREAD_ACCESS / THREAD / DENIED";
+        }
+        if (request.path() == null || !request.path().startsWith("/api/v1/")) {
+            return "path 必须是 /api/v1/ 开头的业务路径";
+        }
+        return null;
+    }
+
+    private String reasonOf(Map<String, Object> detail) {
+        Object reason = detail == null ? null : detail.get("reason");
+        return reason == null ? "not_owner" : String.valueOf(reason);
     }
 }

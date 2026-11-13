@@ -66,4 +66,43 @@ class InternalAuditTest {
                         .content(body("t-audit-3")))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void rejects_forged_action() throws Exception {
+        String forged = """
+                {"actor":"x","actorRole":"CUSTOMER","action":"LOGIN","resourceType":"THREAD",
+                 "resourceId":"t-forge","result":"OK","path":"/api/v1/chat","detail":{}}
+                """;
+        mockMvc.perform(post("/api/internal/audit")
+                        .header("X-Internal-Token", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(forged))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejects_non_business_path() throws Exception {
+        String bad = body("t-path").replace("/api/v1/chat", "/evil");
+        mockMvc.perform(post("/api/internal/audit")
+                        .header("X-Internal-Token", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void long_actor_is_clipped_instead_of_lost() throws Exception {
+        String longActor = "a".repeat(80);
+        mockMvc.perform(post("/api/internal/audit")
+                        .header("X-Internal-Token", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("t-long").replace("\"buyer_b\"", "\"" + longActor + "\"")))
+                .andExpect(status().isOk());
+
+        var rows = auditLogMapper.selectList(new LambdaQueryWrapper<AuditLogEntity>()
+                .eq(AuditLogEntity::getAction, "THREAD_ACCESS")
+                .eq(AuditLogEntity::getResourceId, "t-long"));
+        assertThat(rows).isNotEmpty();
+        assertThat(rows.get(rows.size() - 1).getActor()).hasSize(50);
+    }
 }

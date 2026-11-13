@@ -80,7 +80,7 @@
 
 | 功能 | 入口 | 处理链 | 落库/留痕 | 失败处理 |
 |---|---|---|---|---|
-| **登录** | `POST /api/auth/login` | BCrypt 校验 → 签发 JWT（2h，含 role/userId） | **不写审计**（SPEC 未要求；避免把凭据尝试存进日志） | 401，不区分「用户不存在/密码错」 |
+| **登录** | `POST /api/auth/login` | BCrypt 校验 → 签发 JWT（2h，含 role/userId） | `audit_logs(LOGIN)`：只记 username 与结果，失败原因统一 `credentials`；不记密码/令牌 | 401，不区分「用户不存在/密码错」 |
 | **查订单** | `GET /api/orders/{no}` | JWT 解析 user_id → 归属校验 → MyBatis 查询 | `audit_logs(QUERY_ORDER)` | 非本人 → **404** + `DENIED` 审计 |
 | **订单列表** | `GET /api/orders` | 买家查自己；坐席查全部 | 审计 | 401 |
 | **查物流** | `GET /api/logistics/{no}` | 归属校验 → 物流 + 轨迹（子查询） | 审计 | 同订单 |
