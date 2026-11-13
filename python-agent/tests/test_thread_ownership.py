@@ -200,6 +200,25 @@ def test_agent_can_reject_handoff(app_env) -> None:
         assert resp.json()["needs_human"] is False
 
 
+def test_agent_can_approve_handoff(app_env) -> None:
+    with TestClient(app) as client:
+        chat = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-approve", "message": "我要投诉"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        assert chat.json()["needs_human"] is True
+
+        resp = client.post(
+            "/api/v1/threads/t-approve/resume",
+            json={"approved": True, "note": "已处理"},
+            headers=_auth(_token("cs_agent", 4, "ROLE_CS_AGENT")),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["needs_human"] is False
+        assert resp.json()["reply"]
+
+
 def test_stream_rejects_other_users_thread(app_env) -> None:
     with TestClient(app) as client:
         assert _chat(client, "t-stream", _token("buyer_a", 1)) == 200

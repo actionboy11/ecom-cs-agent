@@ -11,10 +11,10 @@ def can_review(role: str | None) -> bool:
 
 
 def format_reply(reply: dict) -> str:
-    """把 Agent 响应拼成展示文本：正文 + 转人工提示。"""
+    """把 Agent 响应拼成展示文本：正文 + 人工转接提示（买家只能等待）。"""
     content = str(reply.get("reply") or "")
     if reply.get("needs_human"):
-        content += "\n\n_（已转接人工坐席，可在右侧处理）_"
+        content += "\n\n_（已转接人工坐席，请等待处理）_"
     return content
 
 

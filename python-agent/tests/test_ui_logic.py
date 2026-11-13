@@ -17,6 +17,9 @@ def test_format_reply_appends_transfer_hint() -> None:
     assert format_reply({"reply": "已查询", "needs_human": False}) == "已查询"
     text = format_reply({"reply": "已转接", "needs_human": True})
     assert "已转接" in text and "转接人工" in text
+    # 买家没有审批权，提示只能是「等待处理」，不能写「可在右侧处理」
+    assert "等待处理" in text
+    assert "右侧" not in text
 
 
 def test_format_reply_handles_empty_reply() -> None:
