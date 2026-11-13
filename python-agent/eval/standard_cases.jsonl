@@ -1,0 +1,600 @@
+{"id": "std-001", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-002", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-003", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-004", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-005", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-006", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-007", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-008", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-009", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-010", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-011", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-012", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-013", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-014", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-015", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-016", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-017", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-018", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-019", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-020", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-021", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-022", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-023", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-024", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-025", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-026", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-027", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-028", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-029", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-030", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-031", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-032", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-033", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-034", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-035", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-036", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-037", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-038", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-039", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-040", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-041", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-042", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-043", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-044", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-045", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-046", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-047", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-048", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-049", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-050", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-051", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-052", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-053", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-054", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-055", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-056", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-057", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-058", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-059", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-060", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-061", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-062", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-063", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-064", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-065", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-066", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-067", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-068", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-069", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-070", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-071", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-072", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-073", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-074", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-075", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-076", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-077", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-078", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-079", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-080", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-081", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-082", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-083", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-084", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-085", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-086", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-087", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-088", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-089", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-090", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-091", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-092", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-093", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-094", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-095", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-096", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-097", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-098", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-099", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-100", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-101", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-102", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-103", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-104", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-105", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-106", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-107", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-108", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-109", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-110", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-111", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-112", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-113", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-114", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-115", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-116", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-117", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-118", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-119", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-120", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-121", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-122", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-123", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-124", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-125", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-126", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-127", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-128", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-129", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-130", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-131", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-132", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-133", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-134", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-135", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-136", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-137", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-138", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-139", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-140", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-141", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-142", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-143", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-144", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-145", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-146", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-147", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-148", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-149", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-150", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-151", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-152", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-153", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-154", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-155", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-156", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-157", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-158", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-159", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-160", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-161", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-162", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-163", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-164", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-165", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-166", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-167", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-168", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-169", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-170", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-171", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-172", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-173", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-174", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-175", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-176", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-177", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-178", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-179", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-180", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-181", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-182", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-183", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-184", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-185", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-186", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-187", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-188", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-189", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-190", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-191", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-192", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-193", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-194", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-195", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-196", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-197", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-198", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-199", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-200", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-201", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-202", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-203", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-204", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-205", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-206", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-207", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-208", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-209", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-210", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-211", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-212", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-213", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-214", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-215", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-216", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-217", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-218", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-219", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-220", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-221", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-222", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-223", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-224", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-225", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-226", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-227", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-228", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-229", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-230", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-231", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-232", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-233", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-234", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-235", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-236", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-237", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-238", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-239", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-240", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-241", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-242", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-243", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-244", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-245", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-246", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-247", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-248", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-249", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-250", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-251", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-252", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-253", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-254", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-255", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-256", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-257", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-258", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-259", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-260", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-261", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-262", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-263", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-264", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-265", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-266", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-267", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-268", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-269", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-270", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-271", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-272", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-273", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-274", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-275", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-276", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-277", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-278", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-279", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-280", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-281", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-282", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-283", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-284", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-285", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-286", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-287", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-288", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-289", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-290", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-291", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-292", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-293", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-294", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-295", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-296", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-297", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-298", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-299", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-300", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-301", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-302", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-303", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-304", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-305", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-306", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-307", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-308", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-309", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-310", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-311", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-312", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-313", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-314", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-315", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-316", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-317", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-318", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-319", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-320", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-321", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-322", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-323", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-324", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-325", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-326", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-327", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-328", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-329", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-330", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-331", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-332", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-333", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-334", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-335", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-336", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-337", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-338", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-339", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-340", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-341", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-342", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-343", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-344", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-345", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-346", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-347", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-348", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-349", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-350", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-351", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-352", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-353", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-354", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-355", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-356", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-357", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-358", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-359", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-360", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-361", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-362", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-363", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-364", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-365", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-366", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-367", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-368", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-369", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-370", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-371", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-372", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-373", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-374", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-375", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-376", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-377", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-378", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-379", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-380", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-381", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-382", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-383", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-384", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-385", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-386", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-387", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-388", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-389", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-390", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-391", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-392", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-393", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-394", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-395", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-396", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-397", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-398", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-399", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-400", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-401", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-402", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-403", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-404", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-405", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-406", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-407", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-408", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-409", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-410", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-411", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-412", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-413", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-414", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-415", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-416", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-417", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-418", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-419", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-420", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-421", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-422", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-423", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-424", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-425", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-426", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-427", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-428", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-429", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-430", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-431", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-432", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-433", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-434", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-435", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-436", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-437", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-438", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-439", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-440", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-441", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-442", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-443", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-444", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-445", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-446", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-447", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-448", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-449", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-450", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-451", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-452", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-453", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-454", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-455", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-456", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-457", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-458", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-459", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-460", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-461", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-462", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-463", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-464", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-465", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-466", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-467", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-468", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-469", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-470", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-471", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-472", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-473", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-474", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-475", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-476", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-477", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-478", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-479", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-480", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-481", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-482", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-483", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-484", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-485", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-486", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-487", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-488", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-489", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-490", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-491", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-492", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-493", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-494", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-495", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-496", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-497", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-498", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-499", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-500", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-501", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-502", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-503", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-504", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-505", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-506", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-507", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-508", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-509", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-510", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-511", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-512", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-513", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-514", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-515", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-516", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-517", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-518", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-519", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-520", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-521", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-522", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-523", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-524", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-525", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-526", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-527", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-528", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-529", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-530", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-531", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-532", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-533", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-534", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-535", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-536", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-537", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-538", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-539", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-540", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-541", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-542", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-543", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-544", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-545", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-546", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-547", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-548", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-549", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-550", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-551", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-552", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-553", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-554", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-555", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-556", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-557", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-558", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-559", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-560", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-561", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-562", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-563", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-564", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-565", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-566", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-567", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-568", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-569", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-570", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-571", "input": "查一下订单 CS2024001 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-572", "input": "CS2024001 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-573", "input": "CS2024001 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-574", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-575", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-576", "input": "查一下订单 CS2024002 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-577", "input": "CS2024002 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-578", "input": "CS2024002 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-579", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-580", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-581", "input": "查一下订单 CS2024003 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-582", "input": "CS2024003 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-583", "input": "CS2024003 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-584", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-585", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-586", "input": "查一下订单 CS2024004 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-587", "input": "CS2024004 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-588", "input": "CS2024004 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-589", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-590", "input": "SKU1001 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-591", "input": "查一下订单 CS2024005 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-592", "input": "CS2024005 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-593", "input": "CS2024005 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-594", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-595", "input": "SKU1002 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}
+{"id": "std-596", "input": "查一下订单 CS2024006 的状态", "expect_intent": "order_query", "expect_tool": true, "must_contain": ["订单"], "provenance": "local-equivalent"}
+{"id": "std-597", "input": "CS2024006 到哪了", "expect_intent": "logistics", "expect_tool": true, "must_contain": ["物流"], "provenance": "local-equivalent"}
+{"id": "std-598", "input": "CS2024006 我要退款", "expect_intent": "refund", "expect_tool": true, "must_contain": ["退款"], "provenance": "local-equivalent"}
+{"id": "std-599", "input": "退货政策是几天", "expect_intent": "policy", "expect_tool": false, "must_contain": ["7"], "provenance": "local-equivalent"}
+{"id": "std-600", "input": "SKU1003 有货吗", "expect_intent": "product_info", "expect_tool": true, "must_contain": ["库存"], "provenance": "local-equivalent"}

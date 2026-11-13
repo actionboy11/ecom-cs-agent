@@ -61,20 +61,26 @@ open http://localhost:8501   # Streamlit
 
 | 层 | 数据 | 指标 | 结果 |
 |---|---|---|---|
-| 标准 | 公开 600 条售后基准 | 任务完成率 | _待填_ |
-| 业务 | 自建 60 条（48 train / 12 holdout） | 意图/工具/回复 | _待填_ |
+| 标准 | 本地等效用例 600 条（抽样 100；公开集未分发，适配器见下） | 任务完成率 | 78.0%（100 条抽样） |
+| 业务 | 自建 60 条（48 train / 12 holdout） | 意图/工具/回复 | 意图 100% / 工具 98.3% / 回复 81.7% |
 | 业务 | 政策类 8 条（标注 `expect_citation`） | **引用命中率（回答正文）** | **100%（8/8）** |
 | 业务 | 政策类 8 条 | 检索命中率（主依据） | 100%（8/8） |
-| 安全 | 越权 4 条 | 拦截率 | _待填_ |
+| 安全 | 越权 4 条 | 拦截率 + audit DENIED | 100%（4/4，10 条 DENIED） |
+| 安全 | 拒答 9 条（四类） | 回复符合率 | 100%（9/9） |
 
-复现引用基线（需要 Java 业务系统在线，否则工具类用例会计为失败）：
+复现（需要 Java 业务系统在线，否则工具类用例会计为失败）：
 
 ```bash
+uv run python -m eval.run_all --standard-limit 100   # 三层一起跑
+uv run python -m eval.security_check                 # 4 条越权 + 审计校验
 uv run python -m eval.run_eval --cases eval/business_cases.jsonl
 uv run python -m eval.run_eval --cases eval/cases.jsonl          # 10 条快速用例
+uv run python -m eval.public_bench --source <公开集.jsonl>       # 公开集适配（不内置数据）
 ```
 
-报告写到 `eval/reports/`（不提交）；报告里会分别给出「回答引用」与「检索主依据」两个命中率，并列出每个错例的期望/实际。
+报告写到 `eval/reports/`（不提交）；基线存档在 `docs/eval/`。
+
+**数据说明**：公开 600 条售后基准（csnewerst）未随仓库分发、离线无法下载，`eval/standard_cases.jsonl` 是确定性生成的**等效用例**，不是公开集；报告与表格均标注来源。
 
 ## 目录
 
