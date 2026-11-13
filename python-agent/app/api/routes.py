@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -128,39 +129,43 @@ async def list_handoffs(
     user: CurrentUser = Depends(require_user),
     store: ThreadOwnerStore = Depends(get_thread_store),
 ) -> list[dict[str, Any]]:
-    """坐席转接待办：扫描最近会话里处于 interrupt 的那些（只返回元数据）。"""
+    """坐席转接待办：只返回元数据（不含买家消息正文）。"""
     if not user.is_agent:
         raise HTTPException(status_code=403, detail="仅坐席可查看转接待办")
 
     graph = get_graph()
-    pending: list[dict[str, Any]] = []
-    for row in await store.list_recent(limit=50):
+
+    # 老库没有 pending 标记：把待办与最近会话合并，避免已挂起会话被新聊天挤掉
+    candidates: dict[str, dict[str, Any]] = {
+        row["thread_id"]: row for row in await store.list_recent(limit=50)
+    }
+    for row in await store.list_pending(limit=50):
+        candidates.setdefault(row["thread_id"], row)
+
+    async def inspect(row: dict[str, Any]) -> dict[str, Any] | None:
         thread_id = row["thread_id"]
         try:
             state = await graph.aget_state(_config(thread_id, user.token))
         except Exception as exc:  # noqa: BLE001 - 单个坏会话不能拖垮列表
-            logger.debug("跳过无法读取的会话 %s: %s", thread_id, exc)
-            continue
+            logger.warning("跳过无法读取的会话 %s: %s", thread_id, exc)
+            return None
         tasks = getattr(state, "tasks", ()) or ()
         if not any(getattr(task, "interrupts", ()) for task in tasks):
-            continue
+            # 已在别处恢复：顺手自愈，避免待办越积越多
+            await store.clear_pending(thread_id)
+            return None
+        await store.mark_pending(thread_id)
         values = state.values or {}
-        messages = values.get("messages") or []
-        last_user = next(
-            (m.content for m in reversed(messages) if getattr(m, "type", "") == "human"), ""
-        )
-        pending.append(
-            {
-                "thread_id": thread_id,
-                "user_id": row["user_id"],
-                "reason": values.get("handoff_reason"),
-                "summary": values.get("handoff_summary"),
-                "last_message": str(last_user)[:120],
-                "turn_count": values.get("turn_count", 0),
-                "updated_at": row["updated_at"],
-            }
-        )
-    return pending
+        return {
+            "thread_id": thread_id,
+            "user_id": row["user_id"],
+            "reason": values.get("handoff_reason"),
+            "turn_count": values.get("turn_count", 0),
+            "pending_at": row.get("pending_at"),
+        }
+
+    results = await asyncio.gather(*(inspect(row) for row in candidates.values()))
+    return [item for item in results if item is not None]
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -183,6 +188,8 @@ async def chat(
         _config(req.thread_id, user.token),
     )
     interrupt = _extract_interrupt(result)
+    if interrupt is not None:
+        await store.mark_pending(req.thread_id)
     return ChatResponse(
         thread_id=req.thread_id,
         reply=result.get("reply", ""),
@@ -213,6 +220,9 @@ async def chat_stream(
                 stream_mode="updates",
             ):
                 for node, update in chunk.items():
+                    if node == "__interrupt__":
+                        # 流式接口也要记待办，否则坐席列表看不到
+                        await store.mark_pending(req.thread_id)
                     payload = json.dumps(
                         {"node": node, "update": update},
                         ensure_ascii=False,
@@ -252,6 +262,8 @@ async def resume(
         raise HTTPException(status_code=409, detail=f"该会话当前没有待处理的人工任务: {exc}") from exc
 
     interrupt = _extract_interrupt(result)
+    if interrupt is None:
+        await store.clear_pending(thread_id)
     return ChatResponse(
         thread_id=thread_id,
         reply=result.get("reply", ""),

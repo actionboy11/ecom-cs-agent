@@ -101,6 +101,7 @@ def test_handoffs_and_my_after_sales_endpoints() -> None:
     assert api.handoffs("jwt")[0]["thread_id"] == "t-1"
     assert "/api/v1/handoffs" in seen["path"]
     assert api.my_after_sales("jwt")[0]["requestNo"] == "AS1"
+    assert seen["path"].endswith("/api/after-sales")
 
 
 def test_pending_and_audit_hit_java_endpoints() -> None:

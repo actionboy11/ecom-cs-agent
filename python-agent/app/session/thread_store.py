@@ -15,9 +15,18 @@ CREATE TABLE IF NOT EXISTS thread_owner (
     thread_id  TEXT PRIMARY KEY,
     user_id    INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    pending    INTEGER NOT NULL DEFAULT 0,
+    pending_at TEXT
 )
 """
+
+# 老库升级：CREATE TABLE IF NOT EXISTS 不会补列
+_MIGRATIONS = (
+    "ALTER TABLE thread_owner ADD COLUMN pending INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE thread_owner ADD COLUMN pending_at TEXT",
+    "CREATE INDEX IF NOT EXISTS idx_thread_pending ON thread_owner (pending, pending_at DESC)",
+)
 
 
 class ThreadOwnerStore:
@@ -34,6 +43,12 @@ class ThreadOwnerStore:
         await conn.execute("PRAGMA busy_timeout=5000")
         store = cls(conn)
         await conn.execute(_SCHEMA)
+        for migration in _MIGRATIONS:
+            try:
+                await conn.execute(migration)
+            except aiosqlite.OperationalError:
+                # 列/索引已存在
+                pass
         await conn.commit()
         return store
 
@@ -70,17 +85,53 @@ class ThreadOwnerStore:
         return cursor.rowcount == 1
 
     async def touch(self, thread_id: str) -> None:
+        # 毫秒精度：同一秒内的多次操作也能稳定排序
         await self._conn.execute(
-            "UPDATE thread_owner SET updated_at = datetime('now') WHERE thread_id = ?",
+            "UPDATE thread_owner SET updated_at = strftime('%Y-%m-%d %H:%M:%f','now') "
+            "WHERE thread_id = ?",
             (thread_id,),
         )
         await self._conn.commit()
 
+    async def mark_pending(self, thread_id: str) -> None:
+        """挂起等人工：显式记 pending，避免被新会话挤出「最近 50」。"""
+        await self._conn.execute(
+            "UPDATE thread_owner SET pending = 1, "
+            "pending_at = strftime('%Y-%m-%d %H:%M:%f','now') WHERE thread_id = ?",
+            (thread_id,),
+        )
+        await self._conn.commit()
+
+    async def clear_pending(self, thread_id: str) -> None:
+        await self._conn.execute(
+            "UPDATE thread_owner SET pending = 0, pending_at = NULL WHERE thread_id = ?",
+            (thread_id,),
+        )
+        await self._conn.commit()
+
+    async def list_pending(self, limit: int = 50) -> list[dict]:
+        """待人工处理的会话（按挂起时间，最新在前）。"""
+        async with self._conn.execute(
+            "SELECT thread_id, user_id, updated_at, pending_at FROM thread_owner "
+            "WHERE pending = 1 ORDER BY pending_at DESC, thread_id DESC LIMIT ?",
+            (limit,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+        return [
+            {
+                "thread_id": r[0],
+                "user_id": int(r[1]),
+                "updated_at": r[2],
+                "pending_at": r[3],
+            }
+            for r in rows
+        ]
+
     async def list_recent(self, limit: int = 50) -> list[dict]:
-        """最近活跃的会话（供坐席转接待办扫描；只返回元数据）。"""
+        """最近活跃的会话（供调试/巡检；只返回元数据）。"""
         async with self._conn.execute(
             "SELECT thread_id, user_id, updated_at FROM thread_owner "
-            "ORDER BY updated_at DESC LIMIT ?",
+            "ORDER BY updated_at DESC, thread_id DESC LIMIT ?",
             (limit,),
         ) as cursor:
             rows = await cursor.fetchall()

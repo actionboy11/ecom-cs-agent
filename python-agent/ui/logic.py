@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 ROLE_AGENT = "CS_AGENT"
+ROLE_CUSTOMER = "CUSTOMER"
 
 
 def can_review(role: str | None) -> bool:
     """与 API 侧同口径：兼容 Spring 的 ROLE_ 前缀，大小写不敏感。"""
     return bool(role) and role.upper().removeprefix("ROLE_") == ROLE_AGENT
+
+
+def is_customer(role: str | None) -> bool:
+    """买家专属面板（售后进度）只对 CUSTOMER 展示，避免坐席看到「我的」全部数据。"""
+    return bool(role) and role.upper().removeprefix("ROLE_") == ROLE_CUSTOMER
 
 
 def format_reply(reply: dict) -> str:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ui.logic import audit_row, can_review, format_reply
+from ui.logic import audit_row, can_review, format_reply, is_customer
 
 
 def test_only_agent_can_review() -> None:
@@ -11,6 +11,13 @@ def test_only_agent_can_review() -> None:
     assert can_review("cs_agent") is True
     assert can_review("CUSTOMER") is False
     assert can_review(None) is False
+
+
+def test_only_customer_sees_my_after_sales() -> None:
+    assert is_customer("CUSTOMER") is True
+    assert is_customer("ROLE_CUSTOMER") is True
+    assert is_customer("CS_AGENT") is False
+    assert is_customer(None) is False
 
 
 def test_format_reply_appends_transfer_hint() -> None:

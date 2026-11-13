@@ -16,10 +16,10 @@ import streamlit as st
 
 try:  # 作为包导入（pytest / 其他模块）
     from ui.api_client import WorkbenchApi, WorkbenchError
-    from ui.logic import audit_row, can_review, format_reply
+    from ui.logic import audit_row, can_review, format_reply, is_customer
 except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
     from api_client import WorkbenchApi, WorkbenchError
-    from logic import audit_row, can_review, format_reply
+    from logic import audit_row, can_review, format_reply, is_customer
 
 JAVA_BASE = os.getenv("JAVA_BASE", "http://localhost:8080")
 AGENT_BASE = os.getenv("AGENT_BASE", "http://localhost:8000")
@@ -89,29 +89,32 @@ def render_chat() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    with st.expander("我的售后进度", expanded=False):
-        try:
-            mine = api.my_after_sales(st.session_state.token)
-        except WorkbenchError as exc:
-            st.error(f"售后加载失败：{exc}")
-            mine = []
-        if mine:
-            st.dataframe(
-                [
-                    {
-                        "请求编号": row.get("requestNo", ""),
-                        "订单": row.get("orderNo", ""),
-                        "类型": row.get("type", ""),
-                        "状态": row.get("status", ""),
-                        "创建时间": row.get("createdAt", ""),
-                    }
-                    for row in mine
-                ],
-                width="stretch",
-                hide_index=True,
-            )
-        else:
-            st.caption("暂无售后请求；可在对话里发起退款/退货/换货")
+    if is_customer(st.session_state.user.get("role")):
+        with st.expander("我的售后进度", expanded=False):
+            try:
+                mine = api.my_after_sales(st.session_state.token)
+            except WorkbenchError as exc:
+                st.error(f"售后加载失败：{exc}")
+                mine = []
+            if mine:
+                if len(mine) > 50:
+                    st.caption(f"共 {len(mine)} 条，仅显示最近 50 条")
+                st.dataframe(
+                    [
+                        {
+                            "请求编号": row.get("requestNo", ""),
+                            "订单": row.get("orderNo", ""),
+                            "类型": row.get("type", ""),
+                            "状态": row.get("status", ""),
+                            "创建时间": row.get("createdAt", ""),
+                        }
+                        for row in mine[:50]
+                    ],
+                    width="stretch",
+                    hide_index=True,
+                )
+            else:
+                st.caption("暂无售后请求；可在对话里发起退款/退货/换货")
 
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
     text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
@@ -177,30 +180,34 @@ def render_agent_pane() -> None:
             st.error(f"转接待办加载失败：{exc}")
             handoffs = []
 
+        manual_thread = st.text_input("或手动输入会话 ID", key="handoff_manual")
+        handoff_thread = manual_thread.strip()
         if handoffs:
             options = {
-                f"{row['thread_id']} · {row.get('reason') or '投诉'} · "
-                f"{(row.get('last_message') or '')[:20]}": row["thread_id"]
+                f"{row['thread_id']} · {row.get('reason') or '投诉'}": row["thread_id"]
                 for row in handoffs
             }
-            selected_handoff = st.selectbox("待恢复会话", list(options))
-            handoff_thread = options[selected_handoff]
-        else:
-            st.caption("暂无转接待办；也可手动输入会话 ID")
-            handoff_thread = st.text_input("会话 ID", key="handoff_thread")
+            selected_handoff = st.selectbox(
+                "待恢复会话", ["（手填上方 ID）"] + list(options), key="handoff_select"
+            )
+            if selected_handoff in options:
+                handoff_thread = options[selected_handoff]
 
         handoff_approved = st.radio(
-            "转接审批结果", ["通过", "驳回"], horizontal=True, key="handoff_result"
+            "转接审批结果",
+            ["通过", "驳回"],
+            horizontal=True,
+            key=f"handoff_result_{handoff_thread}",
         ) == "通过"
-        handoff_note = st.text_input("审批备注", key="handoff_note")
+        handoff_note = st.text_input("审批备注", key=f"handoff_note_{handoff_thread}")
         if st.button("恢复会话", key="handoff_submit"):
-            if not handoff_thread.strip():
+            if not handoff_thread:
                 st.error("请选择或填写会话 ID")
             else:
                 try:
                     api.resume(
                         st.session_state.token,
-                        handoff_thread.strip(),
+                        handoff_thread,
                         handoff_approved,
                         handoff_note,
                     )
@@ -208,6 +215,8 @@ def render_agent_pane() -> None:
                     st.rerun()
                 except WorkbenchError as exc:
                     st.error(f"恢复失败：{exc}")
+        if not handoffs:
+            st.caption("暂无转接待办")
 
     with st.expander("最近审计", expanded=False):
         try:

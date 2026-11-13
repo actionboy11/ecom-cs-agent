@@ -43,6 +43,7 @@
 | `POST /api/v1/chat` | 仅自己的 thread，否则 **404** | 403（坐席不能接管买家对话） | 401 |
 | `POST /api/v1/chat/stream` | 同 `/chat` | 403 | 401 |
 | `POST /api/v1/threads/{id}/resume` | 404（无恢复权限，按越权处理） | ✅ 任意 thread 的待审转接（审批是坐席职责） | 401 |
+| `GET /api/v1/handoffs` | 403（坐席专属列表） | ✅ 只看待办元数据 | 401 |
 
 > **说明**：`/chat` 允许首次创建 thread，因此 404 只表示「已存在但无权」；`thread_id` 由客户端生成、不是敏感标识，这个信息量可接受。`resume` 仅坐席可用，买家调用与不存在/无权同样返回 404，并写 `DENIED` 审计。
 
