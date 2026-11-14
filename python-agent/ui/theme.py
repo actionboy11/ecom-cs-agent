@@ -1,10 +1,6 @@
 """售后调度台的视觉层：运单纸 + 邮路绿 + 印章。
 
-设计方向（见 README/前端说明）：把工作台当成一张**调度运单**——
-纸面是有灰绿的档案纸，分隔靠铅线而不是卡片阴影，强调色是邮路绿，
-唯一的暖色是「印章朱」，只给越权/驳回这类需要人停一下的状态。
-
-刻意避开：奶油底 + 陶土橙（生成式默认）、统一圆角卡片堆、全大写小标签。
+单窗口工作台：一个居中的对话卡片，不再分栏、不再显示无关提示。
 """
 
 from __future__ import annotations
@@ -46,167 +42,102 @@ html, body, [data-testid="stAppViewContainer"] {{
   color: var(--ink);
   font-family: var(--sans);
 }}
-[data-testid="stAppViewContainer"] > .main {{
-  background-image: linear-gradient(180deg, rgba(31,92,74,.05), transparent 320px);
-}}
 header[data-testid="stHeader"] {{ background: transparent; }}
 #MainMenu, footer,
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
 [data-testid="stToolbar"], [data-testid="stAppDeployButton"],
 [data-testid="stStatusWidget"] {{ display: none !important; }}
-.block-container {{ padding-top: 2.2rem; max-width: 1180px; }}
 
-h1, h2, h3, [data-testid="stMarkdownContainer"] h1,
-[data-testid="stMarkdownContainer"] h2, [data-testid="stMarkdownContainer"] h3 {{
-  font-family: var(--serif);
-  color: var(--ink);
-  letter-spacing: .01em;
+.block-container {{
+  max-width: 780px;
+  padding: 2.6rem 1.2rem 3rem;
 }}
-p, li, label, [data-testid="stMarkdownContainer"] p {{ line-height: 1.7; }}
 
-/* —— 运单头：整页唯一的高调元素 —— */
-.waybill {{
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: 1.4rem 1.6rem 1.3rem;
-  margin-bottom: 1.6rem;
+h1, h2, h3 {{ font-family: var(--serif); color: var(--ink); }}
+p, li, label {{ line-height: 1.7; }}
+
+/* 一整张单：登录、对话、坐席台都落在这张纸卡上 */
+.st-key-app_card {{
   background: var(--panel);
   border: 1px solid var(--line);
-  border-left: 6px solid var(--green);
-  border-radius: 2px;
-}}
-.waybill::after {{
-  content: "";
-  position: absolute;
-  left: 1.6rem;
-  right: 1.6rem;
-  bottom: .55rem;
-  border-bottom: 1px dashed var(--line);
-}}
-.waybill h1 {{
-  font-size: clamp(1.5rem, 3.2vw, 2rem);
-  line-height: 1.3;
-  margin: .25rem 0 .15rem;
-}}
-.waybill .kicker {{
-  font-size: .78rem;
-  color: var(--ink-soft);
-  letter-spacing: .18em;
-}}
-.waybill .lede {{ margin: 0; color: var(--ink-soft); font-size: .9rem; }}
-.waybill .meta {{
-  display: flex;
-  gap: 1.8rem;
-  padding-bottom: .35rem;
-  text-align: right;
-}}
-.waybill .meta span {{ display: block; font-size: .72rem; color: var(--ink-soft); }}
-.waybill .meta strong {{ font-size: .92rem; font-weight: 600; color: var(--ink); }}
-.stamp {{
-  display: inline-block;
-  margin-top: .45rem;
-  padding: .12rem .5rem;
-  border: 1.5px solid var(--seal);
-  border-radius: 2px;
-  color: var(--seal);
-  font-size: .74rem;
-  letter-spacing: .12em;
-  transform: rotate(-2deg);
-}}
-
-/* —— 侧栏：深绿墨块，像调度台压在纸上的垫板 —— */
-[data-testid="stSidebar"] {{
-  background: var(--green-deep);
-  border-right: 1px solid #0e2f26;
-}}
-[data-testid="stSidebar"] * {{ color: #E9EFE6; }}
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {{ color: #F4F7F0; font-family: var(--serif); }}
-[data-testid="stSidebar"] input {{
-  background: var(--panel) !important;
-  color: var(--ink) !important;
-  border-radius: 3px !important;
-}}
-[data-testid="stSidebar"] [data-testid="stForm"] {{
-  border: 1px solid rgba(233,239,230,.18);
-  border-radius: 3px;
-  padding: 1rem;
-}}
-[data-testid="stSidebar"] .stButton button {{
-  background: transparent;
-  border: 1px solid rgba(233,239,230,.45);
-  color: #E9EFE6;
-}}
-
-/* —— 对话：像一张连续抄录的工单，不是聊天气泡墙 —— */
-[data-testid="stChatMessage"] {{
-  background: var(--panel) !important;
-  border: 1px solid var(--line) !important;
-  border-left: 3px solid var(--green) !important;
+  border-left: 4px solid var(--green);
   border-radius: 4px;
-  padding: .9rem 1rem;
-  margin-bottom: .55rem;
-  max-width: 82ch;
+  padding: 1.5rem 1.6rem 1.4rem;
+}}
+.card-kicker {{
+  font-size: .76rem;
+  letter-spacing: .16em;
+  color: var(--ink-soft);
+}}
+.card-title {{
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  line-height: 1.4;
+  margin: .3rem 0 .2rem;
+}}
+.card-sub {{ color: var(--ink-soft); font-size: .88rem; margin: 0 0 .6rem; }}
+
+/* 对话：连续工单，不是气泡墙 */
+[data-testid="stChatMessage"] {{
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid var(--line) !important;
+  border-radius: 0 !important;
+  padding: .35rem 0 .35rem .9rem !important;
+  margin-bottom: .4rem;
 }}
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {{
-  background: var(--green-deep) !important;
-  border-color: var(--green-deep) !important;
-  border-left-color: var(--blue) !important;
+  border-left: 2px solid var(--green) !important;
 }}
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) p {{ color: #F1F5EC !important; }}
 [data-testid="stChatMessageAvatarUser"],
 [data-testid="stChatMessageAvatarAssistant"] {{ display: none !important; }}
 [data-testid="stChatMessageContent"] {{ width: 100%; }}
 
-/* —— 控件：细线、小圆角、纸面 —— */
+/* 控件 */
 .stButton button, [data-testid="stFormSubmitButton"] button {{
   border-radius: 3px;
   font-weight: 600;
-  letter-spacing: .02em;
   background: var(--green);
   color: #F7FAF2;
   border: 1px solid var(--green);
-  transition: background .15s ease, transform .15s ease;
 }}
 .stButton button:hover, [data-testid="stFormSubmitButton"] button:hover {{
   background: var(--green-deep);
   border-color: var(--green-deep);
 }}
-.stButton button:active {{ transform: translateY(1px); }}
 :focus-visible {{ outline: 2px solid var(--blue) !important; outline-offset: 2px !important; }}
 
-[data-testid="stTextInput"] input, [data-testid="stNumberInput"] input {{
+.st-key-logout button {{
+  background: transparent !important;
+  color: var(--ink-soft) !important;
+  border: 1px solid var(--line) !important;
+  font-weight: 500 !important;
+  padding: .15rem .8rem !important;
+}}
+.st-key-logout button:hover {{
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+}}
+
+[data-testid="stTextInput"] input {{
   background: var(--panel);
   border: 1px solid var(--line);
   border-bottom: 2px solid var(--ink-soft);
   border-radius: 3px;
 }}
 [data-testid="stExpander"] {{
-  background: var(--panel);
+  background: transparent;
   border: 1px solid var(--line);
   border-radius: 3px;
 }}
-[data-testid="stExpander"] summary {{
-  font-family: var(--serif);
-  font-weight: 600;
-  color: var(--ink);
-}}
-[data-testid="stDataFrame"] {{
-  border: 1px solid var(--line);
-  border-radius: 3px;
-}}
-[data-testid="stMetricValue"] {{
-  font-family: var(--serif);
-  color: var(--green-deep);
-}}
+[data-testid="stExpander"] summary {{ font-family: var(--serif); color: var(--ink); }}
+[data-testid="stDataFrame"] {{ border: 1px solid var(--line); border-radius: 3px; }}
 [data-testid="stAlertContainer"] {{
   background: var(--panel) !important;
   border: 1px solid var(--line) !important;
   border-left: 3px solid var(--blue) !important;
   border-radius: 3px !important;
-  padding: .6rem .8rem !important;
+  padding: .55rem .75rem !important;
   color: var(--ink) !important;
 }}
 [data-testid="stAlert"], [data-testid="stAlertContentInfo"] {{
@@ -214,23 +145,33 @@ p, li, label, [data-testid="stMarkdownContainer"] p {{ line-height: 1.7; }}
   border: none !important;
   color: var(--ink) !important;
 }}
-[data-testid="stAlert"] * {{ color: var(--ink); }}
 
-/* 一次页载入的轻抬升；尊重 prefers-reduced-motion */
+/* 坐席台的三个页签 */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {{
+  gap: 1.4rem;
+  border-bottom: 1px solid var(--line);
+}}
+[data-testid="stTabs"] [data-baseweb="tab"] {{
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  padding: .3rem 0;
+}}
+[data-testid="stTabs"] [aria-selected="true"] {{ color: var(--green-deep); }}
+
+/* 顶栏：一行身份 + 退出，不占版面 */
+.who {{ color: var(--ink-soft); font-size: .82rem; }}
+.who strong {{ color: var(--ink); }}
+
 @media (prefers-reduced-motion: no-preference) {{
-  .block-container {{ animation: settle .28s ease-out both; }}
+  .block-container {{ animation: settle .24s ease-out both; }}
   @keyframes settle {{
-    from {{ opacity: 0; transform: translateY(6px); }}
+    from {{ opacity: 0; transform: translateY(5px); }}
     to {{ opacity: 1; transform: none; }}
   }}
 }}
 @media (prefers-reduced-motion: reduce) {{
   * {{ animation: none !important; transition: none !important; }}
-}}
-
-@media (max-width: 760px) {{
-  .waybill {{ flex-direction: column; align-items: flex-start; gap: .8rem; }}
-  .waybill .meta {{ text-align: left; gap: 1.2rem; }}
 }}
 </style>
 """
@@ -240,23 +181,10 @@ def inject() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 
 
-def header(display_name: str, role_label: str, thread_id: str, stamp: str = "") -> None:
-    safe_thread = thread_id[-12:] if thread_id else "—"
-    stamp_html = f'<span class="stamp">{stamp}</span>' if stamp else ""
+def card_head(kicker: str, title: str, sub: str = "") -> None:
+    sub_html = f'<p class="card-sub">{sub}</p>' if sub else ""
     st.markdown(
-        f"""
-        <div class="waybill">
-          <div>
-            <div class="kicker">售后调度台</div>
-            <h1>把每一单售后，落到具体的人手里。</h1>
-            <p class="lede">买家对话、坐席审批与审计在同一张单上流转。</p>
-            {stamp_html}
-          </div>
-          <div class="meta">
-            <div><span>当前身份</span><strong>{display_name} · {role_label}</strong></div>
-            <div><span>会话</span><strong>{safe_thread}</strong></div>
-          </div>
-        </div>
-        """,
+        f'<div class="card-kicker">{kicker}</div>'
+        f'<div class="card-title">{title}</div>{sub_html}',
         unsafe_allow_html=True,
     )

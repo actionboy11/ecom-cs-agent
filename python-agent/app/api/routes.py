@@ -236,6 +236,29 @@ async def chat_stream(
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
+@router.get("/threads/{thread_id}/messages")
+async def thread_messages(
+    thread_id: str,
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> list[dict[str, str]]:
+    """单会话历史：买家只能读自己的，坐席可读任意。"""
+    await _ensure_thread_access(
+        store, thread_id, user, bind_if_new=False, allow_agent=True,
+        path=f"/api/v1/threads/{thread_id}/messages",
+    )
+    state = await get_graph().aget_state(_config(thread_id, user.token))
+    messages = (state.values or {}).get("messages") or []
+    history: list[dict[str, str]] = []
+    for message in messages[-40:]:
+        content = getattr(message, "content", "")
+        if not isinstance(content, str) or not content:
+            continue
+        role = "user" if getattr(message, "type", "") == "human" else "assistant"
+        history.append({"role": role, "content": content})
+    return history
+
+
 @router.post("/threads/{thread_id}/resume", response_model=ChatResponse)
 async def resume(
     thread_id: str,

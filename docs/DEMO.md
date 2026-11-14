@@ -16,17 +16,17 @@ docker compose up -d      # 等 compose ps 里 mysql/java/python/workbench 都 h
 
 ## 时间轴
 
-| 时间 | 场景 | 栏位 | 输入 | 预期 |
+| 时间 | 场景 | 位置 | 输入 | 预期 |
 |---|---|---|---|---|
-| 0:00–0:30 | 登录 | 侧边栏 | `buyer_a` / `demo123` | 双栏出现；右侧提示「非坐席不可用」 |
-| 0:30–1:20 | S1 查物流 | 买家 | `CS2024001 到哪了` | 物流状态 + 最近轨迹（该单为「已签收」） |
-| 1:20–2:10 | S2 退款 | 买家 | `CS2024002 耳机有杂音，我要退款` | 生成售后请求编号，状态 PENDING |
-| 2:10–3:00 | S3 投诉 | 买家 | `你们客服态度太差了，我要投诉` | 回复「已转接人工坐席」 |
-| 3:00–3:50 | S4 商品 | 买家 | `降噪耳机续航多久` | 商品参数；建过索引时附带 `[P0x]` 引用 |
-| 3:50–4:40 | S5 越权 | 买家 | `查一下 CS2024005 的物流` | 统一「没有找到对应的记录」，不暴露是否存在 |
-| 4:40–5:00 | 审计 | `cs_agent` | 右侧展开「最近审计」 | 看到 LOGIN、QUERY_LOGISTICS/DENIED 等记录 |
+| 0:00–0:30 | 登录 | 页面 | `buyer_a` / `demo123` | 进入单窗口对话 |
+| 0:30–1:20 | S1 查物流 | 对话窗口 | `CS2024001 到哪了` | 物流状态 + 最近轨迹（该单为「已签收」） |
+| 1:20–2:10 | S2 退款 | 对话窗口 | `CS2024002 耳机有杂音，我要退款` | 生成售后请求编号，状态 PENDING |
+| 2:10–3:00 | S3 投诉 | 对话窗口 | `你们客服态度太差了，我要投诉` | 回复「已转接人工坐席」 |
+| 3:00–3:50 | S4 商品 | 对话窗口 | `降噪耳机续航多久` | 商品参数；建过索引时附带 `[P0x]` 引用 |
+| 3:50–4:40 | S5 越权 | 对话窗口 | `查一下 CS2024005 的物流` | 统一「没有找到对应的记录」，不暴露是否存在 |
+| 4:40–5:00 | 审计 | 坐席页签 | 登录 `cs_agent`，打开「审计」页签 | 看到 LOGIN、QUERY_LOGISTICS/DENIED 等记录 |
 
-若时间富余：用 `cs_agent` 在右侧审批 S2 的 PENDING 请求（通过/驳回 + 备注）。
+若时间富余：用 `cs_agent` 在「售后审批」页签处理 S2 的 PENDING 请求（通过/驳回 + 备注）。
 
 ## 每步口播
 
@@ -45,7 +45,7 @@ docker compose up -d      # 等 compose ps 里 mysql/java/python/workbench 都 h
 | 回答像模板 | 正常：模型超时降级模板，说明「兜底链路，评测里单独统计」 |
 | 政策回答没有 `[P0x]` | 说明未建索引或相似度低于 0.35，展示拒答而不是硬编 |
 | 审批列表为空 | 先做 S2 生成 PENDING；仍为空则 `docker compose logs java-service` |
-| 右侧报「无法连接」 | `docker compose ps` 看依赖是否 healthy；`docker compose logs python-agent` |
+| 页面报「无法连接」 | `docker compose ps` 看依赖是否 healthy；`docker compose logs python-agent` |
 | 越权演示返回 401 | JWT 2 小时过期，重新登录 |
 | `docker pull` 报 `failed size validation` | 本机代理会损坏 Docker Hub 层；改用镜像源拉取后打 tag：`docker pull swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.12-slim && docker tag ... python:3.12-slim`（maven / eclipse-temurin / mysql 同理） |
 | `docker compose up` 后 Java 起不来 | 先 `docker compose logs java-service`；确认 `.env` 里 `JWT_SECRET` 与 `INTERNAL_AUDIT_TOKEN` 已设置，Java 与 Python 必须共用同一个 `JWT_SECRET` |

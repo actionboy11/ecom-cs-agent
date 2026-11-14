@@ -112,6 +112,15 @@ def test_network_error_becomes_workbench_error() -> None:
         _api(handler).handoffs("jwt")
 
 
+def test_thread_messages_endpoint() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[{"role": "user", "content": "你好"}])
+
+    rows = _api(handler).thread_messages("jwt", "ui-buyer_a")
+
+    assert rows[0]["content"] == "你好"
+
+
 def test_pending_and_audit_hit_java_endpoints() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if "after-sales" in str(request.url):

@@ -79,6 +79,16 @@ class WorkbenchApi:
         )
         return self._json(resp)
 
+    def thread_messages(self, token: str, thread_id: str) -> list[dict]:
+        """固定会话的历史消息（买家自己的，或坐席查看任意）。"""
+        resp = self._request(
+            self.agent_base,
+            "GET",
+            f"/api/v1/threads/{thread_id}/messages",
+            headers=self._auth(token),
+        )
+        return self._json(resp)
+
     def resume(self, token: str, thread_id: str, approved: bool, note: str = "") -> dict:
         resp = self._request(
             self.agent_base,

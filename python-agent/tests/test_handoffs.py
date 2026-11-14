@@ -113,6 +113,39 @@ def test_legacy_thread_without_pending_flag_is_still_found(app_env) -> None:
         assert any(r["thread_id"] == "t-handoff-inbox" for r in rows)
 
 
+def test_thread_messages_returns_history(app_env) -> None:
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-history", "message": "退货政策几天"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        resp = client.get(
+            "/api/v1/threads/t-history/messages", headers=_auth(_token("buyer_a", 1))
+        )
+        assert resp.status_code == 200
+        history = resp.json()
+        assert history[0] == {"role": "user", "content": "退货政策几天"}
+        assert history[-1]["role"] == "assistant"
+
+
+def test_buyer_cannot_read_others_history(app_env) -> None:
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-history-owner", "message": "你好"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        resp = client.get(
+            "/api/v1/threads/t-history-owner/messages", headers=_auth(_token("buyer_b", 2))
+        )
+        assert resp.status_code == 404
+
+
 @pytest.mark.asyncio
 async def test_pending_ordering_and_clear(tmp_path) -> None:
     store = await ThreadOwnerStore.open(str(tmp_path / "threads.db"))
