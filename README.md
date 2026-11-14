@@ -73,6 +73,10 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 ## 工作台（Streamlit）
 
+![工作台](docs/assets/workbench.png)
+
+视觉方向是「售后调度台」：灰绿档案纸 + 邮路绿 + 铅线分隔，唯一的暖色（印章朱）只给越权/驳回这类需要人停一下的状态；标题用思源宋体，正文用思源黑体，对话做成连续工单而不是气泡墙。
+
 左右两栏：左栏买家对话（走 Agent），右栏坐席审批与审计（走 Java REST）。`docker compose up -d` 已包含该服务（<http://localhost:8501>）。
 
 不用容器时：

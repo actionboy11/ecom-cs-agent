@@ -10,6 +10,7 @@ COPY python-agent/pyproject.toml ./
 COPY python-agent/app ./app
 COPY python-agent/eval ./eval
 COPY python-agent/ui ./ui
+COPY python-agent/.streamlit ./.streamlit
 # 政策库是运行时依赖，容器里必须存在（会话库/Chroma 由 volume 持久化）
 COPY data/policies ./data/policies
 

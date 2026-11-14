@@ -15,9 +15,11 @@ import uuid
 import streamlit as st
 
 try:  # 作为包导入（pytest / 其他模块）
+    from ui import theme
     from ui.api_client import WorkbenchApi, WorkbenchError
     from ui.logic import audit_row, can_review, format_reply, handoff_label, is_customer
 except ImportError:  # streamlit run ui/app.py：脚本目录在 sys.path
+    import theme
     from api_client import WorkbenchApi, WorkbenchError
     from logic import audit_row, can_review, format_reply, handoff_label, is_customer
 
@@ -32,7 +34,14 @@ def get_api() -> WorkbenchApi:
 
 api = get_api()
 
-st.set_page_config(page_title="电商售后客服工作台", layout="wide")
+st.set_page_config(page_title="售后调度台", layout="wide")
+theme.inject()
+
+ROLE_LABELS = {"CUSTOMER": "买家", "CS_AGENT": "坐席"}
+
+
+def role_label(role: str | None) -> str:
+    return ROLE_LABELS.get((role or "").upper().removeprefix("ROLE_"), role or "访客")
 
 for key, default in (
     ("token", None),
@@ -85,6 +94,8 @@ def login_form() -> None:
 
 def render_chat() -> None:
     st.subheader("买家侧对话")
+    if not st.session_state.messages:
+        st.caption("还没有对话。试着问：「CS2024001 到哪了」或「退货政策是几天」。")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
@@ -117,7 +128,11 @@ def render_chat() -> None:
                 st.caption("暂无售后请求；可在对话里发起退款/退货/换货")
 
     # key 带序号：每次发送后换 key，输入框自动清空，避免重复发送同一句
-    text = st.text_input("输入问题", key=f"chat_input_{st.session_state.chat_seq}")
+    text = st.text_input(
+        "输入问题",
+        key=f"chat_input_{st.session_state.chat_seq}",
+        placeholder="例如：CS2024001 到哪了",
+    )
     if st.button("发送", type="primary") and text.strip():
         st.session_state.messages.append({"role": "user", "content": text})
         try:
@@ -138,6 +153,7 @@ def render_agent_pane() -> None:
     st.subheader("坐席侧审批与审计")
     if not can_review(st.session_state.user.get("role")):
         st.info("当前账号不是坐席，审批与审计不可用。")
+        st.caption("坐席登录后可在此审批售后、处理转接待办、查看审计。")
         return
 
     if st.session_state.notice:
@@ -236,13 +252,23 @@ def render_agent_pane() -> None:
 
 if st.session_state.token is None:
     login_form()
-    st.title("电商售后客服工作台")
+    theme.header("访客", "未登录", "—")
     st.caption("请先在左侧登录：买家账号看对话，坐席账号可审批售后。")
     if st.session_state.notice:
         st.info(st.session_state.notice)
 else:
     user = st.session_state.user
-    st.sidebar.success(f"{user.get('displayName')}（{user.get('role')}）")
+    display_name = user.get("displayName") or user.get("role") or "用户"
+    label = role_label(user.get("role"))
+    theme.header(
+        display_name,
+        label,
+        st.session_state.thread_id or "—",
+        stamp="坐席通道" if can_review(user.get("role")) else "",
+    )
+
+    st.sidebar.markdown(f"**{display_name}**")
+    st.sidebar.caption(f"{label} · 已登录")
     if st.sidebar.button("退出登录"):
         logout()
         st.rerun()
