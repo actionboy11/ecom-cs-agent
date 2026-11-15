@@ -27,6 +27,12 @@ class AgentState(TypedDict, total=False):
     reason: str | None
     confidence: float
 
+    # ReAct 工具轨迹与回退
+    tool_trace: list[dict[str, Any]]
+    react_fallback: bool
+    active_order_no: str | None
+    active_order_at: str | None
+
     # 中间结果
     tool_result: dict[str, Any] | None
     knowledge: str | None

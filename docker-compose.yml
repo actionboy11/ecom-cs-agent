@@ -63,6 +63,7 @@ services:
       # 语义检索用宿主机的 Ollama；容器内的 localhost 指的是容器自己
       OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
       AGENT_STATE_DB: data/state/agent_state.db
+      REACT_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

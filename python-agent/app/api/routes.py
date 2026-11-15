@@ -99,6 +99,7 @@ class ChatResponse(BaseModel):
     chain: str = ""
     latency_ms: int = 0
     pending_actions: list[dict[str, Any]] = Field(default_factory=list)
+    tool_trace: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ResumeRequest(BaseModel):
@@ -195,20 +196,37 @@ async def chat(
     )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     interrupt = _extract_interrupt(result)
-    if interrupt is not None:
+    write_approval = interrupt is not None and interrupt.get("type") == "write_approval"
+    if interrupt is not None and not write_approval:
         await store.mark_pending(req.thread_id)
+    reply = result.get("reply", "")
+    pending_actions = result.get("pending_actions") or []
+    if write_approval:
+        order = interrupt.get("order") or {}
+        reply = (
+            f"请确认退款：订单 {interrupt.get('order_no')}"
+            f"（{order.get('item', '')}，{order.get('amount', '')} 元），"
+            f"原因：{interrupt.get('reason', '')}。确认后才会提交。"
+        )
+        pending_actions = [{
+            "type": "refund",
+            "order_no": interrupt.get("order_no"),
+            "reason": interrupt.get("reason"),
+            "label": "确认退款",
+        }]
     return ChatResponse(
         thread_id=req.thread_id,
-        reply=result.get("reply", ""),
+        reply=reply,
         intent=result.get("intent"),
         order_no=result.get("order_no"),
         policy_refs=result.get("policy_refs") or [],
         chain=result.get("reply_chain", ""),
         latency_ms=elapsed_ms,
         tool_result=result.get("tool_result"),
-        needs_human=interrupt is not None,
+        needs_human=interrupt is not None and not write_approval,
         interrupt=interrupt,
-        pending_actions=result.get("pending_actions") or [],
+        pending_actions=pending_actions,
+        tool_trace=result.get("tool_trace") or [],
     )
 
 
@@ -270,6 +288,60 @@ async def thread_messages(
     return history
 
 
+@router.post("/threads/{thread_id}/confirm", response_model=ChatResponse)
+async def confirm_write(
+    thread_id: str,
+    req: ResumeRequest,
+    user: CurrentUser = Depends(require_user),
+    store: ThreadOwnerStore = Depends(get_thread_store),
+) -> ChatResponse:
+    """买家确认自己的写操作（退款）；每次只确认一个动作。"""
+    path = f"/api/v1/threads/{thread_id}/confirm"
+    await _ensure_thread_access(store, thread_id, user, bind_if_new=False, allow_agent=False, path=path)
+    graph = get_graph()
+    started = time.perf_counter()
+    try:
+        result = await graph.ainvoke(
+            Command(resume={"approved": req.approved, "note": req.note}),
+            _config(thread_id, user.token),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=409, detail=f"该会话当前没有待确认的写操作: {exc}") from exc
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    interrupt = _extract_interrupt(result)
+    if interrupt is None:
+        await store.clear_pending(thread_id)
+    reply = result.get("reply", "")
+    pending_actions = result.get("pending_actions") or []
+    if interrupt is not None and interrupt.get("type") == "write_approval":
+        order = interrupt.get("order") or {}
+        reply = (
+            f"请确认下一笔退款：订单 {interrupt.get('order_no')}"
+            f"（{order.get('item', '')}，{order.get('amount', '')} 元），"
+            f"原因：{interrupt.get('reason', '')}。"
+        )
+        pending_actions = [{
+            "type": "refund",
+            "order_no": interrupt.get("order_no"),
+            "reason": interrupt.get("reason"),
+            "label": "确认退款",
+        }]
+    return ChatResponse(
+        thread_id=thread_id,
+        reply=reply,
+        intent=result.get("intent"),
+        order_no=result.get("order_no"),
+        policy_refs=result.get("policy_refs") or [],
+        chain=result.get("reply_chain", ""),
+        latency_ms=elapsed_ms,
+        tool_result=result.get("tool_result"),
+        needs_human=bool(interrupt is not None and interrupt.get("type") != "write_approval"),
+        interrupt=interrupt,
+        pending_actions=pending_actions,
+        tool_trace=result.get("tool_trace") or [],
+    )
+
+
 @router.post("/threads/{thread_id}/resume", response_model=ChatResponse)
 async def resume(
     thread_id: str,
@@ -307,4 +379,5 @@ async def resume(
         needs_human=interrupt is not None,
         interrupt=interrupt,
         pending_actions=result.get("pending_actions") or [],
+        tool_trace=result.get("tool_trace") or [],
     )

@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     )
 
     app_env: str = "dev"
+    # ReAct 主循环开关：默认关闭，出问题可切回旧 workflow
+    react_enabled: bool = False
 
     # --- 模型提供商 ---
     deepseek_api_key: str = ""

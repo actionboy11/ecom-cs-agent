@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import * as api from "./api";
 
 type Message = {
@@ -92,6 +94,14 @@ function Details({ reply }: { reply: api.ChatReply }) {
         </p>
       )}
       {(reply.policy_refs?.length ?? 0) > 0 && <p>政策引用：{reply.policy_refs!.join("、")}</p>}
+      {(reply.tool_trace?.length ?? 0) > 0 && (
+        <p>
+          工具轨迹：
+          {reply.tool_trace!
+            .map((item) => `${item.tool || "?"}${item.error ? "（失败）" : ""}`)
+            .join(" → ")}
+        </p>
+      )}
     </details>
   );
 }
@@ -165,19 +175,56 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
     }
   }
 
+  async function handleWrite(message: Message, approved: boolean) {
+    if (sending) return;
+    setSending(true);
+    setMessages((prev) => [
+      ...prev.map((item) => ({ ...item, actions: undefined })),
+      { role: "user", content: approved ? "确认退款" : "取消退款" },
+    ]);
+    try {
+      const reply = await api.confirmWrite(user.token, thread, approved);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: reply.reply, details: reply, actions: reply.pending_actions },
+      ]);
+    } catch (err) {
+      toast(`确认失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <main id="chat-view" className="card">
       <div className="messages" ref={listRef} aria-live="polite">
         {messages.length === 0 && <p className="muted">直接问订单、物流或售后。</p>}
         {messages.map((message, index) => (
           <div className={`msg ${message.role}`} key={index}>
-            <div className="body">{message.content}</div>
+            <div className="body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            </div>
             {message.actions && message.actions.length > 0 && (
               <div className="actions">
-                <button onClick={() => dispatch("确认执行")} disabled={sending}>
-                  确认执行
+                <button
+                  onClick={() =>
+                    message.actions!.some((action) => action.type === "refund")
+                      ? handleWrite(message, true)
+                      : dispatch("确认执行")
+                  }
+                  disabled={sending}
+                >
+                  {message.actions!.some((action) => action.type === "refund") ? "确认退款" : "确认执行"}
                 </button>
-                <button className="ghost" onClick={() => dispatch("取消")} disabled={sending}>
+                <button
+                  className="ghost"
+                  onClick={() =>
+                    message.actions!.some((action) => action.type === "refund")
+                      ? handleWrite(message, false)
+                      : dispatch("取消")
+                  }
+                  disabled={sending}
+                >
                   取消
                 </button>
               </div>

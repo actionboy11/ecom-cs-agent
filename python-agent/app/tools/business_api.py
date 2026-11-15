@@ -50,6 +50,33 @@ async def get_order(order_no: str, token: str) -> dict[str, Any]:
     return await _mcp("query_order", {"order_no": order_no}, token)
 
 
+async def find_my_orders(
+    token: str,
+    product_terms: list[str] | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    delivered_from: str | None = None,
+    delivered_to: str | None = None,
+    action: str | None = None,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    """按商品/时间/状态召回候选，Java 侧打分。"""
+    args: dict[str, Any] = {"limit": limit}
+    if product_terms:
+        args["product_terms"] = product_terms
+    for key, value in (
+        ("created_from", created_from),
+        ("created_to", created_to),
+        ("delivered_from", delivered_from),
+        ("delivered_to", delivered_to),
+        ("action", action),
+    ):
+        if value:
+            args[key] = value
+    data = await _mcp("find_my_orders", args, token)
+    return data if isinstance(data, list) else []
+
+
 async def list_orders(token: str) -> list[dict[str, Any]]:
     """当前用户全部订单，用于「那个耳机」这类候选匹配。"""
     data = await _mcp("list_my_orders", {}, token)

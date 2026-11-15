@@ -6,7 +6,7 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
-from app.graph import nodes
+from app.graph import nodes, react
 from app.graph.state import AgentState
 
 
@@ -24,6 +24,7 @@ def build_graph(checkpointer: Any):
     graph.add_node("handoff_prepare", nodes.handoff_prepare)
     graph.add_node("await_human", nodes.await_human)
     graph.add_node("respond", nodes.respond_node)
+    graph.add_node("react", react.react_node)
 
     graph.add_edge(START, "classify")
     graph.add_conditional_edges(
@@ -34,6 +35,7 @@ def build_graph(checkpointer: Any):
             "tools": "tools",
             "handoff": "handoff_prepare",
             "respond": "respond",
+            "react": "react",
         },
     )
     graph.add_edge("refuse", "respond")
@@ -42,6 +44,11 @@ def build_graph(checkpointer: Any):
     graph.add_edge("handoff_prepare", "await_human")
     graph.add_edge("await_human", "respond")
     graph.add_edge("respond", END)
+    graph.add_conditional_edges(
+        "react",
+        react.route_after_react,
+        {"tools": "tools", "respond": "respond", "end": END},
+    )
 
     return graph.compile(checkpointer=checkpointer)
 

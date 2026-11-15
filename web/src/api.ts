@@ -10,8 +10,10 @@ export type User = {
 };
 
 export type PendingAction = {
+  type?: string;
   intent?: string;
   order_no?: string | null;
+  reason?: string;
   label?: string;
 };
 
@@ -24,6 +26,7 @@ export type ChatReply = {
   latency_ms?: number;
   needs_human?: boolean;
   pending_actions?: PendingAction[];
+  tool_trace?: { step?: number; tool?: string; args?: Record<string, unknown>; result?: string; error?: string }[];
 };
 
 export type AfterSale = {
@@ -104,6 +107,19 @@ export function pendingAfterSales(token: string): Promise<AfterSale[]> {
 
 export function review(token: string, requestNo: string, approved: boolean, note: string) {
   return request(JAVA, `/api/after-sales/${encodeURIComponent(requestNo)}/review`, {
+    method: "POST",
+    token,
+    body: { approved, note },
+  });
+}
+
+export function confirmWrite(
+  token: string,
+  thread: string,
+  approved: boolean,
+  note = "",
+): Promise<ChatReply> {
+  return request<ChatReply>(AGENT, `/api/v1/threads/${encodeURIComponent(thread)}/confirm`, {
     method: "POST",
     token,
     body: { approved, note },

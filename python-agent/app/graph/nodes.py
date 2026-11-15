@@ -17,6 +17,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.graph.state import AgentState
 from app.knowledge import store as knowledge_store
 from app.llm.registry import ainvoke_with_fallback, with_structured_output
@@ -424,6 +425,10 @@ def route_after_classify(state: AgentState) -> str:
         return "handoff"
     if state.get("awaiting_confirm"):
         return "respond"
+    if settings.react_enabled and not state.get("tasks") and state.get("intent") in (
+        "order_query", "logistics", "refund", "policy", "product_info"
+    ):
+        return "react"
     if state.get("tasks"):
         return "tools"
     intent = state.get("intent", "other")

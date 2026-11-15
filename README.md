@@ -79,6 +79,14 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 **单窗口**：买家打开就是一个对话窗口，每个用户固定一个会话，登录会自动带回历史；坐席登录后在同一位置看到售后审批、转接待办、审计三个页签。`docker compose up -d` 已包含该服务（<http://localhost:8501>）。
 
+**两种 Agent 模式**：
+
+- `REACT_ENABLED=false`：确定性 workflow（意图分类 → 固定工具路由 → 回复）
+- `REACT_ENABLED=true`：ReAct 主循环，LLM 自主选读工具/参数、失败换工具；退款调用前 interrupt，买家逐次确认后执行
+
+订单匹配走「身份 → 候选召回 → 打分 → 消歧」：`find_my_orders` 在 Java 侧按商品/时间/状态过滤并返回 `score/reasons`，LLM 只消费候选，不猜订单。`buyer_test` 是 12 单匹配评测账号。
+
+
 前端是 **React 18 + Vite + TypeScript**，零后端模板：浏览器直接调用 Java / Agent API（已配置 CORS），聊天区滚动由 React 直接控制，不再依赖注入脚本。
 
 ![处理详情](docs/assets/details.png)
