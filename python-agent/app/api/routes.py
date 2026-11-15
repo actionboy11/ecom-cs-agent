@@ -201,8 +201,14 @@ async def chat(
         await store.mark_pending(req.thread_id)
     reply = result.get("reply", "")
     pending_actions = result.get("pending_actions") or []
+    tool_trace = result.get("tool_trace") or []
     if write_approval:
         order = interrupt.get("order") or {}
+        tool_trace = [{
+            "tool": "create_refund",
+            "args": {"order_no": interrupt.get("order_no"), "reason": interrupt.get("reason")},
+            "result": "等待用户确认",
+        }]
         reply = (
             f"请确认退款：订单 {interrupt.get('order_no')}"
             f"（{order.get('item', '')}，{order.get('amount', '')} 元），"
@@ -226,7 +232,7 @@ async def chat(
         needs_human=interrupt is not None and not write_approval,
         interrupt=interrupt,
         pending_actions=pending_actions,
-        tool_trace=result.get("tool_trace") or [],
+        tool_trace=tool_trace,
     )
 
 

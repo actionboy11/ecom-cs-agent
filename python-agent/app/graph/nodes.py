@@ -387,6 +387,10 @@ def _apply_hard_rules(text: str, intent: str) -> str:
     # 赠品没有明确政策条款：转人工确认，避免套用商品条款
     if any(word in text for word in ("赠品", "送的", "赠的")):
         return "complaint"
+    if any(hint in text for hint in PRODUCT_HINTS) and any(
+        word in text for word in ("有货", "库存", "多少钱", "价格", "降价")
+    ):
+        return "product_info"
     if "发票" in text:
         return "policy"
     if any(k in text for k in ("催", "物流", "到哪", "没更新", "快递")) and not any(

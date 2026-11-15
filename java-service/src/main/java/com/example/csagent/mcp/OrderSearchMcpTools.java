@@ -57,6 +57,21 @@ public class OrderSearchMcpTools implements McpTool {
         for (Order order : orders) {
             List<String> reasons = new ArrayList<>();
             double product = productScore(order, terms, reasons);
+            if (!terms.isEmpty() && product == 0) {
+                continue;
+            }
+            if (createdFrom != null || createdTo != null) {
+                LocalDate day = order.createdAt();
+                if (day == null || !within(day, createdFrom, createdTo)) {
+                    continue;
+                }
+            }
+            if (deliveredFrom != null || deliveredTo != null) {
+                LocalDateTime delivered = order.deliveredAt();
+                if (delivered == null || !within(delivered.toLocalDate(), deliveredFrom, deliveredTo)) {
+                    continue;
+                }
+            }
             Double time = timeScore(order, createdFrom, createdTo, deliveredFrom, deliveredTo, reasons);
             Double status = action == null ? null : statusScore(order, action, reasons);
             double recency = recencyScore(order, reasons);
@@ -75,6 +90,7 @@ public class OrderSearchMcpTools implements McpTool {
 
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("orderNo", order.orderNo());
+            row.put("sku", order.sku());
             row.put("item", order.item());
             row.put("amount", order.amount());
             row.put("status", order.status());

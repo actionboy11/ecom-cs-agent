@@ -1,0 +1,247 @@
+{
+  "cases": 30,
+  "passed": 30,
+  "rate": 1.0,
+  "rows": [
+    {
+      "id": "m01",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024101",
+      "top_score": 0.988
+    },
+    {
+      "id": "m02",
+      "expected": "CS2024105",
+      "actual": "CS2024105",
+      "ok": true,
+      "top": "CS2024105",
+      "top_score": 0.952
+    },
+    {
+      "id": "m03",
+      "expected": "CS2024101",
+      "actual": "CS2024101",
+      "ok": true,
+      "top": "CS2024101",
+      "top_score": 0.991
+    },
+    {
+      "id": "m04",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024112",
+      "top_score": 0.981
+    },
+    {
+      "id": "m05",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024106",
+      "top_score": 0.926
+    },
+    {
+      "id": "m06",
+      "expected": "CS2024106",
+      "actual": "CS2024106",
+      "ok": true,
+      "top": "CS2024106",
+      "top_score": 0.943
+    },
+    {
+      "id": "m07",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024111",
+      "top_score": 1.0
+    },
+    {
+      "id": "m08",
+      "expected": "CS2024102",
+      "actual": "CS2024102",
+      "ok": true,
+      "top": "CS2024102",
+      "top_score": 0.994
+    },
+    {
+      "id": "m09",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024107",
+      "top_score": 0.902
+    },
+    {
+      "id": "m10",
+      "expected": "CS2024107",
+      "actual": "CS2024107",
+      "ok": true,
+      "top": "CS2024107",
+      "top_score": 0.924
+    },
+    {
+      "id": "m11",
+      "expected": "CS2024103",
+      "actual": "CS2024103",
+      "ok": true,
+      "top": "CS2024103",
+      "top_score": 0.974
+    },
+    {
+      "id": "m12",
+      "expected": "ask",
+      "actual": "ask",
+      "ok": true,
+      "top": "CS2024108",
+      "top_score": 0.95
+    },
+    {
+      "id": "m13",
+      "expected": "CS2024104",
+      "actual": "CS2024104",
+      "ok": true,
+      "top": "CS2024104",
+      "top_score": 0.865
+    },
+    {
+      "id": "m14",
+      "expected": "CS2024108",
+      "actual": "CS2024108",
+      "ok": true,
+      "top": "CS2024108",
+      "top_score": 0.961
+    },
+    {
+      "id": "m15",
+      "expected": "CS2024109",
+      "actual": "CS2024109",
+      "ok": true,
+      "top": "CS2024109",
+      "top_score": 0.983
+    },
+    {
+      "id": "m16",
+      "expected": "CS2024110",
+      "actual": "CS2024110",
+      "ok": true,
+      "top": "CS2024110",
+      "top_score": 0.978
+    },
+    {
+      "id": "m17",
+      "expected": "none",
+      "actual": "none",
+      "ok": true,
+      "top": null,
+      "top_score": null
+    },
+    {
+      "id": "m18",
+      "expected": "CS2024106",
+      "actual": "CS2024106",
+      "ok": true,
+      "top": "CS2024106",
+      "top_score": 0.826
+    },
+    {
+      "id": "m19",
+      "expected": "CS2024101",
+      "actual": "CS2024101",
+      "ok": true,
+      "top": "CS2024101",
+      "top_score": 0.991
+    },
+    {
+      "id": "m20",
+      "expected": "CS2024101",
+      "actual": "CS2024101",
+      "ok": true,
+      "top": "CS2024101",
+      "top_score": 0.991
+    },
+    {
+      "id": "m21",
+      "expected": "CS2024103",
+      "actual": "CS2024103",
+      "ok": true,
+      "top": "CS2024103",
+      "top_score": 0.974
+    },
+    {
+      "id": "m22",
+      "expected": "CS2024104",
+      "actual": "CS2024104",
+      "ok": true,
+      "top": "CS2024104",
+      "top_score": 0.998
+    },
+    {
+      "id": "m23",
+      "expected": "CS2024109",
+      "actual": "CS2024109",
+      "ok": true,
+      "top": "CS2024109",
+      "top_score": 0.87
+    },
+    {
+      "id": "m24",
+      "expected": "CS2024110",
+      "actual": "CS2024110",
+      "ok": true,
+      "top": "CS2024110",
+      "top_score": 0.978
+    },
+    {
+      "id": "m25",
+      "expected": "CS2024106",
+      "actual": "CS2024106",
+      "ok": true,
+      "top": "CS2024106",
+      "top_score": 0.943
+    },
+    {
+      "id": "m26",
+      "expected": "CS2024105",
+      "actual": "CS2024105",
+      "ok": true,
+      "top": "CS2024105",
+      "top_score": 0.952
+    },
+    {
+      "id": "m27",
+      "expected": "none",
+      "actual": "none",
+      "ok": true,
+      "top": null,
+      "top_score": null
+    },
+    {
+      "id": "m28",
+      "expected": "CS2024108",
+      "actual": "CS2024108",
+      "ok": true,
+      "top": "CS2024108",
+      "top_score": 0.961
+    },
+    {
+      "id": "m29",
+      "expected": "CS2024106",
+      "actual": "CS2024106",
+      "ok": true,
+      "top": "CS2024106",
+      "top_score": 0.826
+    },
+    {
+      "id": "m30",
+      "expected": "CS2024101",
+      "actual": "CS2024101",
+      "ok": true,
+      "top": "CS2024101",
+      "top_score": 0.874
+    }
+  ]
+}

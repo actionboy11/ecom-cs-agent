@@ -145,6 +145,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "必须调用工具获取事实，可多次调用、换工具、重试；不要编造订单或政策。"
             "用户只描述商品（我的鞋/那个耳机）时先 find_my_orders；有明确订单号再用 query_order/query_logistics。"
             "政策问题用 search_policy，并保留 [Pxx] 引用。"
+            "商品价格/库存先 find_my_orders 拿 sku，再 get_product 查参数；不要凭记忆报价。"
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             f"当前会话订单：{active or '无'}。"
             f"用户说退/退款/退货且订单已确定时，必须调用 create_refund，不要只用文字询问；确认由系统卡片完成。"
@@ -192,6 +193,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
                                                 tool_call_id=call_id))
                     continue
+                trace.append({"step": step, "tool": name, "args": args, "result": "等待用户确认"})
                 decision = interrupt(
                     {
                         "type": "write_approval",

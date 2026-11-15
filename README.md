@@ -86,6 +86,17 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 订单匹配走「身份 → 候选召回 → 打分 → 消歧」：`find_my_orders` 在 Java 侧按商品/时间/状态过滤并返回 `score/reasons`，LLM 只消费候选，不猜订单。`buyer_test` 是 12 单匹配评测账号。
 
+**ReAct MVP 验收**：
+
+| 评测 | 结果 |
+|---|---|
+| 订单匹配（30 条：商品/时间/状态/多候选/无此商品） | **30/30** |
+| ReAct 工具选择（15 条：查单/物流/政策/商品/退款确认） | **15/15** |
+| 退款确认 | 取消不落单；确认后创建 REFUND |
+
+样例只有 30+15 条、由我们自己出题，不能替代 100 条封版指标；只用于验证匹配与 ReAct 链路可用。
+
+
 
 前端是 **React 18 + Vite + TypeScript**，零后端模板：浏览器直接调用 Java / Agent API（已配置 CORS），聊天区滚动由 React 直接控制，不再依赖注入脚本。
 

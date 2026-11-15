@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
  */
 public record Order(
         String orderNo,
+        String sku,
         String item,
         BigDecimal amount,
         String status,

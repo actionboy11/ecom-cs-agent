@@ -1,0 +1,188 @@
+{
+  "cases": 15,
+  "passed": 15,
+  "rate": 1.0,
+  "rows": [
+    {
+      "id": "r01",
+      "message": "我的鞋想退货",
+      "expected": [
+        "find_my_orders"
+      ],
+      "tools": [
+        "find_my_orders"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r02",
+      "message": "CS2024105 到哪了",
+      "expected": [
+        "query_logistics"
+      ],
+      "tools": [
+        "query_logistics"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r03",
+      "message": "拆封的鞋还能退吗",
+      "expected": [
+        "search_policy"
+      ],
+      "tools": [
+        "search_policy"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r04",
+      "message": "我的耳机到哪了",
+      "expected": [
+        "find_my_orders"
+      ],
+      "tools": [
+        "find_my_orders"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r05",
+      "message": "背包有货吗",
+      "expected": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "tools": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r06",
+      "message": "我要退 CS2024105",
+      "expected": [
+        "create_refund"
+      ],
+      "tools": [
+        "create_refund"
+      ],
+      "write": true,
+      "ok": true
+    },
+    {
+      "id": "r07",
+      "message": "CS2024102 物流",
+      "expected": [
+        "query_logistics"
+      ],
+      "tools": [
+        "query_logistics"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r08",
+      "message": "耳机多少钱",
+      "expected": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "tools": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r09",
+      "message": "我的杯子想退",
+      "expected": [
+        "find_my_orders"
+      ],
+      "tools": [
+        "find_my_orders"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r10",
+      "message": "CS2024103 订单详情",
+      "expected": [
+        "query_order"
+      ],
+      "tools": [
+        "query_order"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r11",
+      "message": "赠送的耳机坏了",
+      "expected": [],
+      "tools": [],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r12",
+      "message": "行李箱降价能价保吗",
+      "expected": [
+        "search_policy"
+      ],
+      "tools": [
+        "find_my_orders",
+        "search_policy"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r13",
+      "message": "镜子的订单",
+      "expected": [
+        "find_my_orders"
+      ],
+      "tools": [
+        "find_my_orders"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r14",
+      "message": "我的鞋到哪了",
+      "expected": [
+        "find_my_orders"
+      ],
+      "tools": [
+        "find_my_orders"
+      ],
+      "write": false,
+      "ok": true
+    },
+    {
+      "id": "r15",
+      "message": "退款要多久到账",
+      "expected": [
+        "search_policy"
+      ],
+      "tools": [
+        "search_policy"
+      ],
+      "write": false,
+      "ok": true
+    }
+  ]
+}

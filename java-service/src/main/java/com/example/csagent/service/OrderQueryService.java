@@ -59,6 +59,7 @@ public class OrderQueryService {
     private static Order toOrder(OrderEntity entity) {
         return new Order(
                 entity.getOrderNo(),
+                entity.getSku(),
                 entity.getItemName(),
                 entity.getAmount(),
                 entity.getStatus(),
