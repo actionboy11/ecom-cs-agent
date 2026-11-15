@@ -60,6 +60,11 @@ async def get_logistics(order_no: str, token: str) -> dict[str, Any]:
     return await _mcp("query_logistics", {"order_no": order_no}, token)
 
 
+async def urge_logistics(order_no: str, token: str, reason: str = "用户申请催件") -> dict[str, Any]:
+    """催件会落一条 URGE 售后请求，不是只查轨迹。"""
+    return await _mcp("urge_logistics", {"order_no": order_no, "reason": reason}, token)
+
+
 async def apply_after_sales(
     order_no: str, as_type: str, reason: str, token: str
 ) -> dict[str, Any]:

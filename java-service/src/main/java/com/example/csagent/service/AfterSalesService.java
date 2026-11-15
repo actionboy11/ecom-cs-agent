@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AfterSalesService {
 
     private static final DateTimeFormatter REQUEST_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final Set<String> VALID_TYPES = Set.of("REFUND", "RETURN", "EXCHANGE");
+    private static final Set<String> VALID_TYPES = Set.of("REFUND", "RETURN", "EXCHANGE", "URGE");
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";

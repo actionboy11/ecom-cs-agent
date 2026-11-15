@@ -59,7 +59,7 @@ public class AfterSalesMcpTools implements McpTool {
                                 "properties", Map.of(
                                         "order_no", Map.of("type", "string", "description", "订单号"),
                                         "type", Map.of("type", "string", "enum",
-                                                List.of("REFUND", "RETURN", "EXCHANGE")),
+                                                List.of("REFUND", "RETURN", "EXCHANGE", "URGE")),
                                         "reason", Map.of("type", "string", "maxLength", 200,
                                                 "description", "售后原因")),
                                 "required", List.of("order_no", "type", "reason"),

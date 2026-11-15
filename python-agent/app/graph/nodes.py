@@ -481,8 +481,12 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                         continue
                 try:
                     if task_intent == "logistics":
-                        data = await business_api.get_logistics(task_order, token)
-                        tool_name = "query_logistics"
+                        if any(k in task.get("text", "") for k in ("催", "加急")):
+                            data = await business_api.urge_logistics(task_order, token)
+                            tool_name = "urge_logistics"
+                        else:
+                            data = await business_api.get_logistics(task_order, token)
+                            tool_name = "query_logistics"
                     elif task_intent == "refund":
                         as_type = _infer_after_sales_type(task.get("text", ""))
                         as_reason = reason or task.get("text") or "用户申请退款"
@@ -533,6 +537,30 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                        for hint, keyword in PRODUCT_HINTS.items())
             ]
             candidates = matched or orders
+            if len(matched) == 1:
+                target = matched[0].get("orderNo")
+                try:
+                    if intent == "logistics":
+                        if any(k in text for k in ("催", "加急")):
+                            data = await business_api.urge_logistics(target, token)
+                            tool_name = "urge_logistics"
+                        else:
+                            data = await business_api.get_logistics(target, token)
+                            tool_name = "query_logistics"
+                    elif intent == "refund":
+                        as_type = _infer_after_sales_type(text)
+                        as_reason = reason or text or "用户申请退款"
+                        data = await business_api.apply_after_sales(target, as_type, as_reason, token)
+                        tool_name = "create_after_sales_request"
+                    else:
+                        data = await business_api.get_order(target, token)
+                        tool_name = "query_order"
+                    info["result"] = "auto_resolved"
+                    return {"tool_result": {"tool": tool_name, "data": data}}
+                except BusinessAPIError as exc:
+                    info["result"] = "error"
+                    info["error"] = str(exc)[:200]
+                    return {"tool_result": {"tool": intent, "error": str(exc), "recoverable": True}}
             info["result"] = "candidates"
             info["candidate_count"] = len(candidates)
             return {"tool_result": {"tool": "list_my_orders", "data": {"orders": candidates}}}
@@ -545,7 +573,10 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
             if intent == "order_query":
                 data = await business_api.get_order(order_no, token)
             elif intent == "logistics":
-                data = await business_api.get_logistics(order_no, token)
+                if any(k in _last_user_text(state["messages"]) for k in ("催", "加急")):
+                    data = await business_api.urge_logistics(order_no, token)
+                else:
+                    data = await business_api.get_logistics(order_no, token)
             else:
                 as_type = _infer_after_sales_type(_last_user_text(state["messages"]))
                 as_reason = reason or _last_user_text(state["messages"]) or "用户申请退款"
