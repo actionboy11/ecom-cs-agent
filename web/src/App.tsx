@@ -88,6 +88,7 @@ function CandidateCards({
 }: {
   candidates: NonNullable<api.ChatReply["candidates"]>;
   onPick: (orderNo: string) => void;
+  onNone: () => void;
   disabled: boolean;
 }) {
   return (
@@ -112,6 +113,9 @@ function CandidateCards({
           </button>
         </div>
       ))}
+      <button className="ghost none-button" onClick={onNone} disabled={disabled}>
+        都不是
+      </button>
     </div>
   );
 }
@@ -253,6 +257,7 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
               <CandidateCards
                 candidates={message.details.candidates}
                 onPick={(orderNo) => dispatch(`选择订单 ${orderNo}`)}
+                onNone={() => dispatch("都不是，请重新查")}
                 disabled={sending}
               />
             )}

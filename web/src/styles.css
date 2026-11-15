@@ -143,3 +143,5 @@ input[type="radio"] { width: auto; }
 .candidate-meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--ink-soft); font-size: 12.5px; margin-top: 4px; }
 .candidate-reasons { color: var(--blue); font-size: 12px; margin-top: 4px; }
 .candidate button { margin-top: 8px; padding: 5px 12px; font-size: 13px; }
+
+.none-button { justify-self: start; }
