@@ -26,10 +26,10 @@ REPORT_DIR = HERE / "reports"
 DOCS = HERE.parents[1] / "docs" / "eval"
 
 
-def load_cases() -> list[dict]:
+def load_cases(name: str = "hard_cases.jsonl") -> list[dict]:
     return [
         json.loads(line)
-        for line in (HERE / "hard_cases.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in (HERE / name).read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
 
@@ -37,10 +37,11 @@ def load_cases() -> list[dict]:
 async def main() -> None:
     parser = argparse.ArgumentParser(description="规则基线 vs Agent")
     parser.add_argument("--out", default="2026-11-15-hard-baseline")
+    parser.add_argument("--cases", default="hard_cases.jsonl", help="eval/*.jsonl 文件名")
     parser.add_argument("--skip-judge", action="store_true")
     args = parser.parse_args()
 
-    cases = load_cases()
+    cases = load_cases(args.cases)
     async with httpx.AsyncClient(timeout=90, trust_env=False) as client:
         login = await client.post(
             f"{JAVA}/api/auth/login", json={"username": "buyer_a", "password": "demo123"}
