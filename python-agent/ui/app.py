@@ -193,15 +193,22 @@ def after_sales_panel() -> None:
 
 
 def scroll_to_bottom() -> None:
-    """消息区固定高度后，新消息自动滚到底。"""
+    """持续把内部滚动容器钉在底部，直到本次渲染稳定。"""
     st.components.v1.html(
         """
         <script>
         const doc = window.parent.document;
-        const items = doc.querySelectorAll('[data-testid="stChatMessage"]');
-        if (items.length) {
-          items[items.length - 1].scrollIntoView({block: "end"});
+        function toBottom() {
+          const box = doc.querySelector('.st-key-chat_scroll');
+          if (box) { box.scrollTop = box.scrollHeight; }
         }
+        let ticks = 0;
+        const timer = setInterval(() => {
+          toBottom();
+          ticks += 1;
+          if (ticks > 100) { clearInterval(timer); }
+        }, 100);
+        toBottom();
         </script>
         """,
         height=0,

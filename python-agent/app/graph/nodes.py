@@ -443,6 +443,9 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
     retrieval = await asyncio.to_thread(knowledge_store.retrieve, _last_user_text(state["messages"]))
     knowledge = retrieval.knowledge
     policy_refs = retrieval.policy_refs
+    # 身份/隐私条款只用于政策问答；业务查询里引用它会让用户以为还要核验身份
+    if state.get("intent") != "policy":
+        policy_refs = [ref for ref in policy_refs if ref not in ("P10", "P12")]
     view: AgentState = {**state, "knowledge": knowledge, "policy_refs": policy_refs}
 
     context = {
@@ -477,6 +480,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                             "你是电商售后客服。根据给定的事实（订单/物流/退款数据、政策）回复用户。"
                             "只能陈述事实里有的信息，不要编造；语气简洁、有同理心，不超过 120 字。"
                             "引用政策时必须保留 [Pxx] 编号，不要改写或省略。"
+                            "用户身份已由系统登录态验证：不要要求用户提供手机号、身份证或验证码，也不要以此为由拒绝查询本人订单。"
                         )
                     ),
                     HumanMessage(content=f"事实：{context}\n\n用户：{_last_user_text(state['messages'])}"),
