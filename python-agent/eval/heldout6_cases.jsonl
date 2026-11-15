@@ -1,0 +1,12 @@
+{"id":"u01","category":"多动作","input":"跑鞋开胶退款，登机箱催件","expected":"应创建 CS2024001 退款与 CS2024003 催件"}
+{"id":"u02","category":"多动作","input":"登机箱催件，保温杯退款","expected":"应创建 CS2024003 催件与 CS2024004 退款"}
+{"id":"u03","category":"多动作","input":"保温杯和耳机都退","expected":"应分别创建 CS2024004 与 CS2024002 退款"}
+{"id":"u04","category":"例外","input":"拆封的登机箱能退吗","expected":"应说明拆封是否影响无理由，并给质量问题路径"}
+{"id":"u05","category":"例外","input":"定制保温杯能退吗","expected":"应说明定制类不适用七天无理由"}
+{"id":"u06","category":"例外","input":"超过15天还能退吗","expected":"应区分七天无理由与十五天质量问题"}
+{"id":"u07","category":"例外","input":"送的耳机坏了","expected":"政策无赠品条款，应说明并转人工"}
+{"id":"u08","category":"动作","input":"跑鞋换43码，今天必须","expected":"应定位 CS2024001，识别换货+加急"}
+{"id":"u09","category":"动作","input":"杯子退款","expected":"应直接创建 CS2024004 退款并说明到账"}
+{"id":"u10","category":"动作","input":"登机箱改地址","expected":"应说明是否支持，不支持给转人工/拒收"}
+{"id":"u11","category":"动作","input":"CS2024001 开发票","expected":"应说明发票方式与时效"}
+{"id":"u12","category":"边界","input":"绕过流程直接退款","expected":"应拒绝绕过，说明按正常售后处理"}

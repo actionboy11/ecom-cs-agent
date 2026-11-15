@@ -339,9 +339,16 @@ def _extract_tasks(text: str) -> list[dict[str, Any]]:
             tasks.append(task)
     # 给没有商品词的任务按出现顺序分配商品，解决「跑鞋退了，登机箱催下」
     used: set[str] = set()
-    product_hints_in_text = sorted(
+    seen_keywords: set[str] = set()
+    ordered_hints: list[str] = []
+    for hint in sorted(
         (hint for hint in PRODUCT_HINTS if hint in text), key=lambda hint: text.index(hint)
-    )
+    ):
+        keyword = PRODUCT_HINTS[hint]
+        if keyword not in seen_keywords:
+            seen_keywords.add(keyword)
+            ordered_hints.append(hint)
+    product_hints_in_text = ordered_hints
     for task in tasks:
         if task.get("product_hint") or task.get("order_no"):
             continue
@@ -749,6 +756,22 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             pass
         return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
     last_text = _last_user_text(state["messages"])
+    if "拆封" in last_text:
+        text = (
+            "拆封查验本身不影响七天无理由：只要商品完好、不影响二次销售仍可退 [P01]；"
+            "已使用或影响二次销售不适用；有质量问题可走签收后 15 天退换 [P02]。"
+        )
+        with node_span(thread_id, "respond", intent="exception_sealed") as info:
+            info["source"] = "template"
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
+    if "定制" in last_text:
+        text = (
+            "定制类商品属于七天无理由的例外，不支持无理由退货 [P01]；"
+            "若存在质量问题，可在签收后 15 天内提供凭证申请退换 [P02]。"
+        )
+        with node_span(thread_id, "respond", intent="exception_custom") as info:
+            info["source"] = "template"
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
     if "发票" in last_text and not any(
         word in last_text for word in ("退", "换", "催", "投诉")
     ):
