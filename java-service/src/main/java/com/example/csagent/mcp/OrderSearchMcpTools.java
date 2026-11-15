@@ -96,6 +96,7 @@ public class OrderSearchMcpTools implements McpTool {
             row.put("status", order.status());
             row.put("createdAt", order.createdAt());
             row.put("deliveredAt", order.deliveredAt());
+            row.put("tags", order.tags());
             row.put("score", Math.round(score * 1000.0) / 1000.0);
             row.put("reasons", reasons);
             candidates.add(row);

@@ -63,10 +63,11 @@ class OrderQueryApiTest {
     void seed_migration_loads_orders() {
         // 这条断言的是迁移脚本本身（V2 种子），不是接口行为；接口行为由上面的 HTTP 用例覆盖
         Long count = orderMapper.selectCount(new LambdaQueryWrapper<>());
-        assertThat(count).isEqualTo(24L);
+        assertThat(count).isEqualTo(144L);
         OrderEntity first = orderMapper.selectById("CS2024001");
         assertThat(first).isNotNull();
         assertThat(first.getUserId()).isEqualTo(1L);
         assertThat(first.getDeliveredAt()).isNotNull();
+        assertThat(first.getTags()).isNull();
     }
 }

@@ -84,7 +84,7 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 - `REACT_ENABLED=false`：确定性 workflow（意图分类 → 固定工具路由 → 回复）
 - `REACT_ENABLED=true`：ReAct 主循环，LLM 自主选读工具/参数、失败换工具；退款调用前 interrupt，买家逐次确认后执行
 
-订单匹配走「身份 → 候选召回 → 打分 → 消歧」：`find_my_orders` 在 Java 侧按商品/时间/状态过滤并返回 `score/reasons`，LLM 只消费候选，不猜订单。`buyer_test` 是 12 单匹配评测账号。
+订单匹配走「身份 → 候选召回 → 打分 → 消歧」：`find_my_orders` 在 Java 侧按商品/时间/状态过滤并返回 `score/reasons`，LLM 只消费候选，不猜订单。评测 fixture：`eval_a`~`eval_e` 5 个用户、120 单（固定基准日 2026-11-15），覆盖同商品同周/同天、时间边界、缺物流/缺签收、已有售后、gift/custom 标签；生成器在 `scripts/generate_eval_fixture.py`。
 
 **ReAct MVP 验收**：
 

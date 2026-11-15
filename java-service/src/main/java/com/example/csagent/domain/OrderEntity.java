@@ -22,6 +22,7 @@ public class OrderEntity {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime deliveredAt;
+    private String tags;
 
     public String getOrderNo() {
         return orderNo;
@@ -81,6 +82,14 @@ public class OrderEntity {
 
     public void setDeliveredAt(LocalDateTime deliveredAt) {
         this.deliveredAt = deliveredAt;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

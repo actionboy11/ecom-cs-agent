@@ -180,6 +180,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "用户只描述商品（我的鞋/那个耳机）时先 find_my_orders；有明确订单号再用 query_order/query_logistics。"
             "政策问题用 search_policy，并保留 [Pxx] 引用。"
             "商品价格/库存先 find_my_orders 拿 sku，再 get_product 查参数；不要凭记忆报价。"
+            "订单 tags：gift 表示赠品（无明确条款时转人工），custom 表示定制（不适用七天无理由）。"
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             f"当前会话订单：{active or '无'}。"
             "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"

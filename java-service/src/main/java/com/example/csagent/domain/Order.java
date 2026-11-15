@@ -14,6 +14,7 @@ public record Order(
         BigDecimal amount,
         String status,
         LocalDate createdAt,
-        LocalDateTime deliveredAt
+        LocalDateTime deliveredAt,
+        String tags
 ) {
 }
