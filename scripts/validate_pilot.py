@@ -19,6 +19,7 @@ EXPECTED_TYPES = {"answer", "clarify", "tool", "confirm", "handoff", "refuse", "
 TOOLS = {
     "find_my_orders", "query_order", "query_logistics", "get_product", "search_policy",
     "create_refund", "create_return", "create_exchange", "urge_logistics",
+    "order_lookup_skill", "normal_return_skill", "custom_return_skill", "handoff_to_human",
 }
 FORBIDDEN = {"wrong_order", "write_without_confirm", "leak_other", "fabricate_policy", "unsupported_action"}
 WRITER_QUOTAS = {

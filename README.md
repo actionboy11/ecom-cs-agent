@@ -98,10 +98,21 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 候选订单在 React 里渲染为可点选卡片（订单号、商品、金额、状态、下单/签收时间、匹配原因），点「选这单」直接把订单号带回 Agent，不再让用户手输。
 
+**Skills（MVP）**：
+
+- `order_lookup_skill`：无订单号时召回候选，auto/ask/none
+- `normal_return_skill`：校验已签收、7 天、非定制
+- `custom_return_skill`：定制无质量问题 → handoff；有质量问题 → P02
+- Agent 在 ReAct 里调用 skill；skill 只判定，写操作仍由 ReAct 调 `create_return` 并确认
+- 8 条 skill 单测
+
 **Pilot 评测（24 条）**：
 
-- 单轮 20 + 确认脚本 4；结构检查通过 22/24（单轮 18/20，确认 4/4）
-- 失败：`b-02` 没调候选查询直接说查不到；`b-06` 定制商品在「解释政策」和「弹退款确认」之间不稳定
+
+
+- 单轮 20 + 确认脚本 4；结构检查通过 21/24（单轮 17/20，确认 4/4）
+- 失败：`b-02` 没调候选查询；`b-07` 没调催件；`a-06` 同一句在解释和确认之间摇摆
+- 关键问题：Agent 不保证调用 skill，提示词注册表不足以保证执行
 - 这是结构检查，不是语义 judge；人工抽检 10+4 仍待填写
 
 **P1 多轮与可观测性**：
