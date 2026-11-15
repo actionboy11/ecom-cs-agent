@@ -1,7 +1,7 @@
 {
-  "cases": 15,
+  "cases": 17,
   "passed": 15,
-  "rate": 1.0,
+  "rate": 0.882,
   "rows": [
     {
       "id": "r01",
@@ -68,14 +68,12 @@
     {
       "id": "r06",
       "message": "我要退 CS2024105",
-      "expected": [
-        "create_refund"
-      ],
+      "expected": [],
       "tools": [
-        "create_refund"
+        "query_order"
       ],
-      "write": true,
-      "ok": true
+      "write": false,
+      "ok": false
     },
     {
       "id": "r07",
@@ -97,8 +95,7 @@
         "get_product"
       ],
       "tools": [
-        "find_my_orders",
-        "get_product"
+        "find_my_orders"
       ],
       "write": false,
       "ok": true
@@ -133,7 +130,7 @@
       "expected": [],
       "tools": [],
       "write": false,
-      "ok": true
+      "ok": false
     },
     {
       "id": "r12",
@@ -182,6 +179,26 @@
         "search_policy"
       ],
       "write": false,
+      "ok": true
+    },
+    {
+      "id": "r16",
+      "message": "我要退货 CS2024105，鞋子开胶",
+      "expected": [],
+      "tools": [
+        "create_refund"
+      ],
+      "write": true,
+      "ok": true
+    },
+    {
+      "id": "r17",
+      "message": "我要换货 CS2024101，换43码",
+      "expected": [],
+      "tools": [
+        "create_refund"
+      ],
+      "write": true,
       "ok": true
     }
   ]

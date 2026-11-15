@@ -44,9 +44,9 @@ class PolicyArgs(BaseModel):
     query: str = Field(description="政策问题，如 拆封还能退吗")
 
 
-class RefundArgs(BaseModel):
-    order_no: str = Field(description="要退款的订单号")
-    reason: str = Field(description="退款原因")
+class AfterSalesArgs(BaseModel):
+    order_no: str = Field(description="订单号")
+    reason: str = Field(description="原因")
 
 
 def _json(data: Any) -> str:
@@ -71,16 +71,28 @@ def _build_tools(token: str) -> list[StructuredTool]:
         result = await asyncio.to_thread(knowledge_store.retrieve, query)
         return _json({"knowledge": result.knowledge, "policy_refs": result.policy_refs})
 
-    async def create_refund(order_no: str, reason: str) -> str:
+    async def create_after_sales(order_no: str, reason: str) -> str:
         # 真正执行在 ReAct 循环里，先经过 interrupt 确认；这个函数不会被直接调用
         return _json({"status": "pending_confirmation", "order_no": order_no, "reason": reason})
 
     return [
         StructuredTool.from_function(
-            coroutine=create_refund,
+            coroutine=create_after_sales,
             name="create_refund",
             description="发起退款申请；会触发用户逐次确认，确认后才会真正提交。",
-            args_schema=RefundArgs,
+            args_schema=AfterSalesArgs,
+        ),
+        StructuredTool.from_function(
+            coroutine=create_after_sales,
+            name="create_return",
+            description="发起退货申请；会触发用户逐次确认，确认后才会真正提交。",
+            args_schema=AfterSalesArgs,
+        ),
+        StructuredTool.from_function(
+            coroutine=create_after_sales,
+            name="create_exchange",
+            description="发起换货申请；会触发用户逐次确认，确认后才会真正提交。",
+            args_schema=AfterSalesArgs,
         ),
         StructuredTool.from_function(
             coroutine=find_orders,
@@ -148,7 +160,10 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "商品价格/库存先 find_my_orders 拿 sku，再 get_product 查参数；不要凭记忆报价。"
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             f"当前会话订单：{active or '无'}。"
-            f"用户说退/退款/退货且订单已确定时，必须调用 create_refund，不要只用文字询问；确认由系统卡片完成。"
+            f"用户说退/退款且订单已确定时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
+            f"不要只用文字询问，确认由系统卡片完成；工具返回成功结果后明确说已提交，不要再让用户确认。"
+            "示例：用户说『我要退货』→ create_return；『我要换货』→ create_exchange；『我要退款/退钱』→ create_refund。"
+            "即使工具返回政策，只要用户明确要求办理且订单号确定，也必须调用对应写工具。"
             f"最多 {MAX_STEPS} 步；工具连续失败或无法确认时转人工。"
         )
     )
@@ -184,7 +199,14 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             name = call.get("name", "")
             args = call.get("args", {}) or {}
             call_id = call.get("id", f"call-{step}-{name}")
-            if name == "create_refund":
+            write_types = {"create_refund": "REFUND", "create_return": "RETURN", "create_exchange": "EXCHANGE"}
+            if name in write_types:
+                as_type = write_types[name]
+                last_user = str(state["messages"][-1].content) if state.get("messages") else ""
+                if as_type == "REFUND" and "退货" in last_user:
+                    as_type = "RETURN"
+                elif as_type == "REFUND" and "换货" in last_user:
+                    as_type = "EXCHANGE"
                 order_no = str(args.get("order_no", ""))
                 reason = str(args.get("reason", ""))
                 try:
@@ -197,7 +219,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 decision = interrupt(
                     {
                         "type": "write_approval",
-                        "action": "refund",
+                        "action": as_type.lower(),
                         "order_no": order_no,
                         "reason": reason,
                         "order": order,
@@ -210,7 +232,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                                                 tool_call_id=call_id))
                     continue
                 try:
-                    data = await business_api.apply_after_sales(order_no, "REFUND", reason, token)
+                    data = await business_api.apply_after_sales(order_no, as_type, reason, token)
                     trace.append({"step": step, "tool": name, "args": args, "result": str(data)[:300]})
                     messages.append(ToolMessage(content=_json(data), tool_call_id=call_id))
                     active_order = order_no

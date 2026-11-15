@@ -14,7 +14,7 @@ CASES = [
     ("r03", "拆封的鞋还能退吗", {"search_policy"}, False),
     ("r04", "我的耳机到哪了", {"find_my_orders"}, False),
     ("r05", "背包有货吗", {"get_product", "find_my_orders"}, False),
-    ("r06", "我要退 CS2024105", {"create_refund"}, True),
+    ("r06", "我要退 CS2024105", set(), True),
     ("r07", "CS2024102 物流", {"query_logistics"}, False),
     ("r08", "耳机多少钱", {"find_my_orders", "get_product"}, False),
     ("r09", "我的杯子想退", {"find_my_orders"}, False),
@@ -24,6 +24,8 @@ CASES = [
     ("r13", "镜子的订单", {"find_my_orders"}, False),
     ("r14", "我的鞋到哪了", {"find_my_orders"}, False),
     ("r15", "退款要多久到账", {"search_policy"}, False),
+    ("r16", "我要退货 CS2024105，鞋子开胶", set(), True),
+    ("r17", "我要换货 CS2024101，换43码", set(), True),
 ]
 
 
@@ -48,9 +50,13 @@ async def main() -> None:
             data = resp.json()
             tools = {item.get("tool") for item in (data.get("tool_trace") or []) if item.get("tool")}
             interrupt = data.get("interrupt") or {}
-            if expected:
-                write_ok = (interrupt.get("type") == "write_approval") if write else True
-                ok = bool(tools & expected) and write_ok
+            if write:
+                wanted_action = {"r06": "refund", "r16": "return", "r17": "exchange"}.get(cid)
+                ok = interrupt.get("type") == "write_approval" and (
+                    wanted_action is None or interrupt.get("action") == wanted_action
+                )
+            elif expected:
+                ok = bool(tools & expected)
             else:
                 ok = bool(interrupt)
             rows.append(

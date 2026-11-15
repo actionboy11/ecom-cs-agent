@@ -73,6 +73,12 @@ function Login({ onLogin }: { onLogin: (user: api.User) => void }) {
   );
 }
 
+const WRITE_TYPES = new Set(["refund", "return", "exchange"]);
+
+function isWriteAction(action: api.PendingAction): boolean {
+  return WRITE_TYPES.has(action.type || "");
+}
+
 function withoutTable(text: string): string {
   return text
     .split("\n")
@@ -228,7 +234,7 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
     setSending(true);
     setMessages((prev) => [
       ...prev.map((item) => ({ ...item, actions: undefined })),
-      { role: "user", content: approved ? "确认退款" : "取消退款" },
+      { role: "user", content: approved ? "确认办理" : "取消办理" },
     ]);
     try {
       const reply = await api.confirmWrite(user.token, thread, approved);
@@ -266,18 +272,20 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
               <div className="actions">
                 <button
                   onClick={() =>
-                    message.actions!.some((action) => action.type === "refund")
+                    message.actions!.some(isWriteAction)
                       ? handleWrite(message, true)
                       : dispatch("确认执行")
                   }
                   disabled={sending}
                 >
-                  {message.actions!.some((action) => action.type === "refund") ? "确认退款" : "确认执行"}
+                  {message.actions!.some(isWriteAction)
+                    ? message.actions!.find(isWriteAction)?.label || "确认办理"
+                    : "确认执行"}
                 </button>
                 <button
                   className="ghost"
                   onClick={() =>
-                    message.actions!.some((action) => action.type === "refund")
+                    message.actions!.some(isWriteAction)
                       ? handleWrite(message, false)
                       : dispatch("取消")
                   }

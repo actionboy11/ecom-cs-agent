@@ -219,21 +219,23 @@ async def chat(
     tool_trace = result.get("tool_trace") or []
     if write_approval:
         order = interrupt.get("order") or {}
+        action = str(interrupt.get("action") or "refund")
+        label = {"refund": "退款", "return": "退货", "exchange": "换货"}.get(action, "售后")
         tool_trace = [{
             "tool": "create_refund",
             "args": {"order_no": interrupt.get("order_no"), "reason": interrupt.get("reason")},
             "result": "等待用户确认",
         }]
         reply = (
-            f"请确认退款：订单 {interrupt.get('order_no')}"
+            f"请确认{label}：订单 {interrupt.get('order_no')}"
             f"（{order.get('item', '')}，{order.get('amount', '')} 元），"
             f"原因：{interrupt.get('reason', '')}。确认后才会提交。"
         )
         pending_actions = [{
-            "type": "refund",
+            "type": action,
             "order_no": interrupt.get("order_no"),
             "reason": interrupt.get("reason"),
-            "label": "确认退款",
+            "label": f"确认{label}",
         }]
     return ChatResponse(
         thread_id=req.thread_id,
@@ -337,16 +339,18 @@ async def confirm_write(
     pending_actions = result.get("pending_actions") or []
     if interrupt is not None and interrupt.get("type") == "write_approval":
         order = interrupt.get("order") or {}
+        action = str(interrupt.get("action") or "refund")
+        label = {"refund": "退款", "return": "退货", "exchange": "换货"}.get(action, "售后")
         reply = (
-            f"请确认下一笔退款：订单 {interrupt.get('order_no')}"
+            f"请确认下一笔{label}：订单 {interrupt.get('order_no')}"
             f"（{order.get('item', '')}，{order.get('amount', '')} 元），"
             f"原因：{interrupt.get('reason', '')}。"
         )
         pending_actions = [{
-            "type": "refund",
+            "type": action,
             "order_no": interrupt.get("order_no"),
             "reason": interrupt.get("reason"),
-            "label": "确认退款",
+            "label": f"确认{label}",
         }]
     return ChatResponse(
         thread_id=thread_id,
