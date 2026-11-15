@@ -295,6 +295,9 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
                 </button>
               </div>
             )}
+            {message.details?.fallback_reason && (
+              <p className="fallback-note">已切换到确定性流程（原因：{message.details.fallback_reason}）</p>
+            )}
             {message.details && <Details reply={message.details} />}
           </div>
         ))}

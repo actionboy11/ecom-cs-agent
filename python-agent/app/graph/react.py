@@ -14,6 +14,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app.graph.state import AgentState
+from app.graph.time_refs import TZ, parse_time_reference
 from app.knowledge import store as knowledge_store
 from app.llm.registry import get_chat_model
 from app.tools import business_api
@@ -146,11 +147,21 @@ def _active_order(state: AgentState) -> str | None:
 async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     token = (config or {}).get("configurable", {}).get("auth_token") or ""
     if not token:
-        return {"react_fallback": True, "reply_chain": ""}
+        return _fallback([], "unauthorized", None, None)
 
     tools = _build_tools(token)
     tool_map = {tool.name: tool for tool in tools}
     active = _active_order(state)
+    last_text = str(state["messages"][-1].content) if state.get("messages") else ""
+    hint = parse_time_reference(last_text)
+    today = datetime.now(TZ).date().isoformat()
+    time_line = f"当前日期（Asia/Shanghai）：{today}。"
+    if hint:
+        time_line += (
+            f"系统已把用户时间解析为绝对区间：{hint['field']}_from={hint['from']}，"
+            f"{hint['field']}_to={hint['to']}；调用 find_my_orders 时必须使用这组日期。"
+        )
+
     system = SystemMessage(
         content=(
             "你是电商售后 Agent，用户已登录。"
@@ -160,10 +171,12 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "商品价格/库存先 find_my_orders 拿 sku，再 get_product 查参数；不要凭记忆报价。"
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             f"当前会话订单：{active or '无'}。"
+            "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"
             f"用户说退/退款且订单已确定时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
-            f"不要只用文字询问，确认由系统卡片完成；工具返回成功结果后明确说已提交，不要再让用户确认。"
+            "不要只用文字询问，确认由系统卡片完成；工具返回成功结果后明确说已提交，不要再让用户确认。"
             "示例：用户说『我要退货』→ create_return；『我要换货』→ create_exchange；『我要退款/退钱』→ create_refund。"
             "即使工具返回政策，只要用户明确要求办理且订单号确定，也必须调用对应写工具。"
+            f"{time_line}"
             f"最多 {MAX_STEPS} 步；工具连续失败或无法确认时转人工。"
         )
     )
@@ -171,6 +184,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     trace: list[dict[str, Any]] = []
     active_order = active
     active_at = state.get("active_order_at")
+    fallback_reason: str | None = None
+    failures = 0
 
     llm = get_chat_model("reasoning", temperature=0).bind_tools(tools)
     for step in range(MAX_STEPS):
@@ -178,11 +193,13 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             ai: AIMessage = await llm.ainvoke(messages)
         except Exception as exc:  # noqa: BLE001 - 模型失败回退旧链路
             trace.append({"step": step, "error": str(exc)[:160]})
-            return {"react_fallback": True, "tool_trace": trace, "reply_chain": ""}
+            fallback_reason = "model_error"
+            break
 
         if not ai.tool_calls:
             text = str(ai.content).strip()
             if not text:
+                fallback_reason = "empty_reply"
                 break
             return {
                 "reply": text,
@@ -190,6 +207,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 "reply_chain": "react",
                 "tool_trace": trace,
                 "react_fallback": False,
+                "react_fallback_reason": None,
                 "active_order_no": active_order,
                 "active_order_at": active_at,
             }
@@ -202,19 +220,17 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             write_types = {"create_refund": "REFUND", "create_return": "RETURN", "create_exchange": "EXCHANGE"}
             if name in write_types:
                 as_type = write_types[name]
-                last_user = str(state["messages"][-1].content) if state.get("messages") else ""
-                if as_type == "REFUND" and "退货" in last_user:
+                if as_type == "REFUND" and "退货" in last_text:
                     as_type = "RETURN"
-                elif as_type == "REFUND" and "换货" in last_user:
+                elif as_type == "REFUND" and "换货" in last_text:
                     as_type = "EXCHANGE"
                 order_no = str(args.get("order_no", ""))
                 reason = str(args.get("reason", ""))
                 try:
                     order = await business_api.get_order(order_no, token)
-                except Exception as exc:  # noqa: BLE001 - 订单不存在/越权交给模型解释
-                    messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
-                                                tool_call_id=call_id))
-                    continue
+                except Exception:  # noqa: BLE001 - 写校验失败直接降级
+                    fallback_reason = "write_validation_failed"
+                    break
                 trace.append({"step": step, "tool": name, "args": args, "result": "等待用户确认"})
                 decision = interrupt(
                     {
@@ -242,6 +258,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
                                                 tool_call_id=call_id))
                 continue
+
             tool = tool_map.get(name)
             if tool is None:
                 messages.append(ToolMessage(content=_json({"error": f"未知工具 {name}"}),
@@ -256,17 +273,46 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     "result": str(result) if name == "find_my_orders" else str(result)[:300],
                 })
                 messages.append(ToolMessage(content=str(result), tool_call_id=call_id))
+                failures = 0
                 order_no = args.get("order_no")
                 if order_no and name in ("query_order", "query_logistics"):
                     active_order = str(order_no)
                     active_at = datetime.now(UTC).isoformat()
+                if name == "find_my_orders":
+                    try:
+                        payload = json.loads(str(result))
+                        if not payload.get("candidates"):
+                            fallback_reason = "no_candidates"
+                            break
+                    except (TypeError, ValueError):
+                        pass
             except Exception as exc:  # noqa: BLE001 - 工具失败交给模型换工具/重试
+                failures += 1
                 trace.append({"step": step, "tool": name, "args": args, "error": str(exc)[:200]})
                 messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
                                             tool_call_id=call_id))
+                if failures >= 2:
+                    fallback_reason = "tool_failure"
+                    break
 
-    return {"react_fallback": True, "tool_trace": trace, "reply_chain": "", "active_order_no": active_order,
-            "active_order_at": active_at}
+        if fallback_reason:
+            break
+
+    if fallback_reason is None:
+        fallback_reason = "step_limit"
+    return _fallback(trace, fallback_reason, active_order, active_at)
+
+
+def _fallback(trace: list[dict[str, Any]], reason: str, active_order: str | None,
+              active_at: str | None) -> dict[str, Any]:
+    return {
+        "react_fallback": True,
+        "react_fallback_reason": reason,
+        "tool_trace": trace,
+        "reply_chain": "",
+        "active_order_no": active_order,
+        "active_order_at": active_at,
+    }
 
 
 def route_after_react(state: AgentState) -> str:

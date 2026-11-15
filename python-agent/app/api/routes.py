@@ -101,6 +101,7 @@ class ChatResponse(BaseModel):
     pending_actions: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
     candidates: list[dict[str, Any]] = Field(default_factory=list)
+    fallback_reason: str | None = None
 
 
 class ResumeRequest(BaseModel):
@@ -251,6 +252,7 @@ async def chat(
         pending_actions=pending_actions,
         tool_trace=tool_trace,
         candidates=_candidate_orders({"tool_trace": tool_trace}),
+        fallback_reason=result.get("react_fallback_reason"),
     )
 
 

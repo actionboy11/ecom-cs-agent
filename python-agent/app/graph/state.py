@@ -30,6 +30,7 @@ class AgentState(TypedDict, total=False):
     # ReAct 工具轨迹与回退
     tool_trace: list[dict[str, Any]]
     react_fallback: bool
+    react_fallback_reason: str | None
     active_order_no: str | None
     active_order_at: str | None
 

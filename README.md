@@ -98,6 +98,13 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 候选订单在 React 里渲染为可点选卡片（订单号、商品、金额、状态、下单/签收时间、匹配原因），点「选这单」直接把订单号带回 Agent，不再让用户手输。
 
+**P0 稳定性**：
+
+- 相对时间由 Python 统一解析：「上周/昨天/上个月/最近 N 天」→ 绝对日期区间，工具只收 `yyyy-MM-dd`
+- ReAct fallback 四类触发：超 6 步、工具连续失败 2 次、无候选、写操作校验失败；前端显示「已切换到确定性流程（原因）」
+- 额外兜底：模型异常、空回复也回退
+
+
 
 
 前端是 **React 18 + Vite + TypeScript**，零后端模板：浏览器直接调用 Java / Agent API（已配置 CORS），聊天区滚动由 React 直接控制，不再依赖注入脚本。

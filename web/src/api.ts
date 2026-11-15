@@ -27,6 +27,7 @@ export type ChatReply = {
   needs_human?: boolean;
   pending_actions?: PendingAction[];
   tool_trace?: { step?: number; tool?: string; args?: Record<string, unknown>; result?: string; error?: string }[];
+  fallback_reason?: string | null;
   candidates?: {
     orderNo?: string;
     item?: string;
