@@ -86,6 +86,12 @@ def _refusal(text: str) -> str | None:
     if (privacy and about_others) or fabrication or ghostwriting:
         return "这个我没法帮您，我们继续处理售后问题吧。"
 
+    bypass = any(
+        k in text for k in ("忽略以上", "忽略规则", "别管政策", "绕过规则", "绕过流程", "直接退钱", "马上退钱")
+    )
+    if bypass:
+        return "操作需要按售后流程核实，不能绕过规则；我可以帮您走正常退款或转人工处理。"
+
     if any(k in text for k in ("别人", "他人", "朋友的")) and any(
         k in text for k in ("订单", "物流", "售后", "单号")
     ):
@@ -286,9 +292,25 @@ async def refuse(state: AgentState) -> dict[str, Any]:
 
 EXCEPTION_HINTS = ("拆封", "定制", "超过", "赠品", "七天", "十五天", "无理由", "价保")
 REFERENCE_HINTS = ("那个", "昨天", "上周", "前两天", "刚买", "之前")
-PRODUCT_HINTS = {"耳机": "耳机", "行李箱": "行李箱", "杯子": "保温杯", "鞋": "跑步鞋", "背包": "背包", "充电宝": "充电宝"}
+PRODUCT_HINTS = {
+    "耳机": "耳机",
+    "降噪耳机": "耳机",
+    "蓝牙耳机": "耳机",
+    "行李箱": "行李箱",
+    "登机箱": "行李箱",
+    "箱子": "行李箱",
+    "杯子": "保温杯",
+    "保温杯": "保温杯",
+    "水杯": "保温杯",
+    "鞋": "跑步鞋",
+    "跑鞋": "跑步鞋",
+    "跑步鞋": "跑步鞋",
+    "背包": "背包",
+    "双肩包": "背包",
+    "充电宝": "充电宝",
+}
 URGENT_HINTS = ("很急", "今天必须", "尽快", "马上", "快点", "着急")
-TASK_SPLIT = re.compile(r"[，,；;。]|另外|顺便|再|还有")
+TASK_SPLIT = re.compile(r"[，,；;。、]|另外|顺便|再|还有")
 
 
 def _extract_tasks(text: str) -> list[dict[str, Any]]:
@@ -303,7 +325,7 @@ def _extract_tasks(text: str) -> list[dict[str, Any]]:
             intent = "complaint"
         elif any(k in part for k in ("催", "物流", "到哪", "快递")):
             intent = "logistics"
-        elif any(k in part for k in ("退", "换")):
+        elif any(k in part for k in ("退", "换", "不想要")):
             intent = "refund"
         else:
             continue
@@ -311,20 +333,58 @@ def _extract_tasks(text: str) -> list[dict[str, Any]]:
             "intent": intent,
             "order_no": order.group(1).upper() if order else None,
             "text": part,
+            "source": text,
         }
         if task not in tasks:
             tasks.append(task)
+    # 给没有商品词的任务按出现顺序分配商品，解决「跑鞋退了，登机箱催下」
+    used: set[str] = set()
+    product_hints_in_text = sorted(
+        (hint for hint in PRODUCT_HINTS if hint in text), key=lambda hint: text.index(hint)
+    )
+    for task in tasks:
+        if task.get("product_hint") or task.get("order_no"):
+            continue
+        for hint in product_hints_in_text:
+            if hint not in used and hint in text:
+                task["product_hint"] = hint
+                used.add(hint)
+                break
+    if len(tasks) < 2 and "都" in text:
+        hints = [hint for hint in PRODUCT_HINTS if hint in text]
+        unique: list[str] = []
+        for hint in hints:
+            if PRODUCT_HINTS[hint] not in [PRODUCT_HINTS[h] for h in unique]:
+                unique.append(hint)
+        if len(unique) >= 2:
+            tasks = [{"intent": "refund", "order_no": None, "text": hint, "source": text} for hint in unique]
     action_intents = {t["intent"] for t in tasks if t["intent"] != "complaint"}
     distinct_intents = {t["intent"] for t in tasks}
-    return tasks if len(tasks) >= 2 and len(distinct_intents) >= 2 and action_intents else []
+    if len(tasks) < 2 or not action_intents:
+        return []
+    if len(distinct_intents) >= 2:
+        return tasks
+    products = {
+        PRODUCT_HINTS[hint]
+        for task in tasks
+        for hint in PRODUCT_HINTS
+        if hint in task.get("text", "")
+    }
+    return tasks if len(products) >= 2 else []
 
 
 def _apply_hard_rules(text: str, intent: str) -> str:
     """分类器的确定性兜底：政策例外、模糊指代、投诉/加急、价保。"""
     has_order = bool(ORDER_NO_PATTERN.search(text))
     # 赠品没有明确政策条款：转人工确认，避免套用商品条款
-    if "赠品" in text:
+    if any(word in text for word in ("赠品", "送的", "赠的")):
         return "complaint"
+    if "发票" in text:
+        return "policy"
+    if any(k in text for k in ("催", "物流", "到哪", "没更新", "快递")) and not any(
+        k in text for k in ("退", "换", "投诉")
+    ):
+        return "logistics"
     if any(hint in text for hint in EXCEPTION_HINTS) and not has_order:
         return "policy"
     if (
@@ -341,7 +401,10 @@ def _apply_hard_rules(text: str, intent: str) -> str:
         return "complaint"
     if any(hint in text for hint in ("降价", "补差", "价保")) and not has_order:
         return "refund"
-    if any(hint in text for hint in ("换货", "换一码", "换大", "换小", "换码")) and not has_order:
+    if (
+        any(hint in text for hint in ("换货", "换一码", "换大", "换小", "换码"))
+        or re.search(r"换\s*\d*\s*码", text)
+    ) and not has_order:
         return "refund"
     return intent
 
@@ -392,11 +455,24 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                                         "error": str(exc)[:200]})
                         continue
                     text = task.get("text", "")
+                    hint = task.get("product_hint")
                     matched = [
                         o for o in orders
-                        if any(hint in text and keyword in (o.get("item") or o.get("itemName") or "")
-                               for hint, keyword in PRODUCT_HINTS.items())
+                        if any(h in text and keyword in (o.get("item") or o.get("itemName") or "")
+                               for h, keyword in PRODUCT_HINTS.items())
                     ]
+                    if hint:
+                        matched = [
+                            o for o in orders
+                            if PRODUCT_HINTS.get(hint, hint) in (o.get("item") or o.get("itemName") or "")
+                        ]
+                    if not matched:
+                        full_text = task.get("source") or _last_user_text(state["messages"])
+                        matched = [
+                            o for o in orders
+                            if any(hint in full_text and keyword in (o.get("item") or o.get("itemName") or "")
+                                   for hint, keyword in PRODUCT_HINTS.items())
+                        ]
                     if len(matched) == 1:
                         task_order = matched[0].get("orderNo")
                     else:
@@ -528,7 +604,7 @@ async def await_human(state: AgentState) -> dict[str, Any]:
 
 def _infer_after_sales_type(text: str) -> str:
     """从用户话术推断售后类型；判不出来按退款处理。"""
-    if "换货" in text:
+    if "换" in text or re.search(r"\d+\s*码", text):
         return "EXCHANGE"
     if "退货" in text or "寄回" in text:
         return "RETURN"
@@ -641,6 +717,28 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         with node_span(thread_id, "respond", intent="cancelled"):
             pass
         return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
+    last_text = _last_user_text(state["messages"])
+    if "发票" in last_text and not any(
+        word in last_text for word in ("退", "换", "催", "投诉")
+    ):
+        text = (
+            "支持电子普通发票和增值税专用发票：下单时或签收后 30 天内可申请，"
+            "电子发票 1 个工作日内开出，专票 3-5 个工作日。[P06]"
+        )
+        with node_span(thread_id, "respond", intent="invoice") as info:
+            info["source"] = "template"
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
+    if any(
+        word in last_text
+        for word in ("改地址", "修改地址", "改收货", "改一下地址")
+    ):
+        text = (
+            "改地址需要人工核验：未发货可尝试修改，已发货建议拒收后重新下单；"
+            "已为您转人工跟进，请提供订单号。"
+        )
+        with node_span(thread_id, "respond", intent="address_change") as info:
+            info["source"] = "template"
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
     if state.get("refusal") and state.get("safety_reply"):
         text = str(state["safety_reply"])
         with node_span(thread_id, "respond", intent="refusal") as info:
@@ -718,6 +816,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                             "拆封本身不等于不能退：拆封查验不影响商品完好即可七天无理由；已使用/影响二次销售才不适用；有质量问题走 P02 十五天路径。"
                             "事实里可能有多个任务结果：必须逐项回答，不能漏；投诉项要说明已转人工，动作项要说明办理结果。"
                             "urgent 为 true 时，要明确说明已加急/优先处理。"
+                            "没有工具结果支持时，不要声称已经提交/办理；只能说明条件、建议申请或转人工。"
                         )
                     ),
                     HumanMessage(content=f"事实：{context}\n\n用户：{_last_user_text(state['messages'])}"),

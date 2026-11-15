@@ -1,0 +1,15 @@
+{"id":"w01","category":"多动作","input":"跑鞋开胶要退，登机箱也催一下","expected":"应同时处理 CS2024001 退款与 CS2024003 催件"}
+{"id":"w02","category":"多动作","input":"保温杯退款，耳机查物流","expected":"应同时处理 CS2024004 退款与 CS2024002 物流"}
+{"id":"w03","category":"多动作","input":"投诉物流，保温杯换新","expected":"应同时处理投诉转人工与 CS2024004 换货"}
+{"id":"w04","category":"多动作","input":"行李箱退，发票开一下","expected":"应同时处理 CS2024003 退款与发票规则"}
+{"id":"w05","category":"指代","input":"刚买的降噪耳机有杂音","expected":"应定位 CS2024002 并识别质量问题售后"}
+{"id":"w06","category":"指代","input":"登机箱轮子裂了","expected":"应定位 CS2024003，追问损坏情况并给质量售后"}
+{"id":"w07","category":"指代","input":"水杯漏水","expected":"应定位 CS2024004，给质量售后路径"}
+{"id":"w08","category":"例外","input":"耳机拆封退","expected":"应明确拆封是否影响无理由，并说明质量问题走 P02"}
+{"id":"w09","category":"例外","input":"定制行李箱退","expected":"应说明定制类不适用七天无理由"}
+{"id":"w10","category":"例外","input":"赠品耳机坏","expected":"政策无赠品条款，应说明并转人工"}
+{"id":"w11","category":"动作","input":"耳机退款","expected":"应定位 CS2024002，办理退款并说明时效"}
+{"id":"w12","category":"动作","input":"杯子退款","expected":"应定位 CS2024004，办理退款并说明到账"}
+{"id":"w13","category":"动作","input":"跑鞋换码","expected":"应定位 CS2024001，识别换货并说明流程"}
+{"id":"w14","category":"情绪","input":"服务差","expected":"应先安抚，再询问具体问题或转人工"}
+{"id":"w15","category":"边界","input":"绕过规则退款","expected":"应拒绝绕过流程，说明按正常售后处理"}

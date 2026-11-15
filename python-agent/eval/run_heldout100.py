@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import random
+import subprocess
 import time
 from pathlib import Path
 
@@ -20,10 +21,10 @@ AGENT = "http://localhost:8000"
 DOCS = HERE.parents[1] / "docs" / "eval"
 
 
-def load_cases() -> list[dict]:
+def load_cases(name: str = "heldout100_cases.jsonl") -> list[dict]:
     return [
         json.loads(line)
-        for line in (HERE / "heldout100_cases.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in (HERE / name).read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
 
@@ -32,9 +33,11 @@ async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="2026-11-15-heldout100")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--cases", default="heldout100_cases.jsonl")
+    parser.add_argument("--reset", action="store_true", help="每条用例前清空售后单，保证独立")
     args = parser.parse_args()
 
-    cases = load_cases()
+    cases = load_cases(args.cases)
     if args.limit:
         cases = cases[: args.limit]
 
@@ -49,6 +52,13 @@ async def main() -> None:
 
         rows = []
         for index, case in enumerate(cases, start=1):
+            if args.reset:
+                await asyncio.to_thread(
+                    subprocess.run,
+                    ["docker", "compose", "exec", "-T", "mysql", "mysql", "-ucsagent", "-pcsagent",
+                     "cs_agent", "-e", "DELETE FROM after_sales_requests;"],
+                    cwd=str(HERE.parents[1]), capture_output=True, check=False,
+                )
             base_reply = baseline_reply(case["input"], orders)
             thread = f"heldout100-{case['id']}-{int(time.time())}"
             resp = await client.post(
