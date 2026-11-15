@@ -88,7 +88,7 @@ def _refusal(text: str) -> str | None:
         return "这个我没法帮您，我们继续处理售后问题吧。"
 
     bypass = any(
-        k in text for k in ("忽略以上", "忽略规则", "别管政策", "绕过规则", "绕过流程", "直接退钱", "马上退钱")
+        k in text for k in ("忽略以上", "忽略规则", "别管政策", "绕过规则", "绕过流程")
     )
     if bypass:
         return "操作需要按售后流程核实，不能绕过规则；我可以帮您走正常退款或转人工处理。"
@@ -100,6 +100,12 @@ def _refusal(text: str) -> str | None:
 
     if any(k in text for k in ("对比", "比怎么样", "比你们", "友商", "竞品")) or "和" in text and "比" in text:
         return "我只负责售后问题，具体对比建议参考官方参数页。"
+
+    after_sales_context = any(
+        k in text for k in ("订单", "物流", "退款", "退货", "换货", "售后", "CS2024")
+    )
+    if after_sales_context and any(k in text for k in ("退", "换", "查", "物流", "售后")):
+        return None
 
     delay_context = any(k in text for k in ("订单", "物流", "单号", "快递", "派送"))
     if "天气" in text and delay_context:
@@ -262,6 +268,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
         tasks = _extract_tasks(text)
         info["hard_rule_intent"] = intent if intent != parsed.intent else None
         info["tasks"] = len(tasks)
+        if settings.react_enabled:
+            tasks = []
         return {
             "intent": intent,
             "tasks": [],
@@ -411,6 +419,10 @@ def _apply_hard_rules(text: str, intent: str) -> str:
         "refund", "logistics", "order_query", "product_info"
     ):
         return "complaint"
+    if any(k in text for k in ("退", "退款", "退货", "换")) and (
+        has_order or any(hint in text for hint in PRODUCT_HINTS)
+    ):
+        return "refund"
     if any(hint in text for hint in ("降价", "补差", "价保")) and not has_order:
         return "refund"
     if (
@@ -429,7 +441,7 @@ def route_after_classify(state: AgentState) -> str:
         return "handoff"
     if state.get("awaiting_confirm"):
         return "respond"
-    if settings.react_enabled and not state.get("tasks") and state.get("intent") in (
+    if settings.react_enabled and state.get("intent") in (
         "order_query", "logistics", "refund", "policy", "product_info"
     ):
         return "react"

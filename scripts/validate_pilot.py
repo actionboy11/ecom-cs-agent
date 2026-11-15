@@ -88,8 +88,10 @@ def check_case(case: dict, writer: str, users: dict[str, dict[str, dict]], seen_
             errors.append(f"expected.order_nos 不属于 {user}: {order_no}")
     if expected.get("type") == "confirm" and not expected_order and not order_nos:
         errors.append("confirm 题必须给 expected.order_no 或 order_nos")
-    if expected.get("type") == "refuse" and expected.get("tools"):
-        errors.append("refuse 不应要求工具")
+    if expected.get("type") == "refuse":
+        creates = [tool for tool in (expected.get("tools") or []) if tool.startswith("create_")]
+        if creates:
+            errors.append("refuse 不应要求写工具")
     return errors
 
 
