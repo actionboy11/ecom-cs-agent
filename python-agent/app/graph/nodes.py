@@ -416,7 +416,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         with node_span(thread_id, "respond", intent="refusal") as info:
             info["source"] = "template"
             info["reason"] = "refusal"
-        return {"reply": text, "messages": [AIMessage(content=text)]}
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
     if state.get("needs_human"):
         is_turn_limit = state.get("handoff_reason") == "turn_limit"
         if state.get("handoff_approved") is False:
@@ -430,6 +430,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         updates: dict[str, Any] = {
             "reply": text,
             "messages": [AIMessage(content=text)],
+            "reply_chain": "template",
             "needs_human": False,
         }
         if is_turn_limit:
@@ -460,6 +461,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         return {
             "reply": template,
             "messages": [AIMessage(content=template)],
+            "reply_chain": "template",
             "knowledge": knowledge,
             "policy_refs": policy_refs,
         }
@@ -486,6 +488,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             return {
                 "reply": text,
                 "messages": [AIMessage(content=text)],
+                "reply_chain": "llm",
                 "knowledge": knowledge,
                 "policy_refs": policy_refs,
             }
@@ -495,6 +498,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             return {
                 "reply": template,
                 "messages": [AIMessage(content=template)],
+                "reply_chain": "template",
                 "knowledge": knowledge,
                 "policy_refs": policy_refs,
             }

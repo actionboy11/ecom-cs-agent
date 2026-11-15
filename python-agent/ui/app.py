@@ -113,16 +113,58 @@ def top_bar() -> None:
 
 def send_message(text: str) -> None:
     st.session_state.messages.append({"role": "user", "content": text})
+    details: dict = {}
     try:
         reply = api.chat(st.session_state.token, st.session_state.thread_id, text)
         content = format_reply(reply)
+        details = {
+            "intent": reply.get("intent"),
+            "chain": reply.get("chain"),
+            "latency": reply.get("latency_ms"),
+            "tool": reply.get("tool_result"),
+            "refs": reply.get("policy_refs") or [],
+        }
     except WorkbenchError as exc:
         if "HTTP 401" in str(exc):
             logout()
             st.rerun()
         content = "刚才没连上服务，稍后再试一次。"
-    st.session_state.messages.append({"role": "assistant", "content": content})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": content, "details": details}
+    )
     st.session_state.chat_seq += 1
+
+
+INTENT_LABELS = {
+    "order_query": "订单查询",
+    "logistics": "物流",
+    "refund": "退款/售后",
+    "policy": "政策",
+    "product_info": "商品",
+    "complaint": "投诉",
+    "other": "其他",
+}
+
+
+def reply_details(details: dict) -> None:
+    intent = INTENT_LABELS.get(str(details.get("intent")), details.get("intent") or "—")
+    chain = "模型生成" if details.get("chain") == "llm" else "模板兜底"
+    latency = details.get("latency") or 0
+    st.caption(f"意图：{intent} · 链路：{chain} · 耗时：{latency} ms")
+
+    tool = details.get("tool") or {}
+    if tool:
+        if tool.get("error"):
+            st.caption(f"工具：调用失败（{tool.get('error')}）")
+        else:
+            name = tool.get("tool") or "业务工具"
+            data = tool.get("data") or {}
+            status = data.get("status") or data.get("orderStatus") or data.get("state") or ""
+            st.caption(f"工具：{name}" + (f" · 当前状态：{status}" if status else ""))
+
+    refs = details.get("refs") or []
+    if refs:
+        st.caption("政策引用：" + "、".join(str(ref) for ref in refs))
 
 
 def after_sales_panel() -> None:
@@ -159,6 +201,9 @@ def chat_view() -> None:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
+                    if message.get("details"):
+                        with st.expander("这次是怎么处理的"):
+                            reply_details(message["details"])
 
         text = st.text_input(
             "输入问题",

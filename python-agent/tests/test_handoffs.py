@@ -113,6 +113,22 @@ def test_legacy_thread_without_pending_flag_is_still_found(app_env) -> None:
         assert any(r["thread_id"] == "t-handoff-inbox" for r in rows)
 
 
+def test_chat_response_exposes_processing_details(app_env) -> None:
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/v1/chat",
+            json={"thread_id": "t-details", "message": "退货政策几天"},
+            headers=_auth(_token("buyer_a", 1)),
+        )
+        body = resp.json()
+
+        assert body["chain"] in ("llm", "template")
+        assert isinstance(body["policy_refs"], list)
+        assert body["latency_ms"] >= 0
+
+
 def test_thread_messages_returns_history(app_env) -> None:
     from fastapi.testclient import TestClient
 

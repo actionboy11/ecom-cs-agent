@@ -41,6 +41,8 @@ class AgentState(TypedDict, total=False):
 
     # 最终回复
     reply: str
+    # 本次回复的生成链路：llm / template（给前端「处理详情」用）
+    reply_chain: str
 
 
 INTENTS = (

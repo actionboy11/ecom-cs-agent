@@ -94,6 +94,10 @@ class ChatResponse(BaseModel):
     tool_result: dict[str, Any] | None = None
     needs_human: bool = False
     interrupt: dict[str, Any] | None = None
+    # 处理详情：让前端能展示「这次是怎么答的」
+    policy_refs: list[str] = Field(default_factory=list)
+    chain: str = ""
+    latency_ms: int = 0
 
 
 class ResumeRequest(BaseModel):
@@ -180,6 +184,7 @@ async def chat(
     graph = get_graph()
     trace_event(req.thread_id, "api", "chat_request", {"message": req.message[:200]})
 
+    started = time.perf_counter()
     result = await graph.ainvoke(
         {
             "messages": [HumanMessage(content=req.message)],
@@ -187,6 +192,7 @@ async def chat(
         },
         _config(req.thread_id, user.token),
     )
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
     interrupt = _extract_interrupt(result)
     if interrupt is not None:
         await store.mark_pending(req.thread_id)
@@ -195,6 +201,9 @@ async def chat(
         reply=result.get("reply", ""),
         intent=result.get("intent"),
         order_no=result.get("order_no"),
+        policy_refs=result.get("policy_refs") or [],
+        chain=result.get("reply_chain", ""),
+        latency_ms=elapsed_ms,
         tool_result=result.get("tool_result"),
         needs_human=interrupt is not None,
         interrupt=interrupt,
