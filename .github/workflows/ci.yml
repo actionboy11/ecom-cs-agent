@@ -89,6 +89,8 @@ jobs:
         run: npm ci
       - name: 构建
         run: npm run build
+      - name: 构建产物与仓库一致
+        run: git diff --exit-code -- web/dist
 
   compose:
     name: Compose 配置校验

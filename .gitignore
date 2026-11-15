@@ -48,3 +48,6 @@ eval/reports/
 .tmp/
 data/chroma/
 pytest-of-*/
+web/tsconfig.tsbuildinfo
+!web/dist/
+!web/dist/**
