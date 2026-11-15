@@ -84,6 +84,7 @@ function withoutTable(text: string): string {
 function CandidateCards({
   candidates,
   onPick,
+  onNone,
   disabled,
 }: {
   candidates: NonNullable<api.ChatReply["candidates"]>;
