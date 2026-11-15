@@ -1,0 +1,261 @@
+{
+  "cases": 20,
+  "passed": 19,
+  "rate": 0.95,
+  "wrong_order": 0,
+  "rows": [
+    {
+      "id": "h01",
+      "message": "我的跑鞋开胶了",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h02",
+      "message": "上周买的鞋到哪了",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders",
+        "query_logistics"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h03",
+      "message": "上个月买的耳机",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h04",
+      "message": "登机箱轮子坏了",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h05",
+      "message": "保温杯漏水",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [],
+      "fallback": null,
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "id": "h06",
+      "message": "我的背包多少钱",
+      "expected": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "seen": [
+        "find_my_orders",
+        "get_product",
+        "query_order"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h07",
+      "message": "CS2024108 到哪了",
+      "expected": [
+        "query_logistics"
+      ],
+      "seen": [
+        "query_logistics"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h08",
+      "message": "CS2024107 订单详情",
+      "expected": [
+        "query_order"
+      ],
+      "seen": [
+        "query_order"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h09",
+      "message": "拆封的耳机能退吗",
+      "expected": [
+        "search_policy"
+      ],
+      "seen": [
+        "search_policy"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h10",
+      "message": "赠品耳机坏了",
+      "expected": [],
+      "seen": [],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h11",
+      "message": "我要退款 CS2024106，质量问题",
+      "expected": [],
+      "seen": [
+        "create_refund"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": "created=True"
+    },
+    {
+      "id": "h12",
+      "message": "我要退货 CS2024105，开胶",
+      "expected": [],
+      "seen": [
+        "create_refund"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": "created=True"
+    },
+    {
+      "id": "h13",
+      "message": "我要换货 CS2024101，换43码",
+      "expected": [],
+      "seen": [
+        "create_refund"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": "created=True"
+    },
+    {
+      "id": "h14",
+      "message": "最近3天买的杯子",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h15",
+      "message": "上个月买的行李箱",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h16",
+      "message": "我的杯子想退货",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h17",
+      "message": "退款要多久到账",
+      "expected": [
+        "search_policy"
+      ],
+      "seen": [
+        "search_policy"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h18",
+      "message": "镜子的订单",
+      "expected": [
+        "find_my_orders"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": "no_candidates",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h19",
+      "message": "耳机多少钱",
+      "expected": [
+        "find_my_orders",
+        "get_product"
+      ],
+      "seen": [
+        "find_my_orders"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "h20",
+      "message": "CS2024102 物流",
+      "expected": [
+        "query_logistics"
+      ],
+      "seen": [
+        "query_logistics"
+      ],
+      "fallback": null,
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

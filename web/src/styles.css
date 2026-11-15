@@ -170,3 +170,7 @@ input[type="radio"] { width: auto; }
   color: var(--seal);
   font-size: 12.5px;
 }
+
+.tool-trace { margin-top: 6px; }
+.tool-trace p { margin: 2px 0; word-break: break-all; }
+.tool-trace code { color: var(--green-deep); }

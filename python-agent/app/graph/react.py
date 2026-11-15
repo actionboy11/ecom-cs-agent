@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -153,6 +154,16 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     tool_map = {tool.name: tool for tool in tools}
     active = _active_order(state)
     last_text = str(state["messages"][-1].content) if state.get("messages") else ""
+    active_at = state.get("active_order_at")
+    if active is None and state.get("active_order_no"):
+        active_at = None
+    selection = re.search(r"选择订单\s*(CS\d{6,})", last_text)
+    if selection:
+        active = selection.group(1).upper()
+        active_at = datetime.now(UTC).isoformat()
+    elif any(word in last_text for word in ("不是这单", "不是这个", "都不是", "换一个", "不对")):
+        active = None
+        active_at = None
     hint = parse_time_reference(last_text)
     today = datetime.now(TZ).date().isoformat()
     time_line = f"当前日期（Asia/Shanghai）：{today}。"
@@ -183,7 +194,6 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     messages: list[BaseMessage] = [system, *state["messages"][-8:]]
     trace: list[dict[str, Any]] = []
     active_order = active
-    active_at = state.get("active_order_at")
     fallback_reason: str | None = None
     failures = 0
 

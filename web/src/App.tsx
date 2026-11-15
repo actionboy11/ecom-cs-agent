@@ -75,6 +75,11 @@ function Login({ onLogin }: { onLogin: (user: api.User) => void }) {
 
 const WRITE_TYPES = new Set(["refund", "return", "exchange"]);
 
+function shorten(value: unknown, max = 90): string {
+  const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
 function isWriteAction(action: api.PendingAction): boolean {
   return WRITE_TYPES.has(action.type || "");
 }
@@ -149,12 +154,15 @@ function Details({ reply }: { reply: api.ChatReply }) {
       )}
       {(reply.policy_refs?.length ?? 0) > 0 && <p>政策引用：{reply.policy_refs!.join("、")}</p>}
       {(reply.tool_trace?.length ?? 0) > 0 && (
-        <p>
-          工具轨迹：
-          {reply.tool_trace!
-            .map((item) => `${item.tool || "?"}${item.error ? "（失败）" : ""}`)
-            .join(" → ")}
-        </p>
+        <div className="tool-trace">
+          <p>工具轨迹：</p>
+          {reply.tool_trace!.map((item, index) => (
+            <p key={index}>
+              <code>{item.tool || "?"}</code>（{shorten(item.args, 70)}）
+              {item.error ? ` 失败：${shorten(item.error, 80)}` : ` → ${shorten(item.result, 80)}`}
+            </p>
+          ))}
+        </div>
       )}
     </details>
   );
