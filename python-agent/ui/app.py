@@ -192,9 +192,25 @@ def after_sales_panel() -> None:
     )
 
 
+def scroll_to_bottom() -> None:
+    """消息区固定高度后，新消息要自动滚到底（纯前端小脚本）。"""
+    st.components.v1.html(
+        """
+        <script>
+        const doc = window.parent.document;
+        const items = doc.querySelectorAll('[data-testid="stChatMessage"]');
+        if (items.length) {
+          items[items.length - 1].scrollIntoView({block: "end"});
+        }
+        </script>
+        """,
+        height=0,
+    )
+
+
 def chat_view() -> None:
     with st.container(key="app_card"):
-        box = st.container()
+        box = st.container(height=520, border=False)
         with box:
             if not st.session_state.messages:
                 st.caption("直接问订单、物流或售后。")
@@ -204,16 +220,18 @@ def chat_view() -> None:
                     if message.get("details"):
                         with st.expander("这次是怎么处理的"):
                             reply_details(message["details"])
+        scroll_to_bottom()
 
-        text = st.text_input(
-            "输入问题",
-            key=f"chat_input_{st.session_state.chat_seq}",
-            placeholder="例如：CS2024001 到哪了",
-            label_visibility="collapsed",
-        )
-        if st.button("发送", type="primary", use_container_width=True) and text.strip():
-            send_message(text)
-            st.rerun()
+        with st.container(key="composer"):
+            text = st.text_input(
+                "输入问题",
+                key=f"chat_input_{st.session_state.chat_seq}",
+                placeholder="例如：CS2024001 到哪了",
+                label_visibility="collapsed",
+            )
+            if st.button("发送", type="primary", use_container_width=True) and text.strip():
+                send_message(text)
+                st.rerun()
 
         if st.session_state.notice:
             st.success(st.session_state.notice)

@@ -93,6 +93,15 @@ p, li, label {{ line-height: 1.7; }}
 [data-testid="stChatMessageAvatarAssistant"] {{ display: none !important; }}
 [data-testid="stChatMessageContent"] {{ width: 100%; }}
 
+/* 对话区内部滚动，输入框固定在卡片底部 */
+.st-key-composer {{
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  padding-top: .55rem;
+  z-index: 5;
+}}
+
 /* 控件 */
 .stButton button, [data-testid="stFormSubmitButton"] button {{
   border-radius: 3px;
