@@ -187,6 +187,47 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "tasks": [],
         }
 
+    # 待确认计划：用户说「确认/执行」才真正调工具；说「取消」则清空
+    if state.get("awaiting_confirm"):
+        if any(word in text for word in ("确认", "执行", "可以", "好的", "是的", "没问题", "ok", "OK")):
+            with node_span(thread_id, "classify", user_text=text[:200]) as info:
+                info["source"] = "confirm"
+            return {
+                "intent": "multi",
+                "tasks": state.get("pending_tasks") or [],
+                "pending_tasks": [],
+                "pending_actions": [],
+                "awaiting_confirm": False,
+                "cancelled": False,
+                "turn_count": turn_count,
+                "refusal": None,
+                "safety_reply": None,
+                "tool_result": None,
+                "order_no": None,
+                "sku": None,
+                "reason": None,
+                "confidence": 1.0,
+            }
+        if any(word in text for word in ("取消", "不用了", "算了", "先不")):
+            with node_span(thread_id, "classify", user_text=text[:200]) as info:
+                info["source"] = "cancel"
+            return {
+                "intent": "other",
+                "tasks": [],
+                "pending_tasks": [],
+                "pending_actions": [],
+                "awaiting_confirm": False,
+                "cancelled": True,
+                "turn_count": turn_count,
+                "refusal": None,
+                "safety_reply": None,
+                "tool_result": None,
+                "order_no": None,
+                "sku": None,
+                "reason": None,
+                "confidence": 1.0,
+            }
+
     with node_span(thread_id, "classify", user_text=text[:200]) as info:
         try:
             model = with_structured_output("fast", Classification)
@@ -216,7 +257,11 @@ async def classify(state: AgentState) -> dict[str, Any]:
         info["tasks"] = len(tasks)
         return {
             "intent": intent,
-            "tasks": tasks,
+            "tasks": [],
+            "pending_tasks": tasks,
+            "pending_actions": [],
+            "awaiting_confirm": bool(tasks),
+            "cancelled": False,
             "turn_count": turn_count,
             # 每轮清空拒答状态与上轮工具结果，避免旧数据串到本轮回复
             "refusal": None,
@@ -299,6 +344,8 @@ def route_after_classify(state: AgentState) -> str:
     # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
     if int(state.get("turn_count") or 0) > MAX_TURNS:
         return "handoff"
+    if state.get("awaiting_confirm"):
+        return "respond"
     if state.get("tasks"):
         return "tools"
     intent = state.get("intent", "other")
@@ -332,19 +379,27 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                 if not task_order:
                     try:
                         orders = await business_api.list_orders(token)
-                        results.append({"intent": task_intent, "tool": "list_my_orders",
-                                        "data": {"orders": orders}})
                     except BusinessAPIError as exc:
                         results.append({"intent": task_intent, "tool": "list_my_orders",
                                         "error": str(exc)[:200]})
-                    continue
+                        continue
+                    text = task.get("text", "")
+                    matched = [o for o in orders
+                               if any(p in (o.get("itemName") or "") for p in PRODUCT_HINTS if p in text)]
+                    if len(matched) == 1:
+                        task_order = matched[0].get("orderNo")
+                    else:
+                        results.append({"intent": task_intent, "tool": "list_my_orders",
+                                        "data": {"orders": orders}})
+                        continue
                 try:
                     if task_intent == "logistics":
                         data = await business_api.get_logistics(task_order, token)
                         tool_name = "query_logistics"
                     elif task_intent == "refund":
                         as_type = _infer_after_sales_type(task.get("text", ""))
-                        data = await business_api.apply_after_sales(task_order, as_type, reason, token)
+                        as_reason = reason or task.get("text") or "用户申请退款"
+                        data = await business_api.apply_after_sales(task_order, as_type, as_reason, token)
                         tool_name = "create_after_sales_request"
                     else:
                         data = await business_api.get_order(task_order, token)
@@ -399,7 +454,8 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                 data = await business_api.get_logistics(order_no, token)
             else:
                 as_type = _infer_after_sales_type(_last_user_text(state["messages"]))
-                data = await business_api.apply_after_sales(order_no, as_type, reason, token)
+                as_reason = reason or _last_user_text(state["messages"]) or "用户申请退款"
+                data = await business_api.apply_after_sales(order_no, as_type, as_reason, token)
             info["result"] = "ok"
             return {"tool_result": data}
         except BusinessAPIError as exc:
@@ -532,6 +588,39 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    if state.get("awaiting_confirm") and state.get("pending_tasks"):
+        tasks = state.get("pending_tasks") or []
+        labels = {
+            "refund": "退款/退货",
+            "logistics": "催件/物流",
+            "complaint": "转人工投诉",
+        }
+        lines = [f"{index + 1}. {labels.get(t.get('intent', ''), t.get('intent', ''))}"
+                 f"（{t.get('order_no') or '待确认订单'}）"
+                 for index, t in enumerate(tasks)]
+        text = "我准备执行：\n" + "\n".join(lines) + "\n\n确认后我就开始办理，回复「确认」或「取消」。"
+        actions = [
+            {
+                "intent": t.get("intent"),
+                "order_no": t.get("order_no"),
+                "label": labels.get(t.get("intent", ""), t.get("intent", "")),
+            }
+            for t in tasks
+        ]
+        with node_span(thread_id, "respond", intent="confirm_plan") as info:
+            info["source"] = "template"
+            info["tasks"] = len(tasks)
+        return {
+            "reply": text,
+            "messages": [AIMessage(content=text)],
+            "reply_chain": "template",
+            "pending_actions": actions,
+        }
+    if state.get("cancelled"):
+        text = "好的，已取消，没有执行任何操作。"
+        with node_span(thread_id, "respond", intent="cancelled"):
+            pass
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "template"}
     if state.get("refusal") and state.get("safety_reply"):
         text = str(state["safety_reply"])
         with node_span(thread_id, "respond", intent="refusal") as info:

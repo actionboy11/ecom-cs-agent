@@ -5,6 +5,7 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   details?: api.ChatReply;
+  actions?: api.PendingAction[];
 };
 
 const INTENT_LABELS: Record<string, string> = {
@@ -122,16 +123,19 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
 
   useEffect(scrollToBottom, [messages, scrollToBottom]);
 
-  async function send(event: React.FormEvent) {
-    event.preventDefault();
-    const content = text.trim();
+  async function dispatch(content: string) {
     if (!content || sending) return;
     setSending(true);
     setText("");
-    setMessages((prev) => [...prev, { role: "user", content }]);
+    setMessages((prev) => [
+      ...prev.map((message) => ({ ...message, actions: undefined })),
+      { role: "user", content },
+    ]);
     try {
       const reply = await api.chat(user.token, thread, content);
-      const extra: Message[] = [{ role: "assistant", content: reply.reply, details: reply }];
+      const extra: Message[] = [
+        { role: "assistant", content: reply.reply, details: reply, actions: reply.pending_actions },
+      ];
       if (reply.needs_human) {
         extra.push({ role: "assistant", content: "已转接人工坐席，请等待处理。" });
       }
@@ -142,6 +146,11 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
     } finally {
       setSending(false);
     }
+  }
+
+  async function send(event: React.FormEvent) {
+    event.preventDefault();
+    await dispatch(text.trim());
   }
 
   async function toggleAfterSales() {
@@ -163,6 +172,16 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
         {messages.map((message, index) => (
           <div className={`msg ${message.role}`} key={index}>
             <div className="body">{message.content}</div>
+            {message.actions && message.actions.length > 0 && (
+              <div className="actions">
+                <button onClick={() => dispatch("确认执行")} disabled={sending}>
+                  确认执行
+                </button>
+                <button className="ghost" onClick={() => dispatch("取消")} disabled={sending}>
+                  取消
+                </button>
+              </div>
+            )}
             {message.details && <Details reply={message.details} />}
           </div>
         ))}

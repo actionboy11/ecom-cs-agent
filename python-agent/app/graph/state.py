@@ -17,6 +17,10 @@ class AgentState(TypedDict, total=False):
     # 意图与槽位
     intent: str
     tasks: list[dict[str, Any]]
+    pending_tasks: list[dict[str, Any]]
+    pending_actions: list[dict[str, Any]]
+    awaiting_confirm: bool
+    cancelled: bool
     order_no: str | None
     sku: str | None
     reason: str | None

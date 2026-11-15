@@ -123,3 +123,6 @@ input[type="radio"] { width: auto; }
   h1 { font-size: 22px; }
   .messages { height: 300px; }
 }
+
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.actions button { padding: 6px 12px; font-size: 13px; }

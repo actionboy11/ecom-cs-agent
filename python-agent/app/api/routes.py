@@ -98,6 +98,7 @@ class ChatResponse(BaseModel):
     policy_refs: list[str] = Field(default_factory=list)
     chain: str = ""
     latency_ms: int = 0
+    pending_actions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ResumeRequest(BaseModel):
@@ -207,6 +208,7 @@ async def chat(
         tool_result=result.get("tool_result"),
         needs_human=interrupt is not None,
         interrupt=interrupt,
+        pending_actions=result.get("pending_actions") or [],
     )
 
 
@@ -304,4 +306,5 @@ async def resume(
         tool_result=result.get("tool_result"),
         needs_human=interrupt is not None,
         interrupt=interrupt,
+        pending_actions=result.get("pending_actions") or [],
     )

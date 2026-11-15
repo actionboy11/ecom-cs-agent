@@ -55,13 +55,23 @@ async def main() -> None:
         rows = []
         for case in cases:
             base_reply = baseline_reply(case["input"], orders)
+            eval_thread = f"hard-{case['id']}-{int(time.time())}"
             agent_resp = await client.post(
                 f"{AGENT}/api/v1/chat",
-                json={"thread_id": f"hard-{case['id']}-{int(time.time())}", "message": case["input"]},
+                json={"thread_id": eval_thread, "message": case["input"]},
                 headers=headers,
             )
             agent_resp.raise_for_status()
             agent_data = agent_resp.json()
+            # 多动作会先给计划，模拟用户点「确认执行」后取最终结果
+            if agent_data.get("pending_actions"):
+                confirm = await client.post(
+                    f"{AGENT}/api/v1/chat",
+                    json={"thread_id": eval_thread, "message": "确认执行"},
+                    headers=headers,
+                )
+                if confirm.status_code == 200:
+                    agent_data = confirm.json()
             row = {
                 "id": case["id"],
                 "category": case["category"],

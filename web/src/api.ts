@@ -9,6 +9,12 @@ export type User = {
   username: string;
 };
 
+export type PendingAction = {
+  intent?: string;
+  order_no?: string | null;
+  label?: string;
+};
+
 export type ChatReply = {
   reply: string;
   intent?: string;
@@ -17,6 +23,7 @@ export type ChatReply = {
   chain?: string;
   latency_ms?: number;
   needs_human?: boolean;
+  pending_actions?: PendingAction[];
 };
 
 export type AfterSale = {
