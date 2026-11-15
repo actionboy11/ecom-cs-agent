@@ -27,6 +27,16 @@ export type ChatReply = {
   needs_human?: boolean;
   pending_actions?: PendingAction[];
   tool_trace?: { step?: number; tool?: string; args?: Record<string, unknown>; result?: string; error?: string }[];
+  candidates?: {
+    orderNo?: string;
+    item?: string;
+    amount?: number;
+    status?: string;
+    createdAt?: string;
+    deliveredAt?: string;
+    score?: number;
+    reasons?: string[];
+  }[];
 };
 
 export type AfterSale = {

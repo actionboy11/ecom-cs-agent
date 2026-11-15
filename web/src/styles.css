@@ -129,3 +129,17 @@ input[type="radio"] { width: auto; }
 
 .actions { display: flex; gap: 8px; margin-top: 8px; }
 .actions button { padding: 6px 12px; font-size: 13px; }
+
+.candidates { display: grid; gap: 8px; margin: 8px 0 4px; }
+.candidate {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--green);
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 3px;
+}
+.candidate-main { display: flex; gap: 10px; align-items: baseline; }
+.candidate-main strong { font-family: var(--serif); }
+.candidate-meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--ink-soft); font-size: 12.5px; margin-top: 4px; }
+.candidate-reasons { color: var(--blue); font-size: 12px; margin-top: 4px; }
+.candidate button { margin-top: 8px; padding: 5px 12px; font-size: 13px; }

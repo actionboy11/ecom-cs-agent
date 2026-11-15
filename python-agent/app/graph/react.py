@@ -227,7 +227,12 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 continue
             try:
                 result = await tool.ainvoke(args)
-                trace.append({"step": step, "tool": name, "args": args, "result": str(result)[:300]})
+                trace.append({
+                    "step": step,
+                    "tool": name,
+                    "args": args,
+                    "result": str(result) if name == "find_my_orders" else str(result)[:300],
+                })
                 messages.append(ToolMessage(content=str(result), tool_call_id=call_id))
                 order_no = args.get("order_no")
                 if order_no and name in ("query_order", "query_logistics"):

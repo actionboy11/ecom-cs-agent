@@ -96,6 +96,8 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 样例只有 30+15 条、由我们自己出题，不能替代 100 条封版指标；只用于验证匹配与 ReAct 链路可用。
 
+候选订单在 React 里渲染为可点选卡片（订单号、商品、金额、状态、下单/签收时间、匹配原因），点「选这单」直接把订单号带回 Agent，不再让用户手输。
+
 
 
 前端是 **React 18 + Vite + TypeScript**，零后端模板：浏览器直接调用 Java / Agent API（已配置 CORS），聊天区滚动由 React 直接控制，不再依赖注入脚本。

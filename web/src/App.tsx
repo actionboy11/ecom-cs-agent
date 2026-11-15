@@ -73,6 +73,49 @@ function Login({ onLogin }: { onLogin: (user: api.User) => void }) {
   );
 }
 
+function withoutTable(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("|"))
+    .join("\n")
+    .trim();
+}
+
+function CandidateCards({
+  candidates,
+  onPick,
+  disabled,
+}: {
+  candidates: NonNullable<api.ChatReply["candidates"]>;
+  onPick: (orderNo: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="candidates">
+      {candidates.slice(0, 3).map((item) => (
+        <div className="candidate" key={item.orderNo}>
+          <div className="candidate-main">
+            <strong>{item.orderNo}</strong>
+            <span>{item.item}</span>
+          </div>
+          <div className="candidate-meta">
+            <span>{item.status}</span>
+            <span>{item.amount} 元</span>
+            <span>下单 {item.createdAt}</span>
+            {item.deliveredAt && <span>签收 {item.deliveredAt.slice(0, 10)}</span>}
+          </div>
+          {item.reasons && item.reasons.length > 0 && (
+            <div className="candidate-reasons">{item.reasons.join(" · ")}</div>
+          )}
+          <button onClick={() => onPick(item.orderNo || "")} disabled={disabled}>
+            选这单
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Details({ reply }: { reply: api.ChatReply }) {
   const intent = INTENT_LABELS[reply.intent || ""] || reply.intent || "—";
   const chain = reply.chain === "llm" ? "模型生成" : "模板兜底";
@@ -202,8 +245,17 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
         {messages.map((message, index) => (
           <div className={`msg ${message.role}`} key={index}>
             <div className="body">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.details?.candidates?.length ? withoutTable(message.content) : message.content}
+              </ReactMarkdown>
             </div>
+            {message.details?.candidates && message.details.candidates.length > 0 && (
+              <CandidateCards
+                candidates={message.details.candidates}
+                onPick={(orderNo) => dispatch(`选择订单 ${orderNo}`)}
+                disabled={sending}
+              />
+            )}
             {message.actions && message.actions.length > 0 && (
               <div className="actions">
                 <button

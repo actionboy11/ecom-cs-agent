@@ -100,6 +100,7 @@ class ChatResponse(BaseModel):
     latency_ms: int = 0
     pending_actions: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
+    candidates: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ResumeRequest(BaseModel):
@@ -110,6 +111,20 @@ class ResumeRequest(BaseModel):
 def _config(thread_id: str, token: str = "") -> dict[str, Any]:
     """会话配置：auth_token 只走 config，不进 state，避免被 checkpointer 落盘。"""
     return {"configurable": {"thread_id": thread_id, "auth_token": token}}
+
+
+def _candidate_orders(result: dict[str, Any]) -> list[dict[str, Any]]:
+    """从 ReAct 的 find_my_orders 轨迹里取结构化候选，供前端渲染卡片。"""
+    for item in reversed(result.get("tool_trace") or []):
+        if item.get("tool") != "find_my_orders" or not item.get("result"):
+            continue
+        try:
+            payload = json.loads(item["result"])
+        except (TypeError, ValueError):
+            return []
+        rows = payload.get("candidates") if isinstance(payload, dict) else None
+        return rows if isinstance(rows, list) else []
+    return []
 
 
 def _extract_interrupt(result: dict[str, Any]) -> dict[str, Any] | None:
@@ -233,6 +248,7 @@ async def chat(
         interrupt=interrupt,
         pending_actions=pending_actions,
         tool_trace=tool_trace,
+        candidates=_candidate_orders({"tool_trace": tool_trace}),
     )
 
 
