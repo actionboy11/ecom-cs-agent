@@ -14,6 +14,7 @@ import java.util.Map;
 public class OrderMcpTools implements McpTool {
 
     public static final String NAME = "query_order";
+    public static final String LIST_NAME = "list_my_orders";
 
     private final OrderQueryService orderQueryService;
     private final ObjectMapper objectMapper;
@@ -32,17 +33,29 @@ public class OrderMcpTools implements McpTool {
         return objectMapper.writeValueAsString(order);
     }
 
+    public String listMyOrders() throws Exception {
+        AuthenticatedUser user = McpAuthContext.require();
+        List<Order> orders = orderQueryService.listFor(user, "/mcp");
+        return objectMapper.writeValueAsString(orders);
+    }
+
     @Override
     public List<McpProtocol.ToolSpec> specs() {
-        return List.of(new McpProtocol.ToolSpec(
-                NAME,
-                "查询订单详情；只能查当前登录用户自己的订单，他人订单返回不存在",
-                Map.of(
-                        "type", "object",
-                        "properties", Map.of(
-                                "order_no", Map.of("type", "string", "description", "订单号，例如 CS2024001")),
-                        "required", List.of("order_no"),
-                        "additionalProperties", false),
-                args -> queryOrder((String) args.get("order_no"))));
+        return List.of(
+                new McpProtocol.ToolSpec(
+                        NAME,
+                        "查询订单详情；只能查当前登录用户自己的订单，他人订单返回不存在",
+                        Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "order_no", Map.of("type", "string", "description", "订单号，例如 CS2024001")),
+                                "required", List.of("order_no"),
+                                "additionalProperties", false),
+                        args -> queryOrder((String) args.get("order_no"))),
+                new McpProtocol.ToolSpec(
+                        LIST_NAME,
+                        "列出当前登录用户的全部订单（订单号、商品、状态、下单时间）；用于用户只描述商品时的候选匹配",
+                        Map.of("type", "object", "properties", Map.of(), "additionalProperties", false),
+                        args -> listMyOrders()));
     }
 }

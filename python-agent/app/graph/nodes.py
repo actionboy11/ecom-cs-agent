@@ -166,6 +166,7 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "sku": None,
             "reason": None,
             "confidence": 1.0,
+            "tasks": [],
         }
 
     # SPEC §8：turn_count > 10 转人工（真实挂起），且不再调用模型/工具
@@ -183,6 +184,7 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "sku": None,
             "reason": None,
             "confidence": 1.0,
+            "tasks": [],
         }
 
     with node_span(thread_id, "classify", user_text=text[:200]) as info:
@@ -208,8 +210,13 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["fallback_reason"] = str(exc)[:200]
 
         info["intent"] = parsed.intent
+        intent = _apply_hard_rules(text, parsed.intent)
+        tasks = _extract_tasks(text)
+        info["hard_rule_intent"] = intent if intent != parsed.intent else None
+        info["tasks"] = len(tasks)
         return {
-            "intent": parsed.intent,
+            "intent": intent,
+            "tasks": tasks,
             "turn_count": turn_count,
             # 每轮清空拒答状态与上轮工具结果，避免旧数据串到本轮回复
             "refusal": None,
@@ -231,12 +238,69 @@ async def refuse(state: AgentState) -> dict[str, Any]:
     return {"safety_reply": state.get("refusal") or ""}
 
 
+EXCEPTION_HINTS = ("拆封", "定制", "超过", "赠品", "七天", "十五天", "无理由", "价保")
+REFERENCE_HINTS = ("那个", "昨天", "上周", "前两天", "刚买", "之前")
+PRODUCT_HINTS = ("耳机", "行李箱", "杯子", "鞋", "背包", "充电宝")
+URGENT_HINTS = ("很急", "今天必须", "尽快", "马上")
+TASK_SPLIT = re.compile(r"[，,；;。]|另外|顺便|再|还有")
+
+
+def _extract_tasks(text: str) -> list[dict[str, Any]]:
+    """把「退款 + 催件」这类一句话拆成多个动作；政策问答不算动作。"""
+    tasks: list[dict[str, Any]] = []
+    for part in TASK_SPLIT.split(text):
+        part = part.strip()
+        if len(part) < 2:
+            continue
+        order = ORDER_NO_PATTERN.search(part)
+        if any(k in part for k in ("投诉", "差评", "破服务", "态度")):
+            intent = "complaint"
+        elif any(k in part for k in ("催", "物流", "到哪", "快递")):
+            intent = "logistics"
+        elif any(k in part for k in ("退", "换")):
+            intent = "refund"
+        else:
+            continue
+        task = {
+            "intent": intent,
+            "order_no": order.group(1).upper() if order else None,
+            "text": part,
+        }
+        if task not in tasks:
+            tasks.append(task)
+    action_intents = {t["intent"] for t in tasks if t["intent"] != "complaint"}
+    distinct_intents = {t["intent"] for t in tasks}
+    return tasks if len(tasks) >= 2 and len(distinct_intents) >= 2 and action_intents else []
+
+
+def _apply_hard_rules(text: str, intent: str) -> str:
+    """分类器的确定性兜底：政策例外、模糊指代、投诉/加急、价保。"""
+    has_order = bool(ORDER_NO_PATTERN.search(text))
+    if any(hint in text for hint in EXCEPTION_HINTS) and not has_order:
+        return "policy"
+    if (
+        not has_order
+        and any(hint in text for hint in REFERENCE_HINTS)
+        and (any(p in text for p in PRODUCT_HINTS) or any(w in text for w in ("有问题", "坏了", "漏水")))
+    ):
+        return "order_query"
+    if any(hint in text for hint in ("投诉", "破服务", "差评", "态度")):
+        return "complaint"
+    if any(hint in text for hint in URGENT_HINTS):
+        return "complaint"
+    if any(hint in text for hint in ("降价", "补差", "价保")) and not has_order:
+        return "refund"
+    return intent
+
+
 def route_after_classify(state: AgentState) -> str:
     if state.get("refusal"):
         return "refuse"
     # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
     if int(state.get("turn_count") or 0) > MAX_TURNS:
         return "handoff"
+    if state.get("tasks"):
+        return "tools"
     intent = state.get("intent", "other")
     if intent == "complaint":
         return "handoff"
@@ -253,6 +317,46 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
     reason = state.get("reason") or ""
 
     with node_span(thread_id, "tools", intent=intent, order_no=order_no, sku=sku) as info:
+        tasks = state.get("tasks") or []
+        if tasks:
+            token = (config or {}).get("configurable", {}).get("auth_token") or ""
+            if not token:
+                return {"tool_result": {"tool": "multi", "error": "UNAUTHORIZED: 缺少登录令牌"}}
+            results: list[dict[str, Any]] = []
+            for task in tasks:
+                task_intent = task.get("intent", "other")
+                task_order = task.get("order_no")
+                if task_intent == "complaint":
+                    results.append({"intent": "complaint", "tool": "handoff", "data": {"needs_human": True}})
+                    continue
+                if not task_order:
+                    try:
+                        orders = await business_api.list_orders(token)
+                        results.append({"intent": task_intent, "tool": "list_my_orders",
+                                        "data": {"orders": orders}})
+                    except BusinessAPIError as exc:
+                        results.append({"intent": task_intent, "tool": "list_my_orders",
+                                        "error": str(exc)[:200]})
+                    continue
+                try:
+                    if task_intent == "logistics":
+                        data = await business_api.get_logistics(task_order, token)
+                        tool_name = "query_logistics"
+                    elif task_intent == "refund":
+                        as_type = _infer_after_sales_type(task.get("text", ""))
+                        data = await business_api.apply_after_sales(task_order, as_type, reason, token)
+                        tool_name = "create_after_sales_request"
+                    else:
+                        data = await business_api.get_order(task_order, token)
+                        tool_name = "query_order"
+                    results.append({"intent": task_intent, "tool": tool_name, "data": data})
+                except BusinessAPIError as exc:
+                    results.append({"intent": task_intent, "tool": task_intent,
+                                    "error": str(exc)[:200]})
+            info["result"] = "multi"
+            info["tasks"] = len(results)
+            return {"tool_result": {"tool": "multi", "data": {"results": results}}}
+
         # 商品咨询只需要 SKU，不需要订单号
         if intent == "product_info":
             if not sku:
@@ -269,8 +373,20 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                 return {"tool_result": {"tool": intent, "error": str(exc), "recoverable": True}}
 
         if not order_no:
-            info["result"] = "missing_order_no"
-            return {"tool_result": {"tool": intent, "error": "missing_order_no", "recoverable": True}}
+            token = (config or {}).get("configurable", {}).get("auth_token") or ""
+            if not token:
+                info["result"] = "unauthorized"
+                return {"tool_result": {"tool": intent, "error": "UNAUTHORIZED: 缺少登录令牌",
+                                        "recoverable": False}}
+            try:
+                orders = await business_api.list_orders(token)
+            except BusinessAPIError as exc:
+                info["result"] = "error"
+                info["error"] = str(exc)[:200]
+                return {"tool_result": {"tool": "list_my_orders", "error": str(exc), "recoverable": True}}
+            info["result"] = "candidates"
+            info["candidate_count"] = len(orders)
+            return {"tool_result": {"tool": "list_my_orders", "data": {"orders": orders}}}
         token = (config or {}).get("configurable", {}).get("auth_token") or ""
         if not token:
             info["result"] = "unauthorized"
@@ -302,7 +418,12 @@ async def handoff_prepare(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     over_limit = int(state.get("turn_count") or 0) > MAX_TURNS
     with node_span(thread_id, "handoff_prepare", reason="turn_limit" if over_limit else "complaint"):
-        text = TURN_LIMIT_REPLY if over_limit else "已为您转接人工客服，人工将在 3 分钟内接入，请稍候。"
+        if over_limit:
+            text = TURN_LIMIT_REPLY
+        elif any(word in _last_user_text(state["messages"]) for word in URGENT_HINTS):
+            text = "已为您加急处理，请提供订单号和具体问题，我马上跟进；同时已转接人工优先处理。"
+        else:
+            text = "非常抱歉给您带来不好的体验，请告诉我是哪一单、具体什么问题，我先帮您处理；同时已转接人工优先处理。"
         return {
             "needs_human": True,
             "handoff_reason": "turn_limit" if over_limit else state.get("intent", "complaint"),
@@ -397,7 +518,7 @@ def _template_reply(state: AgentState) -> str:
         return "没有查到对应的政策条款，建议转人工确认，避免给您错误信息。"
     if intent == "other" and not state.get("knowledge") and not tool_result:
         # 闲聊/无法归类的输入：明确说能做什么，而不是倾倒政策摘要
-        return "我是售后客服，可以帮您查订单、物流或办理售后。"
+        return "请告诉我是哪一单、遇到什么问题（退款、换货、物流或投诉），我帮您处理。"
     # 检索无命中时 knowledge 为 None，必须回落到政策摘要，不能把 None 塞给模型
     return state.get("knowledge") or POLICY_TEXT
 
@@ -481,6 +602,11 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                             "只能陈述事实里有的信息，不要编造；语气简洁、有同理心，不超过 120 字。"
                             "引用政策时必须保留 [Pxx] 编号，不要改写或省略。"
                             "用户身份已由系统登录态验证：不要要求用户提供手机号、身份证或验证码，也不要以此为由拒绝查询本人订单。"
+                            "如果事实里是候选订单列表：主动指出最可能的订单（按商品、时间匹配），并请用户确认，不要只回“请提供订单号”。"
+                            "如果是政策适用/例外问题（拆封、定制、超期、赠品）：先判断规则是否适用、例外条件是什么，再给下一步；不要先要订单号。"
+                            "对拆封/定制/超期/赠品必须明确回答“属于/不属于例外、依据哪条”，不能只复述条款；政策没有规定时说明没有相关规定并建议转人工，不要套用其他条款。"
+                            "拆封本身不等于不能退：拆封查验不影响商品完好即可七天无理由；已使用/影响二次销售才不适用；有质量问题走 P02 十五天路径。"
+                            "事实里可能有多个任务结果：必须逐项回答，不能漏；投诉项要说明已转人工，动作项要说明办理结果。"
                         )
                     ),
                     HumanMessage(content=f"事实：{context}\n\n用户：{_last_user_text(state['messages'])}"),

@@ -16,6 +16,7 @@ class AgentState(TypedDict, total=False):
 
     # 意图与槽位
     intent: str
+    tasks: list[dict[str, Any]]
     order_no: str | None
     sku: str | None
     reason: str | None

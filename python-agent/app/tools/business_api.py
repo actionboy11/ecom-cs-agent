@@ -50,6 +50,12 @@ async def get_order(order_no: str, token: str) -> dict[str, Any]:
     return await _mcp("query_order", {"order_no": order_no}, token)
 
 
+async def list_orders(token: str) -> list[dict[str, Any]]:
+    """当前用户全部订单，用于「那个耳机」这类候选匹配。"""
+    data = await _mcp("list_my_orders", {}, token)
+    return data if isinstance(data, list) else []
+
+
 async def get_logistics(order_no: str, token: str) -> dict[str, Any]:
     return await _mcp("query_logistics", {"order_no": order_no}, token)
 

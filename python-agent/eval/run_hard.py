@@ -57,7 +57,7 @@ async def main() -> None:
             base_reply = baseline_reply(case["input"], orders)
             agent_resp = await client.post(
                 f"{AGENT}/api/v1/chat",
-                json={"thread_id": f"hard-{case['id']}", "message": case["input"]},
+                json={"thread_id": f"hard-{case['id']}-{int(time.time())}", "message": case["input"]},
                 headers=headers,
             )
             agent_resp.raise_for_status()
