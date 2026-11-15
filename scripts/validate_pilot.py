@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
@@ -93,6 +94,10 @@ def check_case(case: dict, writer: str, users: dict[str, dict[str, dict]], seen_
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--single", action="store_true", help="只验收 single-turn.jsonl")
+    parser.add_argument("--confirm", action="store_true", help="只验收 confirmation-scripts.jsonl")
+    args = parser.parse_args()
     users = load_orders()
     seen_inputs: set[str] = set()
     all_errors: list[str] = []
@@ -100,8 +105,19 @@ def main() -> None:
     multi = 0
     by_category: Counter[str] = Counter()
 
-    for writer in ("writer-a", "writer-b", "writer-c"):
-        path = PILOT / f"{writer}.jsonl"
+    if args.confirm:
+        writers = ("confirmation",)
+    elif args.single:
+        writers = ("single-turn",)
+    else:
+        writers = ("writer-a", "writer-b", "writer-c")
+    for writer in writers:
+        if args.confirm:
+            path = PILOT / "confirmation-scripts.jsonl"
+        elif args.single:
+            path = PILOT / "single-turn.jsonl"
+        else:
+            path = PILOT / f"{writer}.jsonl"
         if not path.exists():
             all_errors.append(f"缺少文件: {path}")
             continue
@@ -120,6 +136,24 @@ def main() -> None:
         total += len(cases)
         multi += sum(1 for case in cases if case.get("turns"))
         by_category.update(case.get("category") for case in cases)
+        if args.confirm:
+            for case in cases:
+                steps = case.get("expected_turns") or []
+                if len(case.get("turns") or []) != 1 or len(steps) != 2:
+                    all_errors.append(f"{case.get('id')} 确认脚本必须是 2 步")
+                    continue
+                if steps[0].get("type") != "confirm":
+                    all_errors.append(f"{case.get('id')} 第一步必须是 confirm")
+                if steps[1].get("type") not in {"handled", "answer"}:
+                    all_errors.append(f"{case.get('id')} 第二步必须是 handled/answer")
+                if steps[0].get("order_no") != case["expected"].get("order_no"):
+                    all_errors.append(f"{case.get('id')} 两步订单不一致")
+            continue
+        if args.single:
+            for case in cases:
+                if case.get("turns"):
+                    all_errors.append(f"{writer} 不应包含多轮题: {case.get('id')}")
+            continue
         quota = WRITER_QUOTAS[writer]
         actual = Counter(case.get("category") for case in cases)
         for category, expected_count in quota.items():
