@@ -71,6 +71,25 @@ jobs:
           MYSQL_PASSWORD: csagent
         run: mvn -B test
 
+  web:
+    name: Web（React 构建）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: 安装依赖
+        run: npm ci
+      - name: 构建
+        run: npm run build
+
   compose:
     name: Compose 配置校验
     runs-on: ubuntu-latest

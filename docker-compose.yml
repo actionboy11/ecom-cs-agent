@@ -84,22 +84,21 @@ services:
       retries: 20
       start_period: 30s
 
-  workbench:
-    image: ghcr.io/actionboy11/ecom-cs-agent-python:0.1.0
-    container_name: cs-agent-ui
+  web:
+    # 零构建单页：静态文件挂载，浏览器直接调 Java/Python API
+    image: python:3.12-slim
+    container_name: cs-agent-web
     command:
-      - streamlit
-      - run
-      - ui/app.py
-      - --server.port=8501
-      - --server.address=0.0.0.0
-      - --server.headless=true
+      - python
+      - -m
+      - http.server
+      - "8501"
+      - --directory
+      - /web
     ports:
       - "8501:8501"
-    environment:
-      # UI 只需要这两个地址，不注入模型/审计密钥
-      JAVA_BASE: http://java-service:8080
-      AGENT_BASE: http://python-agent:8000
+    volumes:
+      - ./web/dist:/web:ro
     depends_on:
       java-service:
         condition: service_healthy
@@ -110,8 +109,8 @@ services:
         - CMD
         - python
         - -c
-        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2).status==200 else 1)"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8501/', timeout=2).status==200 else 1)"
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 20s
+      start_period: 10s

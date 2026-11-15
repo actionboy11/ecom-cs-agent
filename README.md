@@ -71,7 +71,7 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 详细输入、预期与兜底见 [docs/DEMO.md](docs/DEMO.md)。
 
-## 工作台（Streamlit）
+## 工作台（React + Vite）
 
 ![工作台](docs/assets/workbench.png)
 
@@ -79,25 +79,26 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 **单窗口**：买家打开就是一个对话窗口，每个用户固定一个会话，登录会自动带回历史；坐席登录后在同一位置看到售后审批、转接待办、审计三个页签。`docker compose up -d` 已包含该服务（<http://localhost:8501>）。
 
+前端是 **React 18 + Vite + TypeScript**，零后端模板：浏览器直接调用 Java / Agent API（已配置 CORS），聊天区滚动由 React 直接控制，不再依赖注入脚本。
+
 ![处理详情](docs/assets/details.png)
 
 每条回复可展开「这次是怎么处理的」：意图、生成链路（模型生成/模板兜底）、工具调用、政策引用、耗时——后端能力在对话里就能看见。
 
-不用容器时：
+本地开发：
 
 ```bash
-cd python-agent
-JAVA_BASE=http://localhost:8080 AGENT_BASE=http://localhost:8000 \
-  uv run streamlit run ui/app.py
+cd web
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # 产物在 web/dist，compose 的 8501 托管它
 ```
-
-> 本地用 uvicorn 跑 Agent（端口 8010）时，把 `AGENT_BASE` 改成 `http://localhost:8010`。
 
 - 演示账号：`buyer_a` / `cs_agent`，密码均为 `demo123`（种子数据）
 - 每条回复可展开「这次是怎么处理的」：意图、链路、工具、引用、耗时
 - 买家窗口下方有「我的售后进度」，可查自己售后请求的状态
 - 坐席登录后是「售后审批 / 转接待办 / 审计」三个页签，选中待办即可恢复（`/resume` 仅坐席可用）
-- UI 只做编排：接口逻辑在 `ui/api_client.py`，纯逻辑在 `ui/logic.py`，都有单测；页面用 `streamlit.testing` 做加载测试
+- `python-agent/ui/` 是早期 Streamlit 原型，保留作参考，不再由 compose 启动
 
 
 ## 评测（持续更新）
