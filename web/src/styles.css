@@ -13,7 +13,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { min-height: 100%; }
+html, body, #root { height: 100%; }
 body {
   margin: 0;
   background: var(--paper);
@@ -23,9 +23,12 @@ body {
 }
 button, input, select { font: inherit; }
 .shell {
-  width: min(780px, calc(100% - 32px));
+  width: min(980px, calc(100% - 40px));
+  min-height: 100%;
   margin: 0 auto;
-  padding: 28px 0 40px;
+  padding: 22px 0 24px;
+  display: flex;
+  flex-direction: column;
 }
 .topbar {
   display: flex;
@@ -80,7 +83,23 @@ button.ghost { background: transparent; color: var(--ink-soft); border-color: va
 button.ghost:hover { background: var(--paper); color: var(--ink); }
 .error { color: var(--seal); font-size: 13px; margin: 2px 0 0; }
 
-.messages { height: 340px; overflow-y: auto; padding-right: 4px; }
+#chat-view {
+  height: calc(100dvh - 118px);
+  min-height: 460px;
+  display: flex;
+  flex-direction: column;
+}
+#chat-view .messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#chat-view .composer,
+#chat-view .after-sales-toggle,
+#chat-view .after-sales-body { flex: none; }
+.after-sales-body { max-height: 180px; overflow: auto; }
 .msg { padding: 8px 0 8px 12px; border-left: 2px solid var(--line); margin-bottom: 6px; }
 .msg.user { border-left-color: var(--green); }
 .msg .body { line-height: 1.7; }
@@ -124,7 +143,7 @@ input[type="radio"] { width: auto; }
   .shell { width: calc(100% - 20px); padding-top: 14px; }
   .card { padding: 16px 16px 14px; }
   h1 { font-size: 22px; }
-  .messages { height: 300px; }
+  #chat-view { height: calc(100dvh - 96px); min-height: 420px; }
 }
 
 .actions { display: flex; gap: 8px; margin-top: 8px; }
