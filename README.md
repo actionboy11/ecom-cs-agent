@@ -126,6 +126,20 @@ uv run python -m eval.gen_standard_cases             # 重新生成 600 条等�
 
 报告写到 `eval/reports/`（不提交）；基线由脚本生成并提交到 `docs/eval/`（`three-layers-*.md`），报告内标注数据来源、链路（LLM/兜底）与许可状态。
 
+### AI 增量对照（规则 vs Agent）
+
+同一套 20 条「AI-only 难题」（模糊指代、多意图、政策例外、自由文本办理、情绪/追问），分别跑规则基线和 Agent，用 judge 判是否解决：
+
+| 方案 | 解决率 |
+|---|---|
+| 规则基线（关键词 + 正则 + 固定话术） | 5%（1/20） |
+| Agent（当前） | 25%（5/20） |
+| 增量 | +20 个百分点 |
+
+Agent 只在「多政策组合」和「自由文本办理」上有优势；**模糊指代、政策例外、多动作、情绪处理全部失败**。报告与逐题理由见 `docs/eval/2026-11-15-hard-baseline.md`。
+
+命令：`python -m eval.run_hard`（需要 Java/Agent 在线与模型 Key）。
+
 **数据说明**：公开 600 条售后基准（csnewerst）未随仓库分发、离线无法下载，`eval/standard_cases.jsonl` 是确定性生成的**等效用例**，不是公开集；报告与表格均标注来源。
 
 ## 目录
