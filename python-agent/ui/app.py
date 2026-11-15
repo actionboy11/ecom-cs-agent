@@ -193,7 +193,7 @@ def after_sales_panel() -> None:
 
 
 def scroll_to_bottom() -> None:
-    """消息区固定高度后，新消息要自动滚到底（纯前端小脚本）。"""
+    """消息区固定高度后，新消息自动滚到底。"""
     st.components.v1.html(
         """
         <script>
@@ -210,7 +210,7 @@ def scroll_to_bottom() -> None:
 
 def chat_view() -> None:
     with st.container(key="app_card"):
-        box = st.container(height=520, border=False)
+        box = st.container(key="chat_scroll")
         with box:
             if not st.session_state.messages:
                 st.caption("直接问订单、物流或售后。")
