@@ -193,25 +193,29 @@ def after_sales_panel() -> None:
 
 
 def scroll_to_bottom() -> None:
-    """持续把内部滚动容器钉在底部，直到本次渲染稳定。"""
-    st.components.v1.html(
+    """每次 rerun 在主文档执行：把对话区钉在底部，用户手动上滑后停止。"""
+    st.html(
         """
         <script>
-        const doc = window.parent.document;
-        function toBottom() {
-          const box = doc.querySelector('.st-key-chat_scroll');
-          if (box) { box.scrollTop = box.scrollHeight; }
-        }
-        let ticks = 0;
-        const timer = setInterval(() => {
-          toBottom();
-          ticks += 1;
-          if (ticks > 100) { clearInterval(timer); }
-        }, 100);
-        toBottom();
+        (function () {
+          let pinned = true;
+          const find = () => document.querySelector('.st-key-chat_scroll');
+          const pin = () => {
+            const b = find();
+            if (b && pinned) { b.scrollTop = b.scrollHeight; }
+          };
+          const box = find();
+          if (box) {
+            box.addEventListener('wheel', () => { pinned = false; }, {passive: true});
+            box.addEventListener('touchmove', () => { pinned = false; }, {passive: true});
+          }
+          pin();
+          const timer = setInterval(pin, 100);
+          setTimeout(() => clearInterval(timer), 60000);
+        })();
         </script>
         """,
-        height=0,
+        unsafe_allow_javascript=True,
     )
 
 

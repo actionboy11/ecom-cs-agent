@@ -93,7 +93,7 @@ p, li, label {{ line-height: 1.7; }}
 [data-testid="stChatMessageAvatarAssistant"] {{ display: none !important; }}
 [data-testid="stChatMessageContent"] {{ width: 100%; }}
 
-/* 对话区按视口自适应高度，内部滚动；输入框钉在卡片底部 */
+/* 对话区固定高度，内部滚动；输入框钉在卡片底部 */
 .st-key-chat_scroll {{
   height: 340px !important;
   min-height: 340px !important;
