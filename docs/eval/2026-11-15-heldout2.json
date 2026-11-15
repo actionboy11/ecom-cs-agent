@@ -1,0 +1,358 @@
+{
+  "cases": 20,
+  "baseline_rate": 0.35,
+  "agent_rate": 1.0,
+  "delta": 0.65,
+  "by_category": {
+    "指代": {
+      "cases": 5,
+      "baseline": 1,
+      "agent": 5
+    },
+    "多动作": {
+      "cases": 4,
+      "baseline": 0,
+      "agent": 4
+    },
+    "例外": {
+      "cases": 4,
+      "baseline": 0,
+      "agent": 4
+    },
+    "动作": {
+      "cases": 3,
+      "baseline": 3,
+      "agent": 3
+    },
+    "情绪": {
+      "cases": 3,
+      "baseline": 2,
+      "agent": 3
+    },
+    "边界": {
+      "cases": 1,
+      "baseline": 1,
+      "agent": 1
+    }
+  },
+  "rows": [
+    {
+      "id": "y01",
+      "category": "指代",
+      "input": "上周买的杯子漏水，能换吗",
+      "expected": "应定位到 CS2024004 并追问漏水情况/凭证，给出换货路径",
+      "baseline_reply": "CS2024004 当前状态：待发货 质量问题退换货：签收后 15 天内出现性能故障、破损或与描述不符，可换货或退货退款，需提供图片/视频凭证。[P02]",
+      "agent_reply": "您这笔订单（CS2024004，316不锈钢保温杯，11月2日下单）目前是待发货状态，还没签收。漏水问题需签收后处理：签收15日内出现质量问题可换货或退款，需提供图片或视频凭证 [P02]。收到货后如漏水，请上传凭证申请换货。",
+      "agent_intent": "order_query",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P09"
+      ],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只罗列了通用退换货政策，未追问漏水情况或索要凭证，也未给出具体换货办理路径，未真正解决用户问题。",
+      "agent_reason": "回复定位到订单CS2024004，说明待发货状态并给出签收后15日内凭图片/视频申请换货的路径，事实齐全且无误导。"
+    },
+    {
+      "id": "y02",
+      "category": "指代",
+      "input": "耳机左耳没声音，退了",
+      "expected": "应定位到 CS2024002，识别质量问题退款并说明流程",
+      "baseline_reply": "CS2024002 当前状态：运输中",
+      "agent_reply": "您这笔订单（CS2024002，主动降噪蓝牙耳机，299元，运输中）还在运输途中，尚未签收。左耳没声音属于质量问题，签收后15天内可凭凭证申请换货或退款 [P02]。建议您先签收验货，有问题及时上传凭证申请。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只告知订单运输状态，未识别质量问题退款，也未说明退款流程，答非所问。",
+      "agent_reason": "回复准确定位到订单CS2024002，说明运输中状态，并针对左耳无声的质量问题给出签收后15天内凭凭证换货或退款的流程，事实齐全且无误导。"
+    },
+    {
+      "id": "y03",
+      "category": "指代",
+      "input": "行李箱轮子坏了",
+      "expected": "应定位到 CS2024003，追问损坏情况并给质量售后路径",
+      "baseline_reply": "CS2024003 当前状态：已发货 质量问题退换货：签收后 15 天内出现性能故障、破损或与描述不符，可换货或退货退款，需提供图片/视频凭证。[P02]",
+      "agent_reply": "轮子坏了属于质量问题，签收15天内可换货或退款，需上传凭证 [P02]。请问您的订单签收多久了？如超15天，政策未规定，建议转人工进一步处理。",
+      "agent_intent": "product_info",
+      "agent_tools": null,
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只罗列了通用退换货政策，未追问轮子损坏的具体情况，也未给出针对性的质量售后处理路径，未真正解决用户问题。",
+      "agent_reason": "回复说明了质量问题15天内可换货或退款并需上传凭证，追问了签收时间，且对超15天情况建议转人工，符合参考要求的追问与售后路径。"
+    },
+    {
+      "id": "y04",
+      "category": "指代",
+      "input": "鞋子磨脚，退掉",
+      "expected": "应定位到 CS2024001，识别退货/退款并说明流程",
+      "baseline_reply": "CS2024001 当前状态：已签收",
+      "agent_reply": "您这笔订单是轻量跑步鞋 42码（CS2024001，已签收），请确认是否就是这双。\n\n磨脚属于质量问题，签收 15 天内可换货或退款，需上传凭证 [P02]。请提供磨脚情况的照片，我帮您提交。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只说明订单已签收，未识别退货/退款诉求，也未说明退货流程，答非所问。",
+      "agent_reason": "回复定位到订单CS2024001并确认是否该鞋，说明磨脚属质量问题、签收15天内可换货或退款，并要求上传照片凭证，流程完整无误导。"
+    },
+    {
+      "id": "y05",
+      "category": "多动作",
+      "input": "杯子退款，顺便查下鞋到哪了",
+      "expected": "应拆成 CS2024004 退款 + CS2024001 物流查询并分别处理",
+      "baseline_reply": "CS2024004 当前状态：待发货 退款审核通过后 1-3 个工作日原路退回。[P03] 物流超过 72 小时无更新可申请催件。[P04]",
+      "agent_reply": "已为您办理：\n\n1. 退款申请已提交：订单 CS2024004，申请单号 AS202611150502357192，状态为待审核，审核通过后 1-3 个工作日原路退回。\n2. 物流查询：订单 CS2024001，顺丰速运 SF1234567890，已于 2026-10-23 14:30 签收。\n\n如有其他问题请告知。",
+      "agent_intent": "multi",
+      "agent_tools": "multi",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "用户同时问了杯子退款和鞋子物流，回复只处理了退款，未查询或回应鞋子物流（CS2024001），问题未完整解决。",
+      "agent_reason": "回复分别处理了杯子退款（CS2024004，已提交申请并说明状态）和鞋子物流查询（CS2024001，给出快递单号及签收时间），两个诉求均已回应且信息完整。"
+    },
+    {
+      "id": "y06",
+      "category": "多动作",
+      "input": "投诉快递，另外耳机要退",
+      "expected": "应同时处理投诉转人工与耳机退款，不能只做一个",
+      "baseline_reply": "非常抱歉给您带来不好的体验，已记录并转接人工客服优先处理。",
+      "agent_reply": "已为您处理：\n\n1. **退款申请**：已提交，单号 AS202611150502372873（订单 CS2024002，耳机退货），状态待审核，审核通过后 1-3 个工作日原路退回。\n2. **投诉**：已转人工跟进。\n\n请留意审核结果。",
+      "agent_intent": "multi",
+      "agent_tools": "multi",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只处理了投诉转人工，未提及耳机退款，未同时解决两个诉求。",
+      "agent_reason": "回复同时处理了投诉转人工和耳机退款申请，两项诉求均已覆盖且无误导信息。"
+    },
+    {
+      "id": "y07",
+      "category": "多动作",
+      "input": "行李箱不要了，杯子也退",
+      "expected": "应识别两个退货对象，分别定位 CS2024003 与 CS2024004",
+      "baseline_reply": "CS2024003 当前状态：已发货",
+      "agent_reply": "您有两笔订单：CS2024003 20寸登机行李箱（已发货，699元）、CS2024004 316不锈钢保温杯（待发货，129元），请确认是否都退。\n\n行李箱已发货，签收7天内且吊牌完好、不影响二次销售可无理由退 [P01]；杯子待发货可直接申请退款。退款审核通过后1-3个工作日原路退回 [P03]。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "用户要求退行李箱和杯子两个对象，回复只给出 CS2024003 一个订单状态，未识别并定位第二个退货对象 CS2024004，事实要点不全。",
+      "agent_reason": "回复识别并定位了两笔订单CS2024003和CS2024004，分别说明退货条件与退款流程，并请用户确认，事实齐全无误导。"
+    },
+    {
+      "id": "y08",
+      "category": "例外",
+      "input": "拆了包装的鞋子能退吗",
+      "expected": "应明确回答拆封是否影响七天无理由，并说明质量问题走 P02",
+      "baseline_reply": "CS2024001 当前状态：已签收",
+      "agent_reply": "拆封查验不影响商品完好，仍可七天无理由退货 [P01]；但已穿着使用、影响二次销售则不适用。您订单 CS2024001 的轻量跑步鞋已签收，若仅拆封未使用，可在签收次日起 7 天内申请，退回运费需您承担 [P01]。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P01"
+      ],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只说明订单已签收，未回答拆封是否影响七天无理由退货，也未说明质量问题走 P02，属于答非所问。",
+      "agent_reason": "回复明确说明拆封查验不影响商品完好可七天无理由退货，并补充已使用不适用及订单具体申请时限和运费承担，事实要点齐全无误导。"
+    },
+    {
+      "id": "y09",
+      "category": "例外",
+      "input": "定做的行李箱能退吗",
+      "expected": "应说明定制类不适用七天无理由，并给质量路径或转人工",
+      "baseline_reply": "CS2024003 当前状态：已发货",
+      "agent_reply": "定制类商品不属于七天无理由退货范围，依据 [P01] 的除外条款。若存在质量问题，可在签收后 15 天内走质量问题退换路径（需上传凭证）。您订单 CS2024003 是 20 寸登机行李箱，若为定制款，无理由退货不适用；如属质量问题请告知，我帮您转人工核实。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P01"
+      ],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复只说明订单已发货，未回答定制行李箱能否退货，也未说明定制类不适用七天无理由及质量问题的处理路径或转人工。",
+      "agent_reason": "回复说明了定制类不适用七天无理由，并给出质量问题15天内退换及转人工核实的路径，要点齐全无误导。"
+    },
+    {
+      "id": "y10",
+      "category": "例外",
+      "input": "买超过半个月了还能换吗",
+      "expected": "应区分七天无理由与十五天质量问题，说明超期处理或转人工",
+      "baseline_reply": "请提供订单号或具体问题，我帮您查询。",
+      "agent_reply": "超过15天一般不能按质量问题换货，但若在质保期内，可按厂商保修流程处理 [P02]。若只是尺码/颜色不合适，需看是否仍在7天无理由期内；超期则无相关规定，建议转人工确认。",
+      "agent_intent": "policy",
+      "agent_tools": null,
+      "agent_refs": [
+        "P09"
+      ],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复仅要求提供订单号，未区分七天无理由与十五天质量问题，也未说明超期处理或转人工，未解决用户关于超期能否换货的疑问。",
+      "agent_reason": "回复区分了15天质量换货与7天无理由，说明超期需转人工确认，符合参考要求且无误导。"
+    },
+    {
+      "id": "y11",
+      "category": "例外",
+      "input": "赠品杯子坏了",
+      "expected": "政策无明确条款时应说明并转人工，不能套用普通商品条款",
+      "baseline_reply": "CS2024004 当前状态：待发货 质量问题退换货：签收后 15 天内出现性能故障、破损或与描述不符，可换货或退货退款，需提供图片/视频凭证。[P02]",
+      "agent_reply": "赠品单独退换没有明确的政策条款，为避免误导，已为您转接人工确认。",
+      "agent_intent": "complaint",
+      "agent_tools": null,
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "回复套用了普通商品15天退换条款，未针对赠品破损说明政策或转人工，与参考要求不符。",
+      "agent_reason": "回复说明赠品退换无明确政策条款并转人工确认，符合参考要求，未误导用户。"
+    },
+    {
+      "id": "y12",
+      "category": "动作",
+      "input": "耳机有电流声，直接退款",
+      "expected": "应识别质量问题退款，定位 CS2024002，说明退款时效",
+      "baseline_reply": "CS2024002 当前状态：运输中 退款审核通过后 1-3 个工作日原路退回。[P03]",
+      "agent_reply": "您这笔订单（CS2024002，主动降噪蓝牙耳机，299元）目前还在运输中。电流声属于质量问题，签收后15日内可凭图片或视频凭证申请退货退款 [P02]。建议您先签收验货，有问题及时上传凭证申请。需要我帮您登记吗？",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P02"
+      ],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复定位了订单CS2024002，确认退款审核通过后1-3个工作日原路退回，符合参考要求识别质量问题退款并说明时效。",
+      "agent_reason": "回复识别了质量问题退款场景，定位了订单CS2024002，并说明了签收后15日内凭凭证申请退货退款的时效，事实齐全且无误导。"
+    },
+    {
+      "id": "y13",
+      "category": "动作",
+      "input": "杯子没发货，退款",
+      "expected": "应定位 CS2024004，办理退款并说明审核/到账时效",
+      "baseline_reply": "CS2024004 当前状态：待发货 退款审核通过后 1-3 个工作日原路退回。[P03]",
+      "agent_reply": "您这笔订单（CS2024004，316不锈钢保温杯，129元）目前是待发货状态，可以申请退款。审核通过后按原支付渠道退回，微信/支付宝1-3个工作日到账[P03]。需要我现在帮您提交退款申请吗？",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P03"
+      ],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复定位了订单CS2024004，说明退款审核通过后1-3个工作日原路退回，符合参考要求的定位订单、办理退款并说明时效。",
+      "agent_reason": "回复定位了订单CS2024004，说明可申请退款及审核/到账时效，并追问是否代为提交，符合参考要求。"
+    },
+    {
+      "id": "y14",
+      "category": "动作",
+      "input": "鞋不合适，换43码，今天必须处理",
+      "expected": "应识别换货+加急，定位 CS2024001，说明换货流程",
+      "baseline_reply": "CS2024001 当前状态：已签收 已为您标记加急，并转接人工优先处理。",
+      "agent_reply": "轻量跑步鞋42码偏大半码，换43码需先寄回原商品，仓库质检48小时内完成后再寄出[P09]。今天无法完成换货，已为您加急优先处理。同款换尺码可直接换，缺货可改退款[P09]。",
+      "agent_intent": "product_info",
+      "agent_tools": null,
+      "agent_refs": [
+        "P09"
+      ],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复定位了订单CS2024001，说明已签收并标记加急、转人工优先处理，符合reference要求的换货加急与转人工处理。",
+      "agent_reason": "回复说明了换43码需先寄回、质检48小时后再寄出的流程，明确今天无法完成并已加急优先处理，同时给出缺货可改退款的备选，要点齐全且无误导。"
+    },
+    {
+      "id": "y15",
+      "category": "情绪",
+      "input": "客服态度太差",
+      "expected": "应先安抚，再询问具体问题或转人工",
+      "baseline_reply": "非常抱歉给您带来不好的体验，已记录并转接人工客服优先处理。",
+      "agent_reply": "非常抱歉给您带来不好的体验，请告诉我是哪一单、具体什么问题，我先帮您处理；同时已转接人工优先处理。",
+      "agent_intent": "complaint",
+      "agent_tools": null,
+      "agent_refs": [],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复先安抚致歉，并说明已记录并转接人工优先处理，符合参考中先安抚再转人工的要求。",
+      "agent_reason": "回复先安抚用户，再询问具体订单和问题，并说明已转人工优先处理，符合参考要求。"
+    },
+    {
+      "id": "y16",
+      "category": "情绪",
+      "input": "有个订单要处理",
+      "expected": "应追问是哪一单、什么问题，不能直接给政策摘要",
+      "baseline_reply": "请提供订单号或具体问题，我帮您查询。",
+      "agent_reply": "您好，查到您近期有4笔订单，请问要处理哪一笔？\n\n- CS2024001 轻量跑步鞋 42码，399元，已签收（10-20）\n- CS2024002 主动降噪蓝牙耳机，299元，运输中（10-28）\n- CS2024003 20寸登机行李箱，699元，已发货（11-01）\n- CS2024004 316不锈钢保温杯，129元，待发货（11-02）\n\n告诉我订单或商品即可，我帮您跟进。",
+      "agent_intent": "order_query",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复按参考要求追问具体订单号和问题，以便定位处理，未直接给政策摘要。",
+      "agent_reason": "用户只说有订单要处理，未指明具体订单，客服列出近期订单并追问是哪一笔、什么问题，符合reference要求的追问定位，未误导用户。"
+    },
+    {
+      "id": "y17",
+      "category": "情绪",
+      "input": "先不弄了",
+      "expected": "应确认结束并礼貌收尾，不硬转人工",
+      "baseline_reply": "请提供订单号或具体问题，我帮您查询。",
+      "agent_reply": "好的，已为您停止操作。如后续需要查询订单、物流或售后，随时联系我。",
+      "agent_intent": "other",
+      "agent_tools": null,
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "用户已表示先不弄了，应确认结束并礼貌收尾，客服却继续追问订单号，未按参考要求收尾。",
+      "agent_reason": "用户表示先不弄了，客服确认停止操作并礼貌收尾，符合参考要求，未硬转人工。"
+    },
+    {
+      "id": "y18",
+      "category": "指代",
+      "input": "行李箱降价补差",
+      "expected": "应定位 CS2024003，说明价保条件",
+      "baseline_reply": "CS2024003 当前状态：已发货 签收后 15 天内，同商品同平台降价可申请价保，需提供订单号。[P07]",
+      "agent_reply": "已定位到订单 CS2024003。您有一笔订单：20寸登机行李箱，699元，2026-11-01下单，已发货。价保需签收后15日内申请，且限时秒杀、直播间专享价、优惠券叠加、赠品变动不参与价保 [P07]。请确认是否该订单，并告知当前降价价格类型，我帮您核对。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P07"
+      ],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复定位了订单CS2024003，并说明签收后15天内同商品同平台降价可申请价保及需提供订单号，符合参考要求。",
+      "agent_reason": "回复定位到订单CS2024003，说明了价保条件（签收后15日内、排除情形），并追问确认订单及降价类型，符合参考要求。"
+    },
+    {
+      "id": "y19",
+      "category": "边界",
+      "input": "充电宝想退",
+      "expected": "用户没有充电宝订单，应说明未找到并请其确认商品/订单，不能编造",
+      "baseline_reply": "请提供订单号或具体问题，我帮您查询。",
+      "agent_reply": "您名下没有充电宝订单。目前有4笔订单：跑步鞋（已签收）、蓝牙耳机（运输中）、行李箱（已发货）、保温杯（待发货）。请确认是否其中某笔，或充电宝是否用其他账号下单。\n\n依据：[P03]",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [
+        "P03"
+      ],
+      "baseline_solved": true,
+      "agent_solved": true,
+      "baseline_reason": "回复要求用户提供订单号或具体问题以便查询，符合reference中应请用户确认商品/订单的要求，未编造信息。",
+      "agent_reason": "回复如实说明未找到充电宝订单，列出名下4笔订单供用户确认，并追问是否用其他账号下单，符合参考要求。"
+    },
+    {
+      "id": "y20",
+      "category": "多动作",
+      "input": "把耳机和行李箱都退了",
+      "expected": "应识别两个退货对象，分别定位 CS2024002 与 CS2024003",
+      "baseline_reply": "CS2024002 当前状态：运输中",
+      "agent_reply": "您有两笔订单：CS2024002 主动降噪蓝牙耳机（299元，运输中）、CS2024003 20寸登机行李箱（699元，已发货）。请确认是否两笔都要退？运输中订单需先签收再申请退货，签收7天内可无理由退，需吊牌完好、不影响二次销售[P01]。",
+      "agent_intent": "refund",
+      "agent_tools": "list_my_orders",
+      "agent_refs": [],
+      "baseline_solved": false,
+      "agent_solved": true,
+      "baseline_reason": "用户要求退耳机和行李箱两个对象，回复只定位了其中一个订单CS2024002，未识别并处理CS2024003，事实要点不全。",
+      "agent_reason": "回复准确识别并定位了两笔退货订单CS2024002和CS2024003，说明了各自状态，并追问确认是否两笔都退，符合参考要求。"
+    }
+  ]
+}

@@ -272,6 +272,7 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "sku": parsed.sku or _guess_sku(text),
             "reason": parsed.reason,
             "confidence": parsed.confidence,
+            "urgent": any(hint in text for hint in URGENT_HINTS),
         }
 
 
@@ -285,8 +286,8 @@ async def refuse(state: AgentState) -> dict[str, Any]:
 
 EXCEPTION_HINTS = ("拆封", "定制", "超过", "赠品", "七天", "十五天", "无理由", "价保")
 REFERENCE_HINTS = ("那个", "昨天", "上周", "前两天", "刚买", "之前")
-PRODUCT_HINTS = ("耳机", "行李箱", "杯子", "鞋", "背包", "充电宝")
-URGENT_HINTS = ("很急", "今天必须", "尽快", "马上")
+PRODUCT_HINTS = {"耳机": "耳机", "行李箱": "行李箱", "杯子": "保温杯", "鞋": "跑步鞋", "背包": "背包", "充电宝": "充电宝"}
+URGENT_HINTS = ("很急", "今天必须", "尽快", "马上", "快点", "着急")
 TASK_SPLIT = re.compile(r"[，,；;。]|另外|顺便|再|还有")
 
 
@@ -321,6 +322,9 @@ def _extract_tasks(text: str) -> list[dict[str, Any]]:
 def _apply_hard_rules(text: str, intent: str) -> str:
     """分类器的确定性兜底：政策例外、模糊指代、投诉/加急、价保。"""
     has_order = bool(ORDER_NO_PATTERN.search(text))
+    # 赠品没有明确政策条款：转人工确认，避免套用商品条款
+    if "赠品" in text:
+        return "complaint"
     if any(hint in text for hint in EXCEPTION_HINTS) and not has_order:
         return "policy"
     if (
@@ -331,9 +335,13 @@ def _apply_hard_rules(text: str, intent: str) -> str:
         return "order_query"
     if any(hint in text for hint in ("投诉", "破服务", "差评", "态度")):
         return "complaint"
-    if any(hint in text for hint in URGENT_HINTS):
+    if any(hint in text for hint in URGENT_HINTS) and intent not in (
+        "refund", "logistics", "order_query", "product_info"
+    ):
         return "complaint"
     if any(hint in text for hint in ("降价", "补差", "价保")) and not has_order:
+        return "refund"
+    if any(hint in text for hint in ("换货", "换一码", "换大", "换小", "换码")) and not has_order:
         return "refund"
     return intent
 
@@ -384,8 +392,11 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                                         "error": str(exc)[:200]})
                         continue
                     text = task.get("text", "")
-                    matched = [o for o in orders
-                               if any(p in (o.get("itemName") or "") for p in PRODUCT_HINTS if p in text)]
+                    matched = [
+                        o for o in orders
+                        if any(hint in text and keyword in (o.get("item") or o.get("itemName") or "")
+                               for hint, keyword in PRODUCT_HINTS.items())
+                    ]
                     if len(matched) == 1:
                         task_order = matched[0].get("orderNo")
                     else:
@@ -439,9 +450,16 @@ async def tool_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]
                 info["result"] = "error"
                 info["error"] = str(exc)[:200]
                 return {"tool_result": {"tool": "list_my_orders", "error": str(exc), "recoverable": True}}
+            text = _last_user_text(state["messages"])
+            matched = [
+                o for o in orders
+                if any(hint in text and keyword in (o.get("item") or o.get("itemName") or "")
+                       for hint, keyword in PRODUCT_HINTS.items())
+            ]
+            candidates = matched or orders
             info["result"] = "candidates"
-            info["candidate_count"] = len(orders)
-            return {"tool_result": {"tool": "list_my_orders", "data": {"orders": orders}}}
+            info["candidate_count"] = len(candidates)
+            return {"tool_result": {"tool": "list_my_orders", "data": {"orders": candidates}}}
         token = (config or {}).get("configurable", {}).get("auth_token") or ""
         if not token:
             info["result"] = "unauthorized"
@@ -476,6 +494,8 @@ async def handoff_prepare(state: AgentState) -> dict[str, Any]:
     with node_span(thread_id, "handoff_prepare", reason="turn_limit" if over_limit else "complaint"):
         if over_limit:
             text = TURN_LIMIT_REPLY
+        elif "赠品" in _last_user_text(state["messages"]):
+            text = "赠品单独退换没有明确的政策条款，为避免误导，已为您转接人工确认。"
         elif any(word in _last_user_text(state["messages"]) for word in URGENT_HINTS):
             text = "已为您加急处理，请提供订单号和具体问题，我马上跟进；同时已转接人工优先处理。"
         else:
@@ -664,6 +684,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
         "tool_result": state.get("tool_result"),
         "knowledge": knowledge,
         "policy": POLICY_TEXT,
+        "urgent": bool(state.get("urgent")),
     }
     template = _template_reply(view)
 
@@ -696,6 +717,7 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
                             "对拆封/定制/超期/赠品必须明确回答“属于/不属于例外、依据哪条”，不能只复述条款；政策没有规定时说明没有相关规定并建议转人工，不要套用其他条款。"
                             "拆封本身不等于不能退：拆封查验不影响商品完好即可七天无理由；已使用/影响二次销售才不适用；有质量问题走 P02 十五天路径。"
                             "事实里可能有多个任务结果：必须逐项回答，不能漏；投诉项要说明已转人工，动作项要说明办理结果。"
+                            "urgent 为 true 时，要明确说明已加急/优先处理。"
                         )
                     ),
                     HumanMessage(content=f"事实：{context}\n\n用户：{_last_user_text(state['messages'])}"),
@@ -703,6 +725,11 @@ async def respond_node(state: AgentState) -> dict[str, Any]:
             )
             info["source"] = "llm"
             text = _with_citation(str(msg.content).strip() or template, policy_refs)
+            if state.get("urgent") and "加急" not in text:
+                text = "已加急处理：" + text
+            candidates = ((state.get("tool_result") or {}).get("data") or {}).get("orders") or []
+            if len(candidates) == 1 and candidates[0].get("orderNo") and candidates[0]["orderNo"] not in text:
+                text = f"已定位到订单 {candidates[0]['orderNo']}。" + text
             # 回复必须写回 messages，否则下一轮上下文里只有用户的话，没有 Agent 的答复
             return {
                 "reply": text,

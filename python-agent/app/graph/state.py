@@ -21,6 +21,7 @@ class AgentState(TypedDict, total=False):
     pending_actions: list[dict[str, Any]]
     awaiting_confirm: bool
     cancelled: bool
+    urgent: bool
     order_no: str | None
     sku: str | None
     reason: str | None

@@ -58,7 +58,7 @@ def _orders_in_text(text: str, orders: list[dict]) -> list[dict]:
 def _product_candidates(text: str, orders: list[dict]) -> list[dict]:
     for hint, keyword in PRODUCT_HINTS.items():
         if hint in text:
-            return [o for o in orders if keyword in (o.get("itemName") or "")]
+            return [o for o in orders if keyword in (o.get("item") or o.get("itemName") or "")]
     return []
 
 
