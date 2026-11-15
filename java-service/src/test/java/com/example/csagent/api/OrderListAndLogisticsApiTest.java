@@ -62,7 +62,7 @@ class OrderListAndLogisticsApiTest {
         String token = LoginSupport.tokenFor(mockMvc, "cs_agent");
         mockMvc.perform(get("/api/orders").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(12));
+                .andExpect(jsonPath("$.length()").value(24));
     }
 
     @Test

@@ -21,6 +21,7 @@ public class OrderEntity {
     private BigDecimal amount;
     private String status;
     private LocalDateTime createdAt;
+    private LocalDateTime deliveredAt;
 
     public String getOrderNo() {
         return orderNo;
@@ -72,6 +73,14 @@ public class OrderEntity {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

@@ -62,6 +62,7 @@ public class OrderQueryService {
                 entity.getItemName(),
                 entity.getAmount(),
                 entity.getStatus(),
-                entity.getCreatedAt().toLocalDate());
+                entity.getCreatedAt().toLocalDate(),
+                entity.getDeliveredAt());
     }
 }
