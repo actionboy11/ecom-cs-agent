@@ -1,26 +1,26 @@
-# Pilot 结果（24 条）
+# Pilot 结果（25 条）
 
 ## 总览
 
-- 最近一次：22/24
-- 单轮：18/20
-- 确认脚本：4/4 中 3 条通过；confirm-01 动作类型不一致
+- 最近一次：21/25
+- 单轮：17/21
+- 确认脚本：4/4 中 2 条不稳定
 
 ## 已修
 
 | id | 修复 |
 |---|---|
-| pilot-b-02 | Java 商品 canonical/aliases → Python 目录 → matcher → hard rule → ReAct；实测 `intent=logistics`，调用 find_my_orders/query_logistics |
+| pilot-b-02 | 商品目录 aliases + matcher + hard rule + other 条件兜底；实测进 ReAct |
+| pilot-c-11 | 已签收要退款、政策要求退货：先解释并询问，不直接建单 |
 
 ## 未修
 
 | id | 问题 |
 |---|---|
-| pilot-b-07 | `urge_logistics` 未注册到 ReAct，模型只能描述物流 |
-| pilot-confirm-01 | 用户说退款，模型选择 RETURN，首步 action 与期望不一致 |
+| pilot-b-07 | `urge_logistics` 未注册 |
+| pilot-c-02 | 退款冲突时给了退货解释，但首步没有按用例期望 |
+| confirm-01/02 | 订单定位/动作类型不稳定 |
 
 ## 说明
 
-- 结构检查，不含语义 judge
-- 24 条只验证链路，不能外推总体
-- 评测基准日仍需固定，相对时间用例会漂移
+结构检查，不含语义 judge；25 条不能外推总体。
