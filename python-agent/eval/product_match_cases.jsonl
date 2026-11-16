@@ -1,0 +1,30 @@
+{"id": "pm-001", "type": "exact", "input": "蓝牙耳机", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙耳机", "span": [0, 4]}], "unknown": [], "ambiguous": []}, "notes": "目录名/别名精确命中"}
+{"id": "pm-002", "type": "alias", "input": "降噪耳机", "expected": {"matches": [{"canonical": "耳机", "surface": "降噪耳机", "span": [0, 4]}], "unknown": [], "ambiguous": []}, "notes": "别名精确命中"}
+{"id": "pm-003", "type": "alias", "input": "运动鞋", "expected": {"matches": [{"canonical": "跑步鞋", "surface": "运动鞋", "span": [0, 3]}], "unknown": [], "ambiguous": []}, "notes": "近义别名"}
+{"id": "pm-004", "type": "alias", "input": "水杯", "expected": {"matches": [{"canonical": "保温杯", "surface": "水杯", "span": [0, 2]}], "unknown": [], "ambiguous": []}, "notes": "近义别名"}
+{"id": "pm-005", "type": "typo", "input": "蓝牙而机", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙而机", "span": [0, 4]}], "unknown": [], "ambiguous": []}, "notes": "同音错别字，同长度"}
+{"id": "pm-006", "type": "typo", "input": "蓝呀耳机", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝呀耳机", "span": [0, 4]}], "unknown": [], "ambiguous": []}, "notes": "同音错别字，同长度"}
+{"id": "pm-007", "type": "typo", "input": "保温北", "expected": {"matches": [{"canonical": "保温杯", "surface": "保温北", "span": [0, 3]}], "unknown": [], "ambiguous": []}, "notes": "同音错别字，同长度"}
+{"id": "pm-008", "type": "typo", "input": "登机相", "expected": {"matches": [{"canonical": "行李箱", "surface": "登机相", "span": [0, 3]}], "unknown": [], "ambiguous": []}, "notes": "同音错别字，同长度"}
+{"id": "pm-009", "type": "typo", "input": "跑些", "expected": {"matches": [{"canonical": "跑步鞋", "surface": "跑些", "span": [0, 2]}], "unknown": [], "ambiguous": []}, "notes": "同音错别字，短别名"}
+{"id": "pm-010", "type": "compound", "input": "耳机套", "expected": {"matches": [], "unknown": [{"surface": "耳机套", "span": [0, 3]}], "ambiguous": []}, "notes": "派生词，不得吞成耳机"}
+{"id": "pm-011", "type": "compound", "input": "耳机壳", "expected": {"matches": [], "unknown": [{"surface": "耳机壳", "span": [0, 3]}], "ambiguous": []}, "notes": "派生词，不得吞成耳机"}
+{"id": "pm-012", "type": "compound", "input": "充电宝保护套", "expected": {"matches": [], "unknown": [{"surface": "充电宝保护套", "span": [0, 6]}], "ambiguous": []}, "notes": "派生词，不得吞成充电宝"}
+{"id": "pm-013", "type": "compound", "input": "行李箱贴纸", "expected": {"matches": [], "unknown": [{"surface": "行李箱贴纸", "span": [0, 5]}], "ambiguous": []}, "notes": "派生词，不得吞成行李箱"}
+{"id": "pm-014", "type": "compound", "input": "背包带", "expected": {"matches": [], "unknown": [{"surface": "背包带", "span": [0, 3]}], "ambiguous": []}, "notes": "派生词，不得吞成背包"}
+{"id": "pm-015", "type": "multi", "input": "耳机和充电宝", "expected": {"matches": [{"canonical": "耳机", "surface": "耳机", "span": [0, 2]}, {"canonical": "充电宝", "surface": "充电宝", "span": [3, 6]}], "unknown": [], "ambiguous": []}, "notes": "多商品"}
+{"id": "pm-016", "type": "multi", "input": "运动鞋和保温杯", "expected": {"matches": [{"canonical": "跑步鞋", "surface": "运动鞋", "span": [0, 3]}, {"canonical": "保温杯", "surface": "保温杯", "span": [4, 7]}], "unknown": [], "ambiguous": []}, "notes": "多商品，别名+精确"}
+{"id": "pm-017", "type": "multi", "input": "耳机套和充电宝", "expected": {"matches": [{"canonical": "充电宝", "surface": "充电宝", "span": [4, 7]}], "unknown": [{"surface": "耳机套", "span": [0, 3]}], "ambiguous": []}, "notes": "unknown + match"}
+{"id": "pm-018", "type": "multi", "input": "蓝牙而机和充电宝", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙而机", "span": [0, 4]}, {"canonical": "充电宝", "surface": "充电宝", "span": [5, 8]}], "unknown": [], "ambiguous": []}, "notes": "错别字+多商品"}
+{"id": "pm-019", "type": "exact", "input": "女儿的耳机", "expected": {"matches": [{"canonical": "耳机", "surface": "耳机", "span": [3, 5]}], "unknown": [], "ambiguous": []}, "notes": "修饰语在名词短语外"}
+{"id": "pm-020", "type": "exact", "input": "耳机多少钱", "expected": {"matches": [{"canonical": "耳机", "surface": "耳机", "span": [0, 2]}], "unknown": [], "ambiguous": []}, "notes": "谓词/查询词不属于名词短语"}
+{"id": "pm-021", "type": "typo", "input": "蓝牙而机这个订单", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙而机", "span": [0, 4]}], "unknown": [], "ambiguous": []}, "notes": "错别字+订单谓词"}
+{"id": "pm-022", "type": "none", "input": "我要退款", "expected": {"matches": [], "unknown": [], "ambiguous": []}, "notes": "无商品 mention"}
+{"id": "pm-023", "type": "none", "input": "女儿机会", "expected": {"matches": [], "unknown": [], "ambiguous": []}, "notes": "不是商品，不产生 unknown"}
+{"id": "pm-024", "type": "multi", "input": "耳机套、充电宝保护套", "expected": {"matches": [], "unknown": [{"surface": "耳机套", "span": [0, 3]}, {"surface": "充电宝保护套", "span": [4, 10]}], "ambiguous": []}, "notes": "两个 unknown"}
+{"id": "pm-025", "type": "multi", "input": "耳机和耳机套", "expected": {"matches": [{"canonical": "耳机", "surface": "耳机", "span": [0, 2]}], "unknown": [{"surface": "耳机套", "span": [3, 6]}], "ambiguous": []}, "notes": "同一商品的正例+派生词"}
+{"id": "pm-026", "type": "multi", "input": "充电宝和充电宝保护套", "expected": {"matches": [{"canonical": "充电宝", "surface": "充电宝", "span": [0, 3]}], "unknown": [{"surface": "充电宝保护套", "span": [4, 10]}], "ambiguous": []}, "notes": "正例+派生词"}
+{"id": "pm-027", "type": "exact", "input": "耳机到哪了", "expected": {"matches": [{"canonical": "耳机", "surface": "耳机", "span": [0, 2]}], "unknown": [], "ambiguous": []}, "notes": "物流谓词不属于名词短语"}
+{"id": "pm-028", "type": "typo", "input": "帮我查一下蓝牙而机", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙而机", "span": [5, 9]}], "unknown": [], "ambiguous": []}, "notes": "前缀+错别字"}
+{"id": "pm-029", "type": "multi", "input": "蓝牙耳机和降噪耳机", "expected": {"matches": [{"canonical": "耳机", "surface": "蓝牙耳机", "span": [0, 4]}, {"canonical": "耳机", "surface": "降噪耳机", "span": [5, 9]}], "unknown": [], "ambiguous": []}, "notes": "同 canonical 两个 mention"}
+{"id": "pm-030", "type": "exact", "input": "保温杯", "expected": {"matches": [{"canonical": "保温杯", "surface": "保温杯", "span": [0, 3]}], "unknown": [], "ambiguous": []}, "notes": "精确命中"}
