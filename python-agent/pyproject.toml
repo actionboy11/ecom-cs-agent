@@ -12,6 +12,7 @@ dependencies = [
     "pyjwt>=2.8",
     "python-dotenv>=1.0",
     "langgraph>=0.2.60",
+    "pypinyin>=0.55",
     "langgraph-checkpoint-sqlite>=2.0",
     "aiosqlite>=0.20",
     "langchain-core>=0.3.20",
