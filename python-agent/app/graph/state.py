@@ -22,6 +22,7 @@ class AgentState(TypedDict, total=False):
     awaiting_confirm: bool
     cancelled: bool
     urgent: bool
+    matched_products: list[str]
     order_no: str | None
     sku: str | None
     reason: str | None

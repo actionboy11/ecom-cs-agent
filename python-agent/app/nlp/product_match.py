@@ -22,13 +22,19 @@ ALLOWED_NEIGHBOR = set(
     "查问看帮我想买退换订单物流快递发货收签款货到哪多少钱怎么可以是有请给找下一这个那"
 )
 
-CATALOG: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("耳机", ("蓝牙耳机", "降噪耳机", "无线耳机", "耳机", "耳麦")),
-    ("保温杯", ("保温杯", "水杯", "杯子", "杯")),
-    ("跑步鞋", ("跑步鞋", "跑鞋", "运动鞋", "鞋")),
-    ("行李箱", ("行李箱", "登机箱", "箱子", "拉杆箱")),
-    ("背包", ("背包", "双肩包")),
-    ("充电宝", ("充电宝", "移动电源")),
+@dataclass(frozen=True)
+class CatalogEntity:
+    canonical: str
+    names: tuple[str, ...]
+
+
+DEFAULT_CATALOG: tuple[CatalogEntity, ...] = (
+    CatalogEntity("耳机", ("蓝牙耳机", "降噪耳机", "无线耳机", "耳机", "耳麦")),
+    CatalogEntity("保温杯", ("保温杯", "水杯", "杯子", "杯")),
+    CatalogEntity("跑步鞋", ("跑步鞋", "跑鞋", "运动鞋", "鞋")),
+    CatalogEntity("行李箱", ("行李箱", "登机箱", "箱子", "拉杆箱")),
+    CatalogEntity("背包", ("背包", "双肩包")),
+    CatalogEntity("充电宝", ("充电宝", "移动电源")),
 )
 
 
@@ -70,27 +76,27 @@ def _compound_span(text: str, start: int, end: int) -> tuple[int, int]:
     return left, right
 
 
-def _candidates(text: str) -> list[Candidate]:
+def _candidates(text: str, catalog: tuple[CatalogEntity, ...]) -> list[Candidate]:
     found: list[Candidate] = []
-    for canonical, aliases in CATALOG:
-        for alias in aliases:
+    for entity in catalog:
+        for alias in entity.names:
             length = len(alias)
             for start in range(len(text) - length + 1):
                 window = text[start : start + length]
                 if window == alias:
-                    found.append(Candidate(canonical, alias, start, start + length, 1.0, "exact"))
+                    found.append(Candidate(entity.canonical, alias, start, start + length, 1.0, "exact"))
                     continue
                 ratio = _ratio(alias, window)
                 pinyin_equal = _pinyin(alias) == _pinyin(window)
                 same = sum(1 for a, b in zip(alias, window) if a == b)
                 if ratio >= TYPO_CHAR_RATIO:
-                    found.append(Candidate(canonical, alias, start, start + length, ratio, "typo"))
+                    found.append(Candidate(entity.canonical, alias, start, start + length, ratio, "typo"))
                 elif (
                     pinyin_equal
                     and ratio >= TYPO_PINYIN_CHAR_RATIO
                     and (same >= 2 if length >= 3 else window[0] == alias[0])
                 ):
-                    found.append(Candidate(canonical, alias, start, start + length, 0.95, "typo"))
+                    found.append(Candidate(entity.canonical, alias, start, start + length, 0.95, "typo"))
     return found
 
 
@@ -103,10 +109,10 @@ def _select(candidates: list[Candidate]) -> list[Candidate]:
     return sorted(chosen, key=lambda c: c.start)
 
 
-def match_products(text: str) -> dict:
+def match_products(text: str, catalog: tuple[CatalogEntity, ...] | None = None) -> dict:
     matches: list[dict] = []
     unknown: list[dict] = []
-    for candidate in _select(_candidates(text)):
+    for candidate in _select(_candidates(text, catalog or DEFAULT_CATALOG)):
         if _boundary_ok(text, candidate.start, candidate.end):
             matches.append(
                 {

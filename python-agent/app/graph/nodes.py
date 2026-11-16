@@ -21,6 +21,8 @@ from app.config import settings
 from app.graph.state import AgentState
 from app.knowledge import store as knowledge_store
 from app.llm.registry import ainvoke_with_fallback, with_structured_output
+from app.nlp import catalog as product_catalog
+from app.nlp.product_match import match_products
 from app.observability.trace import node_span
 from app.tools import business_api
 from app.tools.business_api import BusinessAPIError
@@ -263,8 +265,10 @@ async def classify(state: AgentState) -> dict[str, Any]:
             info["source"] = "keyword"
             info["fallback_reason"] = str(exc)[:200]
 
+        catalog = await product_catalog.load_catalog()
+        matches = match_products(text, catalog)["matches"]
         info["intent"] = parsed.intent
-        intent = _apply_hard_rules(text, parsed.intent)
+        intent = _apply_hard_rules(text, parsed.intent, catalog)
         tasks = _extract_tasks(text)
         info["hard_rule_intent"] = intent if intent != parsed.intent else None
         info["tasks"] = len(tasks)
@@ -288,6 +292,7 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "reason": parsed.reason,
             "confidence": parsed.confidence,
             "urgent": any(hint in text for hint in URGENT_HINTS),
+            "matched_products": list(dict.fromkeys(item["canonical"] for item in matches)),
         }
 
 
@@ -389,9 +394,10 @@ def _extract_tasks(text: str) -> list[dict[str, Any]]:
     return tasks if len(products) >= 2 else []
 
 
-def _apply_hard_rules(text: str, intent: str) -> str:
+def _apply_hard_rules(text: str, intent: str, catalog=None) -> str:
     """分类器的确定性兜底：政策例外、模糊指代、投诉/加急、价保。"""
     has_order = bool(ORDER_NO_PATTERN.search(text))
+    matches = match_products(text, catalog)["matches"] if catalog is not None else match_products(text)["matches"]
     # 赠品没有明确政策条款：转人工确认，避免套用商品条款
     if any(word in text for word in ("赠品", "送的", "赠的")):
         return "complaint"
@@ -405,6 +411,14 @@ def _apply_hard_rules(text: str, intent: str) -> str:
         k in text for k in ("退", "换", "投诉")
     ):
         return "logistics"
+    if matches and any(k in text for k in ("没到", "没收到", "还没到", "怎么还没到", "没更新")) and not any(
+        k in text for k in ("退", "换", "投诉")
+    ):
+        return "logistics"
+    if matches and any(k in text for k in ("查", "查一下", "订单", "看一下")) and not any(
+        k in text for k in ("退", "换", "投诉")
+    ):
+        return "order_query"
     if any(hint in text for hint in EXCEPTION_HINTS) and not has_order:
         return "policy"
     if (
@@ -444,6 +458,8 @@ def route_after_classify(state: AgentState) -> str:
     if settings.react_enabled and state.get("intent") in (
         "order_query", "logistics", "refund", "policy", "product_info"
     ):
+        return "react"
+    if settings.react_enabled and state.get("intent") == "other" and state.get("matched_products"):
         return "react"
     if state.get("tasks"):
         return "tools"

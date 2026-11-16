@@ -108,6 +108,14 @@ async def get_product(sku: str, token: str = "") -> dict[str, Any]:
     return await _mcp("get_product_info", {"sku": sku}, token)
 
 
+async def list_products() -> list[dict[str, Any]]:
+    """公开商品目录：用于商品实体链接，不需要 token。"""
+    async with _client() as client:
+        resp = await client.get("/api/products/search")
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def healthy() -> bool:
     try:
         async with _client() as client:

@@ -226,6 +226,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "订单 tags：gift 表示赠品（无明确条款时转人工），custom 表示定制（不适用七天无理由）。"
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             "find_my_orders 只返回一个候选且用户明确要退/换时，直接调用对应写工具，不要再问‘是这单吗’，系统确认卡负责确认。"
+            f"已识别商品：{'、'.join(state.get('matched_products') or []) or '无'}；有商品时优先用 canonical 作为 product_terms。"
             f"当前会话订单：{active or '无'}。"
             "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"
             f"用户说退/退款且订单已确定时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
