@@ -15,12 +15,11 @@ from langgraph.errors import GraphInterrupt
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
+from app import skill_registry
 from app.graph.state import AgentState
 from app.graph.time_refs import TZ, parse_time_reference
 from app.knowledge import store as knowledge_store
 from app.llm.registry import get_chat_model
-from app.skills import order_lookup as lookup_skill
-from app.skills import return_flow
 from app.tools import business_api
 
 MAX_STEPS = 6
@@ -54,18 +53,8 @@ class AfterSalesArgs(BaseModel):
     reason: str = Field(description="原因")
 
 
-class LookupSkillArgs(BaseModel):
-    product_terms: list[str] = Field(default_factory=list, description="商品词")
-    created_from: str | None = Field(default=None, description="下单日期下限 yyyy-MM-dd")
-    created_to: str | None = Field(default=None, description="下单日期上限 yyyy-MM-dd")
-    delivered_from: str | None = Field(default=None, description="签收日期下限")
-    delivered_to: str | None = Field(default=None, description="签收日期上限")
-    action: str | None = Field(default=None, description="refund/return/exchange/logistics/query")
-
-
-class ReturnSkillArgs(BaseModel):
-    order_no: str = Field(description="订单号")
-    reason: str = Field(description="退货原因")
+class LoadSkillArgs(BaseModel):
+    name: str = Field(description="skill 名称，例如 order-lookup / normal-return / custom-return")
 
 
 class HandoffArgs(BaseModel):
@@ -95,14 +84,11 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
         result = await asyncio.to_thread(knowledge_store.retrieve, query)
         return _json({"knowledge": result.knowledge, "policy_refs": result.policy_refs})
 
-    async def order_lookup_skill(**kwargs: Any) -> str:
-        return _json(await lookup_skill.order_lookup(token, **kwargs))
-
-    async def normal_return_skill(order_no: str, reason: str) -> str:
-        return _json(await return_flow.normal_return(token, order_no, reason))
-
-    async def custom_return_skill(order_no: str, reason: str) -> str:
-        return _json(await return_flow.custom_return(token, order_no, reason))
+    async def load_skill(name: str) -> str:
+        try:
+            return skill_registry.load(name)
+        except ValueError as exc:
+            return _json({"error": str(exc)})
 
     async def handoff_to_human(reason: str, summary: str = "") -> str:
         decision = interrupt(
@@ -122,22 +108,10 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
 
     return [
         StructuredTool.from_function(
-            coroutine=order_lookup_skill,
-            name="order_lookup_skill",
-            description="用户没给订单号时，按商品/时间/状态召回候选并决定 auto/ask/none；先于所有订单操作调用。",
-            args_schema=LookupSkillArgs,
-        ),
-        StructuredTool.from_function(
-            coroutine=normal_return_skill,
-            name="normal_return_skill",
-            description="正常退货流程：校验已签收、7 天内、非定制；返回 ready/out_of_window/handoff。",
-            args_schema=ReturnSkillArgs,
-        ),
-        StructuredTool.from_function(
-            coroutine=custom_return_skill,
-            name="custom_return_skill",
-            description="定制退货流程：定制商品不适用七天无理由；有质量问题走 P02，否则 handoff。",
-            args_schema=ReturnSkillArgs,
+            coroutine=load_skill,
+            name="load_skill",
+            description="按名称加载 SKILL.md 全文；需要走订单定位/正常退货/定制退货时先调用它。",
+            args_schema=LoadSkillArgs,
         ),
         StructuredTool.from_function(
             coroutine=handoff_to_human,
@@ -256,10 +230,9 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"
             f"用户说退/退款且订单已确定时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
             "不要只用文字询问，确认由系统卡片完成；工具返回成功结果后明确说已提交，不要再让用户确认。"
-            "技能注册表：order_lookup_skill（无订单号先查候选）、normal_return_skill（正常退货）、custom_return_skill（定制退货）。"
-            "技能返回 handoff 时，先用一句话解释政策，再调 handoff_to_human，不要只说‘已转人工’。"
-            "技能返回 ready 时，调 create_return，确认由系统卡片完成。"
-            "退货前先看 tags：custom 用 custom_return_skill，否则 normal_return_skill；技能返回 ready 后再调 create_return 并等待确认，返回 handoff 就解释并转人工。"
+            f"可用 Skill（先用 load_skill(name) 读取全文，再严格按文档步骤执行）：\n{skill_registry.descriptions()}"
+            "没有订单号时先 load_skill('order-lookup')；退货先 load_skill('normal-return') 或 load_skill('custom-return')。"
+            "Skill 文档要求 handoff 时，先用一句话解释政策，再调 handoff_to_human。"
             "示例：用户说『我要退货』→ 先判 tags；『我要换货』→ create_exchange；『我要退款/退钱』→ create_refund。"
             "即使工具返回政策，只要用户明确要求办理且订单号确定，也必须调用对应写工具。"
             f"{time_line}"

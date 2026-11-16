@@ -8,6 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY python-agent/pyproject.toml ./
 COPY python-agent/app ./app
+COPY python-agent/skills ./skills
 COPY python-agent/eval ./eval
 COPY python-agent/ui ./ui
 COPY python-agent/.streamlit ./.streamlit
