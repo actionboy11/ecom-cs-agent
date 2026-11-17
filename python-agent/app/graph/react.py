@@ -62,6 +62,11 @@ class HandoffArgs(BaseModel):
     summary: str = Field(default="", description="给坐席的摘要")
 
 
+class UrgeArgs(BaseModel):
+    order_no: str = Field(description="订单号")
+    reason: str = Field(default="用户申请催件", description="催件原因")
+
+
 def _json(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, default=str)
 
@@ -79,6 +84,9 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
 
     async def get_product(sku: str) -> str:
         return _json(await business_api.get_product(sku, token))
+
+    async def urge_logistics(order_no: str, reason: str = "用户申请催件") -> str:
+        return _json(await business_api.urge_logistics(order_no, token, reason))
 
     async def search_policy(query: str) -> str:
         result = await asyncio.to_thread(knowledge_store.retrieve, query)
@@ -154,6 +162,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
             name="query_logistics",
             description="按订单号查物流轨迹；仅本人订单。",
             args_schema=OrderArgs,
+        ),
+        StructuredTool.from_function(
+            coroutine=urge_logistics,
+            name="urge_logistics",
+            description="对订单发起催件，创建 URGE 售后请求；用户要求催件时直接调用，不需要确认。",
+            args_schema=UrgeArgs,
         ),
         StructuredTool.from_function(
             coroutine=get_product,

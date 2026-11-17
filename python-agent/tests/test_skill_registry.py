@@ -29,5 +29,6 @@ def test_unknown_skill_raises() -> None:
 
 
 def test_load_skill_tool_is_registered() -> None:
-    tools = _build_tools("token", "thread")
-    assert "load_skill" in {tool.name for tool in tools}
+    names = {tool.name for tool in _build_tools("token", "thread")}
+    assert "load_skill" in names
+    assert "urge_logistics" in names

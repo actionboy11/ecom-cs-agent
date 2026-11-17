@@ -57,5 +57,5 @@ mysql -h 127.0.0.1 -P 3308 -ucsagent -pcsagent cs_agent
 
 ## 当前状态
 
-- 25/26
-- 唯一失败：`pilot-b-07`，`urge_logistics` 未注册到 ReAct
+- 26/26
+- b-07 已修：`urge_logistics` 已注册
