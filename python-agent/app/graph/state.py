@@ -23,6 +23,8 @@ class AgentState(TypedDict, total=False):
     cancelled: bool
     urgent: bool
     matched_products: list[str]
+    ui_action: dict[str, Any] | None
+    history_request: dict[str, Any] | None
     order_no: str | None
     sku: str | None
     reason: str | None

@@ -28,6 +28,22 @@ export type ChatReply = {
   pending_actions?: PendingAction[];
   tool_trace?: { step?: number; tool?: string; args?: Record<string, unknown>; result?: string; error?: string }[];
   fallback_reason?: string | null;
+  ui_action?: {
+    type?: string;
+    action?: string;
+    order_no?: string | null;
+    message?: string;
+    fields?: string[];
+  } | null;
+  history_request?: {
+    type?: string;
+    page?: number;
+    page_size?: number;
+    created_from?: string | null;
+    created_to?: string | null;
+    total?: number | null;
+    has_more?: boolean | null;
+  } | null;
   candidates?: {
     orderNo?: string;
     item?: string;
@@ -159,4 +175,64 @@ export type AuditRow = {
 
 export function audit(token: string): Promise<AuditRow[]> {
   return request<AuditRow[]>(JAVA, "/api/audit?limit=20", { token });
+}
+
+
+export type OrderPage = {
+  items: {
+    orderNo: string;
+    sku?: string;
+    item: string;
+    amount?: number;
+    status: string;
+    createdAt?: string;
+    deliveredAt?: string | null;
+    tags?: string | null;
+  }[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
+export function orderPage(
+  token: string,
+  params: {
+    page?: number;
+    page_size?: number;
+    created_from?: string | null;
+    created_to?: string | null;
+    product?: string;
+    status?: string;
+  },
+): Promise<OrderPage> {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
+  });
+  return request<OrderPage>(JAVA, `/api/orders/page?${query.toString()}`, { token });
+}
+
+export function updateAddress(
+  token: string,
+  orderNo: string,
+  payload: { receiver: string; phone: string; address: string },
+) {
+  return request(JAVA, `/api/orders/${encodeURIComponent(orderNo)}/address`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export function createInvoice(
+  token: string,
+  orderNo: string,
+  payload: { title: string; taxId: string; email?: string },
+) {
+  return request(JAVA, `/api/orders/${encodeURIComponent(orderNo)}/invoice`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
 }

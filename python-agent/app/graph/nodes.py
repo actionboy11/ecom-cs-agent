@@ -18,6 +18,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.graph import capabilities
 from app.graph.state import AgentState
 from app.knowledge import store as knowledge_store
 from app.llm.registry import ainvoke_with_fallback, with_structured_output
@@ -243,6 +244,33 @@ async def classify(state: AgentState) -> dict[str, Any]:
                 "confidence": 1.0,
             }
 
+    capability = capabilities.detect(text)
+    if capability is not None:
+        with node_span(thread_id, "classify", user_text=text[:200]) as info:
+            info["source"] = "capability"
+            info["capability"] = capability.kind
+        payload = capability.payload
+        return {
+            "intent": "other",
+            "tasks": [],
+            "pending_tasks": [],
+            "pending_actions": [],
+            "awaiting_confirm": False,
+            "cancelled": False,
+            "turn_count": turn_count,
+            "refusal": None,
+            "safety_reply": None,
+            "tool_result": None,
+            "order_no": payload.get("order_no"),
+            "sku": None,
+            "reason": None,
+            "confidence": 1.0,
+            "urgent": False,
+            "matched_products": [],
+            "ui_action": payload if capability.kind == "user_action" else None,
+            "history_request": payload if capability.kind == "order_history" else None,
+        }
+
     with node_span(thread_id, "classify", user_text=text[:200]) as info:
         try:
             model = with_structured_output("fast", Classification)
@@ -453,6 +481,8 @@ def route_after_classify(state: AgentState) -> str:
     # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
     if int(state.get("turn_count") or 0) > MAX_TURNS:
         return "handoff"
+    if state.get("ui_action") or state.get("history_request"):
+        return "respond"
     if state.get("awaiting_confirm"):
         return "respond"
     if settings.react_enabled and state.get("intent") in (
@@ -761,6 +791,16 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    if state.get("ui_action"):
+        payload = state["ui_action"]
+        text = str(payload.get("message") or "请在下方完成操作。")
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "capability",
+                "ui_action": payload}
+    if state.get("history_request"):
+        payload = state["history_request"]
+        text = "已为你打开订单记录，每页 10 条，可以点下一页继续查看。"
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "capability",
+                "history_request": payload}
     if state.get("awaiting_confirm") and state.get("pending_tasks"):
         tasks = state.get("pending_tasks") or []
         labels = {

@@ -98,6 +98,13 @@ docker compose up -d         # MySQL + Java + Python Agent + 工作台
 
 候选订单在 React 里渲染为可点选卡片（订单号、商品、金额、状态、下单/签收时间、匹配原因），点「选这单」直接把订单号带回 Agent，不再让用户手输。
 
+**能力注册表（Stage 4）**：
+
+- 历史账单：`/api/orders/page` 分页（每页 10 条，total/has_more），前端上一页/下一页
+- 改地址/发票：Agent 返回 `user_action`，前端表单提交到 `/api/orders/{no}/address`、`/api/orders/{no}/invoice`
+- 时间：自然月边界（11 月 = 11-01 ~ 11-30；当月截止今天）
+- 能力边界：改地址/发票不走 handoff；查他人订单仍 refuse
+
 **Skills（SKILL.md）**：
 
 - `python-agent/skills/order-lookup/SKILL.md`

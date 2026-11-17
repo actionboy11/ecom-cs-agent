@@ -101,6 +101,8 @@ class ChatResponse(BaseModel):
     pending_actions: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
     candidates: list[dict[str, Any]] = Field(default_factory=list)
+    ui_action: dict[str, Any] | None = None
+    history_request: dict[str, Any] | None = None
     fallback_reason: str | None = None
 
 
@@ -254,6 +256,8 @@ async def chat(
         pending_actions=pending_actions,
         tool_trace=tool_trace,
         candidates=_candidate_orders({"tool_trace": tool_trace}),
+        ui_action=result.get("ui_action"),
+        history_request=result.get("history_request"),
         fallback_reason=result.get("react_fallback_reason"),
     )
 
@@ -369,6 +373,8 @@ async def confirm_write(
         interrupt=interrupt,
         pending_actions=pending_actions,
         tool_trace=result.get("tool_trace") or [],
+        ui_action=result.get("ui_action"),
+        history_request=result.get("history_request"),
     )
 
 

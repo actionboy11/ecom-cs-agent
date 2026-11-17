@@ -168,6 +168,172 @@ function Details({ reply }: { reply: api.ChatReply }) {
   );
 }
 
+
+function UserActionCard({
+  token,
+  action,
+  toast,
+}: {
+  token: string;
+  action: NonNullable<api.ChatReply["ui_action"]>;
+  toast: (text: string) => void;
+}) {
+  const [orderNo, setOrderNo] = useState(action.order_no || "");
+  const [receiver, setReceiver] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [title, setTitle] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!orderNo.trim()) {
+      toast("请填写订单号");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (action.action === "change_address") {
+        await api.updateAddress(token, orderNo.trim(), {
+          receiver: receiver.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+        });
+        setDone("收货地址已更新");
+      } else {
+        await api.createInvoice(token, orderNo.trim(), {
+          title: title.trim(),
+          taxId: taxId.trim(),
+          email: email.trim(),
+        });
+        setDone("开票申请已提交");
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) return <div className="user-action done">{done}</div>;
+
+  return (
+    <div className="user-action">
+      <p>{action.message}</p>
+      <label>
+        订单号
+        <input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="CS2024..." />
+      </label>
+      {action.action === "change_address" ? (
+        <>
+          <label>
+            收件人
+            <input value={receiver} onChange={(e) => setReceiver(e.target.value)} />
+          </label>
+          <label>
+            手机号
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </label>
+          <label>
+            新地址
+            <input value={address} onChange={(e) => setAddress(e.target.value)} />
+          </label>
+        </>
+      ) : (
+        <>
+          <label>
+            发票抬头
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
+          <label>
+            税号
+            <input value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+          </label>
+          <label>
+            邮箱
+            <input value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+        </>
+      )}
+      <button onClick={submit} disabled={busy}>
+        {busy ? "提交中…" : "提交"}
+      </button>
+    </div>
+  );
+}
+
+function OrderHistory({
+  token,
+  request,
+  toast,
+}: {
+  token: string;
+  request: NonNullable<api.ChatReply["history_request"]>;
+  toast: (text: string) => void;
+}) {
+  const [page, setPage] = useState(request.page || 1);
+  const [data, setData] = useState<api.OrderPage | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setBusy(true);
+    api
+      .orderPage(token, {
+        page,
+        page_size: request.page_size || 10,
+        created_from: request.created_from,
+        created_to: request.created_to,
+      })
+      .then(setData)
+      .catch((err) => toast(err instanceof Error ? err.message : String(err)))
+      .finally(() => setBusy(false));
+  }, [page, request.created_from, request.created_to, request.page_size, token, toast]);
+
+  return (
+    <div className="order-history">
+      {data && (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>商品</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>下单日期</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.map((item) => (
+                <tr key={item.orderNo}>
+                  <td>{item.orderNo}</td>
+                  <td>{item.item}</td>
+                  <td>{item.amount ?? ""}</td>
+                  <td>{item.status}</td>
+                  <td>{item.createdAt ?? ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="pager">
+            <button disabled={busy || page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              上一页
+            </button>
+            <span>
+              第 {data.page} 页 · 共 {data.total} 条
+            </span>
+            <button disabled={busy || !data.hasMore} onClick={() => setPage((p) => p + 1)}>
+              下一页
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => void; toast: (t: string) => void }) {
   const thread = `ui-${user.username}`;
   const [messages, setMessages] = useState<Message[]>([]);
@@ -275,6 +441,12 @@ function BuyerChat({ user, onLogout, toast }: { user: api.User; onLogout: () => 
                 onNone={() => dispatch("都不是，请重新查")}
                 disabled={sending}
               />
+            )}
+            {message.details?.history_request && (
+              <OrderHistory token={user.token} request={message.details.history_request} toast={toast} />
+            )}
+            {message.details?.ui_action && (
+              <UserActionCard token={user.token} action={message.details.ui_action} toast={toast} />
             )}
             {message.actions && message.actions.length > 0 && (
               <div className="actions">
