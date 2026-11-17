@@ -68,3 +68,15 @@ def test_other_without_product_stays_respond(monkeypatch) -> None:
     monkeypatch.setattr(settings, "react_enabled", True)
     state = {"intent": "other", "matched_products": [], "turn_count": 1, "refusal": None}
     assert nodes.route_after_classify(state) == "respond"  # type: ignore[arg-type]
+
+
+def test_last_candidates_routes_to_react(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "react_enabled", True)
+    state = {
+        "intent": "other",
+        "matched_products": [],
+        "last_candidates": [{"orderNo": "CS2024231"}],
+        "turn_count": 2,
+        "refusal": None,
+    }
+    assert nodes.route_after_classify(state) == "react"  # type: ignore[arg-type]

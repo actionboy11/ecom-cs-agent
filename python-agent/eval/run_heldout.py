@@ -37,7 +37,9 @@ def check_step(expected: dict, data: dict) -> tuple[bool, str]:
 async def run_script(
     client: httpx.AsyncClient, token: str, case: dict, thread: str
 ) -> dict[str, Any]:
-    order_no = (case.get("preconditions", {}).get("orders") or [""])[0]
+    steps = case.get("steps") or []
+    final_order = (steps[-1].get("expect") or {}).get("order_no") if steps else None
+    order_no = final_order or (case.get("preconditions", {}).get("orders") or [""])[0]
     if not order_no:
         return {"ok": False, "detail": "missing order", "transcript": [], "reply": ""}
     if not await asyncio.to_thread(reset_order, order_no):
@@ -61,7 +63,10 @@ async def run_script(
             )
             data = resp.json() if resp.status_code == 200 else {}
             transcript.append({"user": step["user"], "response": data, "confirm": approved})
-            details.append(f"{expected['type']}:confirm={approved}")
+            details.append(f"{expected['type']}:confirm={approved}:status={resp.status_code}")
+            if resp.status_code != 200:
+                ok = False
+                break
             continue
 
         data = await chat(client, token, thread, step["user"])
@@ -73,8 +78,17 @@ async def run_script(
             break
 
     if ok:
-        created = await after_sales(client, token)
-        matched = [row for row in created if row["orderNo"] == order_no]
+        matched: list[dict] = []
+        for _ in range(5):
+            created = await after_sales(client, token)
+            matched = [row for row in created if row["orderNo"] == order_no]
+            if final_expect.get("type") == "answer":
+                break
+            if final_expect.get("type") == "handled" and any(
+                row["type"] == str(final_expect.get("action", "")).upper() for row in matched
+            ):
+                break
+            await asyncio.sleep(0.2)
         if final_expect.get("type") == "handled":
             ok = any(row["type"] == str(final_expect.get("action", "")).upper() for row in matched)
         elif final_expect.get("type") == "answer":

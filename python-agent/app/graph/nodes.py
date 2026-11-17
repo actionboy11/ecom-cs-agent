@@ -461,6 +461,8 @@ def route_after_classify(state: AgentState) -> str:
         return "react"
     if settings.react_enabled and state.get("intent") == "other" and state.get("matched_products"):
         return "react"
+    if settings.react_enabled and state.get("last_candidates"):
+        return "react"
     if state.get("tasks"):
         return "tools"
     intent = state.get("intent", "other")

@@ -37,6 +37,18 @@ def parse_time_reference(text: str, today: date | None = None) -> dict[str, str]
     def result(start: date, end: date, label: str) -> dict[str, str]:
         return {"field": field, "from": start.isoformat(), "to": end.isoformat(), "label": label}
 
+    explicit = re.search(r"(?:(20\d{2})\s*年)?\s*(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]?", text)
+    if explicit:
+        try:
+            day = date(
+                int(explicit.group(1)) if explicit.group(1) else base.year,
+                int(explicit.group(2)),
+                int(explicit.group(3)),
+            )
+            return result(day, day, "指定日期")
+        except ValueError:
+            pass
+
     if "大前天" in text:
         day = base - timedelta(days=3)
         return result(day, day, "大前天")

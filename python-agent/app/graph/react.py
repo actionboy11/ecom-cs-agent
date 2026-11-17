@@ -184,6 +184,29 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
     ]
 
 
+def _candidate_selection(text: str, candidates: list[dict[str, Any]]) -> str | None:
+    """把「10月28号那个 / 第二个」解析成上一轮候选订单。"""
+    explicit = re.search(r"选择订单\s*(CS\d{6,})", text)
+    if explicit:
+        return explicit.group(1).upper()
+
+    ordinals = {"第一个": 0, "第一": 0, "第二个": 1, "第二": 1, "第三个": 2, "第三": 2}
+    for word, index in ordinals.items():
+        if word in text and index < len(candidates):
+            return str(candidates[index].get("orderNo") or "") or None
+
+    hint = parse_time_reference(text)
+    if not hint or not candidates:
+        return None
+    key = "createdAt" if hint["field"] == "created" else "deliveredAt"
+    matched = [
+        str(item.get("orderNo"))
+        for item in candidates
+        if item.get(key) and hint["from"] <= str(item[key])[:10] <= hint["to"]
+    ]
+    return matched[0] if len(set(matched)) == 1 else None
+
+
 def _active_order(state: AgentState) -> str | None:
     order_no = state.get("active_order_no")
     stamped = state.get("active_order_at")
@@ -211,12 +234,16 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     active = _active_order(state)
     last_text = str(state["messages"][-1].content) if state.get("messages") else ""
     active_at = state.get("active_order_at")
+    candidates = list(state.get("last_candidates") or [])
+    pending_action = state.get("pending_write_action")
+    selected_now = False
     if active is None and state.get("active_order_no"):
         active_at = None
-    selection = re.search(r"选择订单\s*(CS\d{6,})", last_text)
+    selection = _candidate_selection(last_text, candidates)
     if selection:
-        active = selection.group(1).upper()
+        active = selection
         active_at = clock.now(UTC).isoformat()
+        selected_now = True
     elif any(word in last_text for word in ("不是这单", "不是这个", "都不是", "换一个", "不对")):
         active = None
         active_at = None
@@ -241,7 +268,18 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             "find_my_orders 只返回一个候选且用户明确要退/换时，直接调用对应写工具，不要再问‘是这单吗’，系统确认卡负责确认。"
             f"已识别商品：{'、'.join(state.get('matched_products') or []) or '无'}；有商品时优先用 canonical 作为 product_terms。"
-            f"当前会话订单：{active or '无'}。"
+            + (
+                "上一轮候选：" + "；".join(
+                    f"{item.get('orderNo')}（{item.get('status')}，下单 {item.get('createdAt')}，签收 {item.get('deliveredAt') or '无'}）"
+                    for item in candidates[:5]
+                ) + "。用户如果用一个日期/序号回答，直接选对应订单，不要再说查不到。"
+                if candidates else ""
+            )
+            + (
+                f"上一轮待办：{pending_action}。用户本轮已选订单 {active} 时，直接调用对应写工具，不要再问。"
+                if pending_action and active else ""
+            )
+            + f"当前会话订单：{active or '无'}。"
             "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"
             f"用户说退/退款且订单已确定、未签收或政策允许仅退款时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
             "用户说退款/退钱，但订单已签收且政策要求退货退款时，先说明‘需要寄回商品才能退款’，并询问是否接受退货退款；不要直接调 create_refund 或 create_return。"
@@ -275,6 +313,19 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             if not text:
                 fallback_reason = "empty_reply"
                 break
+            if selected_now and pending_action and not any(
+                item.get("tool") in ("create_refund", "create_return", "create_exchange") for item in trace
+            ):
+                selected = next((item for item in candidates if item.get("orderNo") == active), {})
+                blocked_refund = pending_action == "refund" and selected.get("status") == "已签收"
+                if not blocked_refund:
+                    action_tool = {"refund": "create_refund", "return": "create_return", "exchange": "create_exchange"}.get(pending_action)
+                    if action_tool:
+                        messages.append(SystemMessage(content=(
+                            f"用户已选定订单 {active}，上一轮意图是 {pending_action}。"
+                            f"现在必须调用 {action_tool} 并等待系统确认，不要再文字询问。"
+                        )))
+                        continue
             return {
                 "reply": text,
                 "messages": [AIMessage(content=text)],
@@ -284,6 +335,9 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 "react_fallback_reason": None,
                 "active_order_no": active_order,
                 "active_order_at": active_at,
+                "last_candidates": candidates[:5],
+                "pending_write_action": pending_action,
+                "candidates": candidates[:3],
             }
 
         messages.append(ai)
@@ -327,6 +381,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     messages.append(ToolMessage(content=_json(data), tool_call_id=call_id))
                     active_order = order_no
                     active_at = clock.now(UTC).isoformat()
+                    candidates = []
+                    pending_action = None
                 except Exception as exc:  # noqa: BLE001
                     trace.append({"step": step, "tool": name, "args": args, "error": str(exc)[:200]})
                     messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
@@ -355,9 +411,13 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 if name == "find_my_orders":
                     try:
                         payload = json.loads(str(result))
-                        if not payload.get("candidates"):
+                        found = payload.get("candidates") or []
+                        if not found:
                             fallback_reason = "no_candidates"
                             break
+                        candidates = found[:5]
+                        if state.get("intent") in ("refund", "return", "exchange"):
+                            pending_action = str(state.get("intent"))
                     except (TypeError, ValueError):
                         pass
             except GraphInterrupt:

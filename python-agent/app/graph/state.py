@@ -34,6 +34,8 @@ class AgentState(TypedDict, total=False):
     react_fallback_reason: str | None
     active_order_no: str | None
     active_order_at: str | None
+    last_candidates: list[dict[str, Any]]
+    pending_write_action: str | None
 
     # 中间结果
     tool_result: dict[str, Any] | None
