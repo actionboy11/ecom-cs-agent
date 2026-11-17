@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -16,6 +15,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app import clock, skill_registry
+from app.graph.query_context import ALL_ACTIONS, build_context, resolve_candidate
 from app.graph.state import AgentState
 from app.graph.time_refs import parse_time_reference
 from app.knowledge import store as knowledge_store
@@ -185,26 +185,45 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
 
 
 def _candidate_selection(text: str, candidates: list[dict[str, Any]]) -> str | None:
-    """把「10月28号那个 / 第二个」解析成上一轮候选订单。"""
-    explicit = re.search(r"选择订单\s*(CS\d{6,})", text)
-    if explicit:
-        return explicit.group(1).upper()
+    return resolve_candidate(text, candidates)
 
-    ordinals = {"第一个": 0, "第一": 0, "第二个": 1, "第二": 1, "第三个": 2, "第三": 2}
-    for word, index in ordinals.items():
-        if word in text and index < len(candidates):
-            return str(candidates[index].get("orderNo") or "") or None
 
-    hint = parse_time_reference(text)
-    if not hint or not candidates:
-        return None
-    key = "createdAt" if hint["field"] == "created" else "deliveredAt"
-    matched = [
-        str(item.get("orderNo"))
-        for item in candidates
-        if item.get(key) and hint["from"] <= str(item[key])[:10] <= hint["to"]
-    ]
-    return matched[0] if len(set(matched)) == 1 else None
+QUALITY_HINTS = ("质量", "坏", "破", "漏", "杂音", "故障", "开线", "发错", "错色")
+
+
+async def _action_eligible(token: str, order_no: str | None, action: str, text: str) -> bool:
+    """Guard 只在订单可办、无已有售后、政策不冲突时推动写操作。"""
+    if not order_no:
+        return False
+    try:
+        order = await business_api.get_order(order_no, token)
+        existing = await business_api.list_after_sales(token)
+    except Exception:  # noqa: BLE001
+        return False
+    if any(row.get("orderNo") == order_no for row in existing):
+        return False
+    status = str(order.get("status") or "")
+    tags = {item.strip() for item in str(order.get("tags") or "").split(",") if item.strip()}
+    if action == "urge":
+        return status in ("待发货", "运输中", "已发货")
+    if action == "refund":
+        return status in ("待发货", "运输中", "已发货")
+    if action not in ("return", "exchange"):
+        return False
+    if status != "已签收":
+        return False
+    delivered = order.get("deliveredAt")
+    if not delivered:
+        return False
+    try:
+        days = (clock.today() - datetime.fromisoformat(str(delivered)).date()).days
+    except ValueError:
+        return False
+    if days > 15:
+        return False
+    if "custom" in tags and not any(word in text for word in QUALITY_HINTS):
+        return False
+    return "gift" not in tags
 
 
 def _active_order(state: AgentState) -> str | None:
@@ -234,16 +253,17 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     active = _active_order(state)
     last_text = str(state["messages"][-1].content) if state.get("messages") else ""
     active_at = state.get("active_order_at")
-    candidates = list(state.get("last_candidates") or [])
+    context = build_context(last_text, state)
+    candidates = context.candidates
     pending_action = state.get("pending_write_action")
-    selected_now = False
     if active is None and state.get("active_order_no"):
         active_at = None
-    selection = _candidate_selection(last_text, candidates)
-    if selection:
-        active = selection
+    if context.selected_order:
+        active = context.selected_order
         active_at = clock.now(UTC).isoformat()
-        selected_now = True
+    elif context.order_no:
+        active = context.order_no
+        active_at = clock.now(UTC).isoformat()
     elif any(word in last_text for word in ("不是这单", "不是这个", "都不是", "换一个", "不对")):
         active = None
         active_at = None
@@ -268,13 +288,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             "候选订单有多个时，列出前 3 个让用户选，不要猜。"
             "find_my_orders 只返回一个候选且用户明确要退/换时，直接调用对应写工具，不要再问‘是这单吗’，系统确认卡负责确认。"
             f"已识别商品：{'、'.join(state.get('matched_products') or []) or '无'}；有商品时优先用 canonical 作为 product_terms。"
-            + (
-                "上一轮候选：" + "；".join(
-                    f"{item.get('orderNo')}（{item.get('status')}，下单 {item.get('createdAt')}，签收 {item.get('deliveredAt') or '无'}）"
-                    for item in candidates[:5]
-                ) + "。用户如果用一个日期/序号回答，直接选对应订单，不要再说查不到。"
-                if candidates else ""
-            )
+            + (context.prompt() + "\n" if context.prompt() else "")
             + (
                 f"上一轮待办：{pending_action}。用户本轮已选订单 {active} 时，直接调用对应写工具，不要再问。"
                 if pending_action and active else ""
@@ -298,6 +312,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     active_order = active
     fallback_reason: str | None = None
     failures = 0
+    guard_retried = False
 
     llm = get_chat_model("reasoning", temperature=0).bind_tools(tools)
     for step in range(MAX_STEPS):
@@ -313,19 +328,25 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             if not text:
                 fallback_reason = "empty_reply"
                 break
-            if selected_now and pending_action and not any(
-                item.get("tool") in ("create_refund", "create_return", "create_exchange") for item in trace
+            required_action = context.action if context.action in ALL_ACTIONS else pending_action
+            required_tools = {
+                "refund": "create_refund", "return": "create_return",
+                "exchange": "create_exchange", "urge": "urge_logistics",
+            }
+            if (
+                required_action in required_tools
+                and (active_order or active)
+                and not any(item.get("tool") == required_tools[required_action] for item in trace)
+                and not guard_retried
+                and await _action_eligible(token, active_order or active, required_action, last_text)
             ):
-                selected = next((item for item in candidates if item.get("orderNo") == active), {})
-                blocked_refund = pending_action == "refund" and selected.get("status") == "已签收"
-                if not blocked_refund:
-                    action_tool = {"refund": "create_refund", "return": "create_return", "exchange": "create_exchange"}.get(pending_action)
-                    if action_tool:
-                        messages.append(SystemMessage(content=(
-                            f"用户已选定订单 {active}，上一轮意图是 {pending_action}。"
-                            f"现在必须调用 {action_tool} 并等待系统确认，不要再文字询问。"
-                        )))
-                        continue
+                action_tool = required_tools[required_action]
+                guard_retried = True
+                messages.append(SystemMessage(content=(
+                    f"订单已确定：{active_order or active}；用户动作：{required_action}。"
+                    f"现在必须调用 {action_tool} 并等待系统确认；如果政策不允许，调用 handoff_to_human 或明确解释，不要只文字询问。"
+                )))
+                continue
             return {
                 "reply": text,
                 "messages": [AIMessage(content=text)],
@@ -389,6 +410,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                                                 tool_call_id=call_id))
                 continue
 
+            if name == "find_my_orders":
+                args = context.apply_find_args(args)
             tool = tool_map.get(name)
             if tool is None:
                 messages.append(ToolMessage(content=_json({"error": f"未知工具 {name}"}),
@@ -418,6 +441,20 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                         candidates = found[:5]
                         if state.get("intent") in ("refund", "return", "exchange"):
                             pending_action = str(state.get("intent"))
+                        if not active_order:
+                            matched = []
+                            if len(found) == 1:
+                                matched = found
+                            elif context.time_from and context.time_to:
+                                key = "createdAt" if context.time_field == "created" else "deliveredAt"
+                                matched = [
+                                    item for item in found
+                                    if item.get(key)
+                                    and context.time_from <= str(item[key])[:10] <= context.time_to
+                                ]
+                            if len(matched) == 1:
+                                active_order = str(matched[0].get("orderNo"))
+                                active_at = clock.now(UTC).isoformat()
                     except (TypeError, ValueError):
                         pass
             except GraphInterrupt:

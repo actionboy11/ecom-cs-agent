@@ -27,3 +27,13 @@ def test_relative_time_uses_eval_today(monkeypatch) -> None:
 def test_empty_eval_today_uses_real_clock(monkeypatch) -> None:
     monkeypatch.setattr(settings, "eval_today", "")
     assert clock.today() == date.today()
+
+
+def test_day_only_time_reference(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "eval_today", "2026-11-15")
+    delivered = parse_time_reference("12号收到")
+    created = parse_time_reference("4号买的")
+    assert delivered is not None and delivered["field"] == "delivered"
+    assert delivered["from"] == "2026-11-12"
+    assert created is not None and created["field"] == "created"
+    assert created["from"] == "2026-11-04"

@@ -32,7 +32,8 @@ def parse_time_reference(text: str, today: date | None = None) -> dict[str, str]
     if not text:
         return None
     base = today or _today()
-    field = "delivered" if any(word in text for word in ("收到", "签收", "到货")) else "created"
+    delivered_cue = any(word in text for word in ("收到", "签收", "到货", "到的", "到了", "到达"))
+    field = "delivered" if delivered_cue else "created"
 
     def result(start: date, end: date, label: str) -> dict[str, str]:
         return {"field": field, "from": start.isoformat(), "to": end.isoformat(), "label": label}
@@ -45,6 +46,17 @@ def parse_time_reference(text: str, today: date | None = None) -> dict[str, str]
                 int(explicit.group(2)),
                 int(explicit.group(3)),
             )
+            return result(day, day, "指定日期")
+        except ValueError:
+            pass
+
+    day_only = re.search(r"(?<!月)(?<!\d)(\d{1,2})\s*[日号]", text)
+    if day_only and "月" not in text[: day_only.start()]:
+        try:
+            day = date(base.year, base.month, int(day_only.group(1)))
+            if day > base:
+                year, month = (base.year, base.month - 1) if base.month > 1 else (base.year - 1, 12)
+                day = date(year, month, int(day_only.group(1)))
             return result(day, day, "指定日期")
         except ValueError:
             pass
