@@ -21,7 +21,7 @@
 | Phase 0 冻结定义 | ✅ schema / rubric 已完成 |
 | Phase 1 固定时钟 | ✅ Python + Java + 双日期回归 |
 | Phase 2 150 条 | ✅ 120 单轮 + 30 脚本，已校验 |
-| Phase 3 执行器 | 待开始 |
+| Phase 3 执行器 | ✅ 150 条 ReAct 已跑，90/150；基线未跑 |
 | Phase 4 judge | 待开始 |
 | Phase 5 报告 | 待开始 |
 
