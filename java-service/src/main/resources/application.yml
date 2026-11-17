@@ -21,6 +21,8 @@ mybatis-plus:
     banner: false
 
 app:
+  # 评测基准日；为空时使用真实日期
+  eval-today: ${EVAL_TODAY:}
   # 内部审计接口令牌：Agent 上报越权事件用；为空则接口拒绝所有请求
   internal-audit-token: ${INTERNAL_AUDIT_TOKEN:}
   jwt:

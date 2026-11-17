@@ -6,14 +6,16 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from zoneinfo import ZoneInfo
+
+from app import clock
 
 TZ = ZoneInfo("Asia/Shanghai")
 
 
 def _today() -> date:
-    return datetime.now(TZ).date()
+    return clock.today()
 
 
 def _month_range(year: int, month: int) -> tuple[date, date]:

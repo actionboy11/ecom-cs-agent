@@ -1,5 +1,6 @@
 package com.example.csagent.mcp;
 
+import com.example.csagent.config.EvalClock;
 import com.example.csagent.domain.Order;
 import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.service.OrderQueryService;
@@ -35,10 +36,13 @@ public class OrderSearchMcpTools implements McpTool {
 
     private final OrderQueryService orderQueryService;
     private final ObjectMapper objectMapper;
+    private final EvalClock evalClock;
 
-    public OrderSearchMcpTools(OrderQueryService orderQueryService, ObjectMapper objectMapper) {
+    public OrderSearchMcpTools(
+            OrderQueryService orderQueryService, ObjectMapper objectMapper, EvalClock evalClock) {
         this.orderQueryService = orderQueryService;
         this.objectMapper = objectMapper;
+        this.evalClock = evalClock;
     }
 
     public String findMyOrders(Map<String, Object> args) throws Exception {
@@ -190,11 +194,11 @@ public class OrderSearchMcpTools implements McpTool {
         return score;
     }
 
-    private static double recencyScore(Order order, List<String> reasons) {
+    private double recencyScore(Order order, List<String> reasons) {
         if (order.createdAt() == null) {
             return 0;
         }
-        long days = ChronoUnit.DAYS.between(order.createdAt(), LocalDate.now());
+        long days = ChronoUnit.DAYS.between(order.createdAt(), evalClock.today());
         double score = Math.max(0, 1 - days / 60.0);
         if (score >= 0.7) {
             reasons.add("最近下单");

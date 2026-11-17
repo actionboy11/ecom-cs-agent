@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     )
 
     app_env: str = "dev"
+    # 评测基准日；为空时用真实日期
+    eval_today: str = ""
     # ReAct 主循环开关：默认关闭，出问题可切回旧 workflow
     react_enabled: bool = False
 

@@ -15,9 +15,9 @@ from langgraph.errors import GraphInterrupt
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
-from app import skill_registry
+from app import clock, skill_registry
 from app.graph.state import AgentState
-from app.graph.time_refs import TZ, parse_time_reference
+from app.graph.time_refs import parse_time_reference
 from app.knowledge import store as knowledge_store
 from app.llm.registry import get_chat_model
 from app.tools import business_api
@@ -195,7 +195,7 @@ def _active_order(state: AgentState) -> str | None:
         return None
     if stamp.tzinfo is None:
         stamp = stamp.replace(tzinfo=UTC)
-    if datetime.now(UTC) - stamp > ACTIVE_ORDER_TTL:
+    if clock.now(UTC) - stamp > ACTIVE_ORDER_TTL:
         return None
     return str(order_no)
 
@@ -216,12 +216,12 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     selection = re.search(r"选择订单\s*(CS\d{6,})", last_text)
     if selection:
         active = selection.group(1).upper()
-        active_at = datetime.now(UTC).isoformat()
+        active_at = clock.now(UTC).isoformat()
     elif any(word in last_text for word in ("不是这单", "不是这个", "都不是", "换一个", "不对")):
         active = None
         active_at = None
     hint = parse_time_reference(last_text)
-    today = datetime.now(TZ).date().isoformat()
+    today = clock.today().isoformat()
     time_line = f"当前日期（Asia/Shanghai）：{today}。"
     if hint:
         time_line += (
@@ -326,7 +326,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     trace.append({"step": step, "tool": name, "args": args, "result": str(data)[:300]})
                     messages.append(ToolMessage(content=_json(data), tool_call_id=call_id))
                     active_order = order_no
-                    active_at = datetime.now(UTC).isoformat()
+                    active_at = clock.now(UTC).isoformat()
                 except Exception as exc:  # noqa: BLE001
                     trace.append({"step": step, "tool": name, "args": args, "error": str(exc)[:200]})
                     messages.append(ToolMessage(content=_json({"error": str(exc)[:200]}),
@@ -351,7 +351,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 order_no = args.get("order_no")
                 if order_no and name in ("query_order", "query_logistics"):
                     active_order = str(order_no)
-                    active_at = datetime.now(UTC).isoformat()
+                    active_at = clock.now(UTC).isoformat()
                 if name == "find_my_orders":
                     try:
                         payload = json.loads(str(result))

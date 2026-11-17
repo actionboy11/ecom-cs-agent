@@ -32,6 +32,7 @@ services:
     env_file:
       - .env
     environment:
+      EVAL_TODAY: ${EVAL_TODAY:-}
       # 容器内用服务名连 MySQL，端口是容器端口 3306（不是宿主机的 3308）
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
@@ -59,6 +60,7 @@ services:
     env_file:
       - .env
     environment:
+      EVAL_TODAY: ${EVAL_TODAY:-}
       BUSINESS_API_BASE: http://java-service:8080
       # 语义检索用宿主机的 Ollama；容器内的 localhost 指的是容器自己
       OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
