@@ -141,6 +141,19 @@ def main() -> None:
         by_category.update(case.get("category") for case in cases)
         if args.confirm:
             for case in cases:
+                if case.get("steps"):
+                    steps = case["steps"]
+                    if len(steps) < 2:
+                        all_errors.append(f"{case.get('id')} 至少 2 步")
+                        continue
+                    if steps[0]["expect"].get("type") not in {"clarify", "confirm"}:
+                        all_errors.append(f"{case.get('id')} 首步必须是 clarify/confirm")
+                    if steps[-1]["expect"].get("type") not in {"handled", "answer"}:
+                        all_errors.append(f"{case.get('id')} 末步必须是 handled/answer")
+                    for step in steps:
+                        if not step.get("user") or not step.get("expect"):
+                            all_errors.append(f"{case.get('id')} step 缺 user/expect")
+                    continue
                 steps = case.get("expected_turns") or []
                 if len(case.get("turns") or []) != 1 or len(steps) != 2:
                     all_errors.append(f"{case.get('id')} 确认脚本必须是 2 步")

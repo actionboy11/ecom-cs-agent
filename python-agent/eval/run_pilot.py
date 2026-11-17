@@ -1,7 +1,8 @@
-"""Pilot 执行器：20 条单轮 + 4 条确认脚本。
+"""Pilot 执行器：单轮 + 多步确认脚本。
 
-单轮：核对工具/确认/转人工/拒答/不落单。
-确认脚本：第一步必须 interrupt，第二步按确认/取消执行，并核对售后单。
+确认脚本支持两种写法：
+- 旧版：input + turns[0] + expected_turns
+- 新版：steps[{user, expect}]，可表达「澄清 → 选单 → 确认/取消」
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ import asyncio
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -19,14 +21,15 @@ JAVA = "http://localhost:8080"
 AGENT = "http://localhost:8000"
 
 
-def reset_order(order_no: str) -> None:
-    subprocess.run(
+def reset_order(order_no: str) -> bool:
+    result = subprocess.run(
         [
-            "docker", "compose", "exec", "-T", "mysql", "mysql", "-ucsagent", "-pcsagent",
+            "mysql", "-h", "127.0.0.1", "-P", "3308", "-ucsagent", "-pcsagent",
             "cs_agent", "-e", f"DELETE FROM after_sales_requests WHERE order_no='{order_no}';",
         ],
-        cwd=str(ROOT), capture_output=True, check=False,
+        cwd=str(ROOT), capture_output=True, text=True, check=False,
     )
+    return result.returncode == 0
 
 
 async def login(client: httpx.AsyncClient, user: str) -> str:
@@ -83,6 +86,76 @@ def check_single(case: dict, data: dict) -> tuple[bool, str]:
     return False, f"unknown expected type {kind}"
 
 
+def check_step(expected: dict, data: dict) -> tuple[bool, str]:
+    kind = expected.get("type")
+    if kind == "clarify":
+        tools = {item.get("tool") for item in (data.get("tool_trace") or []) if item.get("tool")}
+        write = (data.get("interrupt") or {}).get("type") == "write_approval"
+        return not write and bool(data.get("reply", "").strip()), f"tools={sorted(tools)}"
+    return check_single({"expected": expected}, data)
+
+
+def default_steps(case: dict) -> list[dict[str, Any]]:
+    return [
+        {"user": case["input"], "expect": case["expected"]},
+        {"user": (case.get("turns") or [""])[0], "expect": case["expected_turns"][1]},
+    ]
+
+
+async def run_confirmation(
+    client: httpx.AsyncClient, token: str, case: dict, stamp: int
+) -> dict[str, Any]:
+    steps = case.get("steps") or default_steps(case)
+    order_no = (case.get("preconditions", {}).get("orders") or [case.get("expected", {}).get("order_no")])[0]
+    if not order_no:
+        return {"ok": False, "detail": "missing order", "reply": ""}
+    if not await asyncio.to_thread(reset_order, order_no):
+        return {"ok": False, "detail": "reset failed", "reply": ""}
+
+    thread = f"pilot-{case['id']}-{stamp}"
+    data: dict = {}
+    details: list[str] = []
+    ok = True
+    final_expect: dict = {}
+
+    for step in steps:
+        expected = step["expect"]
+        final_expect = expected
+        if expected.get("type") in {"handled", "answer"} and (data.get("interrupt") or {}).get("type") == "write_approval":
+            approved = expected.get("type") == "handled"
+            resp = await client.post(
+                f"{AGENT}/api/v1/threads/{thread}/confirm",
+                json={"approved": approved},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = resp.json() if resp.status_code == 200 else {}
+            details.append(f"{expected['type']}:confirm={approved}")
+            continue
+
+        data = await chat(client, token, thread, step["user"])
+        step_ok, detail = check_step(expected, data)
+        details.append(f"{expected.get('type')}:{step_ok}:{detail}")
+        if not step_ok:
+            ok = False
+            break
+
+    if ok:
+        created = await after_sales(client, token)
+        matched = [row for row in created if row["orderNo"] == order_no]
+        if final_expect.get("type") == "handled":
+            ok = any(row["type"] == str(final_expect.get("action", "")).upper() for row in matched)
+        elif final_expect.get("type") == "answer":
+            ok = not matched
+        details.append(f"rows={len(matched)}")
+
+    await asyncio.to_thread(reset_order, order_no)
+    return {
+        "ok": ok,
+        "detail": " ".join(details),
+        "reply": data.get("reply", ""),
+    }
+
+
 async def main() -> None:
     singles = [
         json.loads(line)
@@ -98,10 +171,16 @@ async def main() -> None:
     rows = []
     async with httpx.AsyncClient(timeout=120, trust_env=False) as client:
         tokens: dict[str, str] = {}
+
+        async def token_for(user: str) -> str:
+            if user not in tokens:
+                tokens[user] = await login(client, user)
+            return tokens[user]
+
         stamp = int(asyncio.get_running_loop().time() * 1000)
         for case in singles:
             user = case["preconditions"]["user"]
-            token = tokens.setdefault(user, await login(client, user))
+            token = await token_for(user)
             data = await chat(client, token, f"pilot-{case['id']}-{stamp}", case["input"])
             ok, detail = check_single(case, data)
             rows.append({"id": case["id"], "kind": "single", "ok": ok, "detail": detail,
@@ -109,34 +188,11 @@ async def main() -> None:
 
         for case in confirms:
             user = case["preconditions"]["user"]
-            order_no = case["expected"]["order_no"]
-            token = tokens.setdefault(user, await login(client, user))
-            await asyncio.to_thread(reset_order, order_no)
-            first = await chat(client, token, f"pilot-{case['id']}-{stamp}", case["input"])
-            interrupt = first.get("interrupt") or {}
-            first_ok = (
-                interrupt.get("type") == "write_approval"
-                and interrupt.get("action") == case["expected"]["action"]
-                and interrupt.get("order_no") == order_no
-            )
-            step2 = case["expected_turns"][1]
-            approved = step2.get("type") == "handled"
-            second = await client.post(
-                f"{AGENT}/api/v1/threads/pilot-{case['id']}/confirm",
-                json={"approved": approved},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            second_data = second.json() if second.status_code == 200 else {}
-            created = await after_sales(client, token)
-            matched = [row for row in created if row["orderNo"] == order_no]
-            if approved:
-                ok = first_ok and bool(matched) and matched[0]["type"] == case["expected"]["action"].upper()
-            else:
-                ok = first_ok and not matched
+            token = await token_for(user)
+            result = await run_confirmation(client, token, case, stamp)
             rows.append({
-                "id": case["id"], "kind": "confirm", "ok": ok,
-                "detail": f"first={first_ok} approved={approved} rows={len(matched)}",
-                "expected": case["expected"]["action"], "reply": second_data.get("reply", ""),
+                "id": case["id"], "kind": "confirm", "ok": result["ok"],
+                "detail": result["detail"], "expected": "confirm", "reply": result["reply"],
             })
 
     passed = sum(1 for row in rows if row["ok"])
