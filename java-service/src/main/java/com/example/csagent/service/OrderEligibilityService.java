@@ -45,6 +45,18 @@ public class OrderEligibilityService {
             return Eligibility.denied("UNKNOWN_ACTION", "未知动作", "NONE");
         }
 
+        String tags = order.tags() == null ? "" : order.tags();
+        boolean custom = tags.contains("custom") || tags.contains("定制");
+        boolean gift = tags.contains("gift") || tags.contains("赠品");
+        if (custom && !quality) {
+            return Eligibility.denied("CUSTOM_NO_REASON",
+                    "定制商品无质量问题，不适用无理由退货", "HANDOFF");
+        }
+        if (gift) {
+            return Eligibility.denied("GIFT_SEPARATE_AFTER_SALES",
+                    "赠品单独售后没有明确政策，需人工确认", "HANDOFF");
+        }
+
         if ("已取消".equals(status)) {
             return Eligibility.denied("CANCELLED", "订单已取消，不能创建新的售后", "HANDOFF");
         }

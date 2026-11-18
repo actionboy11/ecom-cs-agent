@@ -65,6 +65,18 @@ def check_single(case: dict, data: dict) -> tuple[bool, str]:
     if expected.get("order_no"):
         orders.add(expected["order_no"])
 
+    if kind == "user_action":
+        action = (data.get("ui_action") or {})
+        ok = bool(action) and action.get("action") == expected.get("action")
+        orders = set(expected.get("order_nos") or [])
+        if expected.get("order_no"):
+            orders.add(expected["order_no"])
+        if orders:
+            ok = ok and action.get("order_no") in orders
+        fields = expected.get("fields") or []
+        if fields:
+            ok = ok and all(field in (action.get("fields") or []) for field in fields)
+        return ok, f"ui_action={action.get('action')}/{action.get('order_no')}"
     if kind == "confirm":
         ok = write and (not expected.get("action") or interrupt.get("action") == expected.get("action"))
         if orders:

@@ -358,6 +358,42 @@ async def _force_handoff_if_ineligible(
     if isinstance(decision, dict) and decision.get("approved") is False:
         return
 
+async def _fallback_user_action(
+    token: str, order_no: str | None, intent: str | None, text: str, reply: str
+) -> dict[str, Any] | None:
+    """模型没调 prepare 时，资格允许就直接生成表单，避免“只解释不办事”。"""
+    if not order_no:
+        found = set(re.findall(r"CS\d{7,}", reply, re.IGNORECASE))
+        if len(found) == 1:
+            order_no = next(iter(found))
+    if not order_no:
+        return None
+    if intent not in ("refund", "return", "exchange") and "退" not in text and "换" not in text:
+        return None
+    action = "exchange" if (intent == "exchange" or "换" in text) else "return"
+    quality = any(word in text for word in QUALITY_HINTS)
+    try:
+        eligibility = await business_api.order_eligibility(order_no, action, token, quality=quality)
+        order = await business_api.get_order(order_no, token)
+    except Exception:  # noqa: BLE001
+        return None
+    next_action = str(eligibility.get("nextAction") or "")
+    if not eligibility.get("allowed") or next_action not in ("RETURN_FORM", "EXCHANGE_FORM"):
+        return None
+    fields = ["reason", "evidence"] + (["target"] if action == "exchange" else [])
+    return {
+        "type": "user_action",
+        "action": action,
+        "order_no": order_no,
+        "order_summary": f"{order.get('item')}，{order.get('status')}",
+        "message": "请填写退货原因" if action == "return" else "请填写换货原因和目标规格",
+        "fields": fields,
+        "after_sales_type": "RETURN" if action == "return" else "EXCHANGE",
+        "shipping_payer": eligibility.get("shippingPayer"),
+        "requires_evidence": eligibility.get("requiresEvidence", False),
+    }
+
+
 async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     token = (config or {}).get("configurable", {}).get("auth_token") or ""
     if not token:
@@ -398,6 +434,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         content=(
             "你是电商售后 Agent，用户已登录。"
             "必须调用工具获取事实，可多次调用、换工具、重试；不要编造订单或政策。"
+            "售后进度/退款到账先 query_order 查订单与售后状态；物流问题按 find_my_orders → query_order → query_logistics；催件必须调 urge_logistics，不要只回复。"
             "用户只描述商品（我的鞋/那个耳机）时先 find_my_orders；有明确订单号再用 query_order/query_logistics。"
             "没有订单号时禁止直接回答‘查不到’，必须先 find_my_orders 查候选。"
             "政策问题用 search_policy，并保留 [Pxx] 引用。"
@@ -488,6 +525,10 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 last_text, text, thread_id,
             )
             _force_handoff_for_policy(last_text, thread_id)
+            if ui_action is None:
+                ui_action = await _fallback_user_action(
+                    token, active_order or active, state.get("intent"), last_text, text
+                )
             return {
                 "reply": text,
                 "messages": [AIMessage(content=text)],
@@ -511,6 +552,12 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             call_id = call.get("id", f"call-{step}-{name}")
             write_types = {"create_refund": "REFUND", "create_return": "RETURN", "create_exchange": "EXCHANGE"}
             if name in write_types:
+                if not (active_order or active) and len(candidates) > 1:
+                    messages.append(ToolMessage(
+                        content=_json({"error": "有多个候选订单，必须先确认是哪一单"}),
+                        tool_call_id=call_id,
+                    ))
+                    continue
                 as_type = write_types[name]
                 if as_type == "REFUND" and "退货" in last_text:
                     as_type = "RETURN"
@@ -602,7 +649,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     active_at = clock.now(UTC).isoformat()
                 if name == "prepare_user_action":
                     try:
-                        payload = json.loads(str(result))
+                        payload = result if isinstance(result, dict) else json.loads(str(result))
                         if payload.get("type") == "user_action":
                             ui_action = payload
                             pending_user_action = None

@@ -22,6 +22,28 @@ class OrderEligibilityServiceTest {
                 status, today.minusDays(10), delivered, null);
     }
 
+    private Order tagged(String tags, int deliveredDaysAgo) {
+        LocalDateTime delivered = today.minusDays(deliveredDaysAgo).atTime(15, 0);
+        return new Order("CS2024001", "SKU1005", "背包", new BigDecimal("259"),
+                "已签收", today.minusDays(20), delivered, tags);
+    }
+
+    @Test
+    void custom_without_quality_is_handoff() {
+        Eligibility result = service.check(tagged("custom", 10), "return", false, false, today);
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.reasonCode()).isEqualTo("CUSTOM_NO_REASON");
+        assertThat(result.nextAction()).isEqualTo("HANDOFF");
+    }
+
+    @Test
+    void gift_after_sales_is_handoff() {
+        Eligibility result = service.check(tagged("gift", 2), "return", false, false, today);
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.reasonCode()).isEqualTo("GIFT_SEPARATE_AFTER_SALES");
+        assertThat(result.nextAction()).isEqualTo("HANDOFF");
+    }
+
     @Test
     void pending_refund_allowed() {
         Eligibility result = service.check(order("待发货", -1), "refund", false, false, today);

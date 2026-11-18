@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ import httpx
 from eval.run_pilot import after_sales, chat, check_single, login, reset_order
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = ROOT / "python-agent/eval/heldout-150"
+BASE = ROOT / "python-agent/eval" / os.environ.get("HELDOUT_SUITE", "heldout-150")
 JAVA = "http://localhost:8080"
 AGENT = "http://localhost:8000"
 
@@ -54,6 +55,40 @@ async def run_script(
     for step in case.get("steps") or []:
         expected = step["expect"]
         final_expect = expected
+        if step.get("intercept"):
+            resp = await client.post(
+                f"{JAVA}/api/orders/{order_no}/intercept",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = {"intercept": resp.json() if resp.status_code == 200 else {}}
+            transcript.append({"intercept": order_no, "response": data})
+            details.append(f"intercept:status={resp.status_code}")
+            if resp.status_code != 200:
+                ok = False
+                break
+            continue
+        if step.get("submit"):
+            submit = step["submit"]
+            reason = str(submit.get("reason") or "测评提交")
+            evidence = str(submit.get("evidence") or "").strip()
+            if evidence:
+                reason = f"{reason}；凭证：{evidence}"
+            resp = await client.post(
+                f"{JAVA}/api/after-sales",
+                json={
+                    "orderNo": order_no,
+                    "type": submit.get("type", final_expect.get("action", "RETURN").upper()),
+                    "reason": reason,
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = {"submitted": resp.json() if resp.status_code == 200 else {}}
+            transcript.append({"submit": submit, "response": data})
+            details.append(f"submit:status={resp.status_code}")
+            if resp.status_code != 200:
+                ok = False
+                break
+            continue
         if expected.get("type") in {"handled", "answer"} and (data.get("interrupt") or {}).get("type") == "write_approval":
             approved = expected.get("type") == "handled"
             resp = await client.post(
