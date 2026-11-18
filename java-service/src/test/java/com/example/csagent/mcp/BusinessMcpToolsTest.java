@@ -2,6 +2,7 @@ package com.example.csagent.mcp;
 
 import com.example.csagent.api.NotFoundException;
 import com.example.csagent.security.AuthenticatedUser;
+import com.example.csagent.service.InterceptService;
 import com.example.csagent.service.ForbiddenOperationException;
 import com.example.csagent.service.InvalidInputException;
 import org.junit.jupiter.api.AfterEach;
@@ -17,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 class BusinessMcpToolsTest {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private InterceptService interceptService;
 
     @Autowired
     private LogisticsMcpTools logisticsTools;
@@ -100,7 +104,8 @@ class BusinessMcpToolsTest {
     @Test
     void agent_lists_all_after_sales() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"));
-        afterSalesTools.createAfterSalesRequest("CS2024005", "RETURN", "买家B的退货");
+        interceptService.intercept("CS2024005", new AuthenticatedUser("buyer_b", 2L, "CUSTOMER"), "/mcp");
+        afterSalesTools.createAfterSalesRequest("CS2024005", "REFUND", "运输中退款");
 
         McpAuthContext.set(new AuthenticatedUser("cs_agent", 4L, "CS_AGENT"));
         String json = afterSalesTools.listAfterSales("PENDING");
@@ -118,7 +123,7 @@ class BusinessMcpToolsTest {
     @Test
     void status_filter_excludes_other_statuses() throws Exception {
         McpAuthContext.set(new AuthenticatedUser("buyer_a", 1L, "CUSTOMER"));
-        afterSalesTools.createAfterSalesRequest("CS2024003", "EXCHANGE", "换货");
+        afterSalesTools.createAfterSalesRequest("CS2024001", "EXCHANGE", "换货");
 
         String json = afterSalesTools.listAfterSales("PENDING");
 

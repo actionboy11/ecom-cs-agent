@@ -122,6 +122,26 @@ async def order_eligibility(
         return resp.json()
 
 
+async def intercept_logistics(order_no: str, token: str) -> dict[str, Any]:
+    async with _client() as client:
+        resp = await client.post(
+            f"/api/orders/{order_no}/intercept",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def get_intercept(order_no: str, token: str) -> dict[str, Any]:
+    async with _client() as client:
+        resp = await client.get(
+            f"/api/orders/{order_no}/intercept",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def list_after_sales(token: str) -> list[dict[str, Any]]:
     async with _client() as client:
         resp = await client.get("/api/after-sales", headers={"Authorization": f"Bearer {token}"})

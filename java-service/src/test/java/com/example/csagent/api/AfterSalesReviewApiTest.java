@@ -48,7 +48,7 @@ class AfterSalesReviewApiTest {
     @Test
     void buyer_creates_an_exchange_request() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
-        String requestNo = createRequest(token, "CS2024002", "EXCHANGE");
+        String requestNo = createRequest(token, "CS2024001", "EXCHANGE");
 
         AfterSalesRequestEntity saved = afterSalesMapper.selectById(requestNo);
         assertThat(saved).isNotNull();
@@ -70,7 +70,7 @@ class AfterSalesReviewApiTest {
     @Test
     void agent_approves_a_pending_request() throws Exception {
         String buyerToken = LoginSupport.tokenFor(mockMvc, "buyer_a");
-        String requestNo = createRequest(buyerToken, "CS2024003", "RETURN");
+        String requestNo = createRequest(buyerToken, "CS2024001", "RETURN");
 
         String agentToken = LoginSupport.tokenFor(mockMvc, "cs_agent");
         mockMvc.perform(post("/api/after-sales/" + requestNo + "/review")

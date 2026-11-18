@@ -51,7 +51,7 @@ class AfterSalesListApiTest {
         String buyerAToken = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String buyerBToken = LoginSupport.tokenFor(mockMvc, "buyer_b");
         String requestA = AfterSalesTestSupport.create(mockMvc, buyerAToken, "CS2024001", "REFUND");
-        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "RETURN");
+        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "REFUND");
 
         var rows = MAPPER.readTree(json(buyerAToken, "/api/after-sales"));
         assertThat(rows.size()).isGreaterThan(0);
@@ -71,7 +71,7 @@ class AfterSalesListApiTest {
         String buyerAToken = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String buyerBToken = LoginSupport.tokenFor(mockMvc, "buyer_b");
         String requestA = AfterSalesTestSupport.create(mockMvc, buyerAToken, "CS2024002", "REFUND");
-        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "EXCHANGE");
+        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "REFUND");
 
         var rows = MAPPER.readTree(json(buyerBToken, "/api/after-sales"));
         boolean containsB = false;
@@ -88,8 +88,8 @@ class AfterSalesListApiTest {
     void agent_sees_requests_from_multiple_buyers() throws Exception {
         String buyerAToken = LoginSupport.tokenFor(mockMvc, "buyer_a");
         String buyerBToken = LoginSupport.tokenFor(mockMvc, "buyer_b");
-        String requestA = AfterSalesTestSupport.create(mockMvc, buyerAToken, "CS2024003", "RETURN");
-        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "RETURN");
+        String requestA = AfterSalesTestSupport.create(mockMvc, buyerAToken, "CS2024001", "RETURN");
+        String requestB = AfterSalesTestSupport.create(mockMvc, buyerBToken, BUYER_B_ORDER, "REFUND");
 
         String agentToken = LoginSupport.tokenFor(mockMvc, "cs_agent");
         var rows = MAPPER.readTree(json(agentToken, "/api/after-sales"));

@@ -185,6 +185,9 @@ function UserActionCard({
   const [title, setTitle] = useState("");
   const [taxId, setTaxId] = useState("");
   const [email, setEmail] = useState("");
+  const [reason, setReason] = useState("");
+  const [evidence, setEvidence] = useState("");
+  const [target, setTarget] = useState("");
   const [done, setDone] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -202,13 +205,21 @@ function UserActionCard({
           address: address.trim(),
         });
         setDone("收货地址已更新");
-      } else {
+      } else if (action.action === "invoice") {
         await api.createInvoice(token, orderNo.trim(), {
           title: title.trim(),
           taxId: taxId.trim(),
           email: email.trim(),
         });
         setDone("开票申请已提交");
+      } else {
+        const detail = evidence.trim() ? `${reason.trim()}；凭证：${evidence.trim()}` : reason.trim();
+        await api.createAfterSales(token, {
+          orderNo: orderNo.trim(),
+          type: action.action === "return" ? "RETURN" : "EXCHANGE",
+          reason: target.trim() ? `${detail}；目标规格：${target.trim()}` : detail,
+        });
+        setDone(action.action === "return" ? "退货申请已提交" : "换货申请已提交");
       }
     } catch (err) {
       toast(err instanceof Error ? err.message : String(err));
@@ -241,7 +252,7 @@ function UserActionCard({
             <input value={address} onChange={(e) => setAddress(e.target.value)} />
           </label>
         </>
-      ) : (
+      ) : action.action === "invoice" ? (
         <>
           <label>
             发票抬头
@@ -255,6 +266,23 @@ function UserActionCard({
             邮箱
             <input value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
+        </>
+      ) : (
+        <>
+          <label>
+            原因
+            <input value={reason} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <label>
+            凭证/说明
+            <input value={evidence} onChange={(e) => setEvidence(e.target.value)} />
+          </label>
+          {action.action === "exchange" && (
+            <label>
+              目标规格
+              <input value={target} onChange={(e) => setTarget(e.target.value)} />
+            </label>
+          )}
         </>
       )}
       <button onClick={submit} disabled={busy}>

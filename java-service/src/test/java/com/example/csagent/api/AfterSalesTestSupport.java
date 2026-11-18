@@ -16,6 +16,9 @@ final class AfterSalesTestSupport {
 
     static String create(MockMvc mockMvc, String token, String orderNo, String type, String reason)
             throws Exception {
+        // 运输中订单先拦截；已签收/待发货会返回 409，忽略即可
+        mockMvc.perform(post("/api/orders/" + orderNo + "/intercept")
+                .header("Authorization", "Bearer " + token));
         String body = mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

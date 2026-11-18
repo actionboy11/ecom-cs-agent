@@ -236,3 +236,11 @@ export function createInvoice(
     body: payload,
   });
 }
+
+
+export function createAfterSales(
+  token: string,
+  payload: { orderNo: string; type: "RETURN" | "EXCHANGE" | "REFUND"; reason: string },
+) {
+  return request(JAVA, "/api/after-sales", { method: "POST", token, body: payload });
+}

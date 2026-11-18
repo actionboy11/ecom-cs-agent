@@ -63,8 +63,12 @@ class HandoffArgs(BaseModel):
 
 
 class PrepareUserActionArgs(BaseModel):
-    action: str = Field(description="change_address 或 invoice")
+    action: str = Field(description="change_address / invoice / return / exchange")
     order_no: str = Field(description="已识别的订单号")
+
+
+class InterceptArgs(BaseModel):
+    order_no: str = Field(description="运输中的订单号")
 
 
 class UrgeArgs(BaseModel):
@@ -99,17 +103,28 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
         fields = {
             "change_address": ["receiver", "phone", "address"],
             "invoice": ["title", "taxId", "email"],
+            "return": ["reason", "evidence"],
+            "exchange": ["reason", "evidence", "target"],
         }.get(action, [])
         return _json({
             "type": "user_action",
             "action": action,
             "order_no": order_no,
             "order_summary": f"{order.get('item')}，{order.get('status')}",
-            "message": "请填写信息后提交" if action == "change_address" else "请填写发票信息",
+            "message": {
+                "change_address": "请填写新地址",
+                "invoice": "请填写发票信息",
+                "return": "请填写退货原因" + ("和凭证" if eligibility.get("requiresEvidence") else ""),
+                "exchange": "请填写换货原因和目标规格",
+            }.get(action, "请填写信息"),
             "fields": fields,
+            "after_sales_type": {"return": "RETURN", "exchange": "EXCHANGE"}.get(action),
             "shipping_payer": eligibility.get("shippingPayer"),
             "requires_evidence": eligibility.get("requiresEvidence", False),
         })
+
+    async def intercept_order(order_no: str) -> str:
+        return _json(await business_api.intercept_logistics(order_no, token))
 
     async def urge_logistics(order_no: str, reason: str = "用户申请催件") -> str:
         return _json(await business_api.urge_logistics(order_no, token, reason))
@@ -194,6 +209,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
             name="prepare_user_action",
             description="订单已识别后，为改地址/发票准备前端表单；必须先定位订单再调用。",
             args_schema=PrepareUserActionArgs,
+        ),
+        StructuredTool.from_function(
+            coroutine=intercept_order,
+            name="intercept_order",
+            description="运输中退款前拦截快递；返回 INTERCEPTED/FAILED。失败必须转人工。",
+            args_schema=InterceptArgs,
         ),
         StructuredTool.from_function(
             coroutine=urge_logistics,
@@ -391,6 +412,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 and await _action_eligible(token, active_order or active, required_action, last_text)
             ):
                 action_tool = required_tools[required_action]
+                if required_action in ("return", "exchange"):
+                    action_tool = "prepare_user_action"
                 guard_retried = True
                 messages.append(SystemMessage(content=(
                     f"订单已确定：{active_order or active}；用户动作：{required_action}。"
@@ -432,6 +455,32 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 except Exception:  # noqa: BLE001 - 写校验失败直接降级
                     fallback_reason = "write_validation_failed"
                     break
+                quality = any(word in last_text for word in QUALITY_HINTS) or any(
+                    word in reason for word in QUALITY_HINTS
+                )
+                intercepted = any(
+                    item.get("tool") == "intercept_order" and "INTERCEPTED" in str(item.get("result", ""))
+                    for item in trace
+                )
+                try:
+                    eligibility = await business_api.order_eligibility(
+                        order_no, as_type.lower(), token, quality=quality, intercepted=intercepted
+                    )
+                except Exception:  # noqa: BLE001
+                    eligibility = {"allowed": False, "reason": "资格校验失败"}
+                if not eligibility.get("allowed"):
+                    messages.append(ToolMessage(
+                        content=_json({"error": eligibility.get("reason") or "当前订单不满足售后条件"}),
+                        tool_call_id=call_id,
+                    ))
+                    continue
+                next_action = str(eligibility.get("nextAction") or "")
+                if next_action in ("RETURN_FORM", "EXCHANGE_FORM"):
+                    messages.append(ToolMessage(
+                        content=_json({"error": "已签收退换必须先 prepare_user_action 收集原因"}),
+                        tool_call_id=call_id,
+                    ))
+                    continue
                 trace.append({"step": step, "tool": name, "args": args, "result": "等待用户确认"})
                 decision = interrupt(
                     {

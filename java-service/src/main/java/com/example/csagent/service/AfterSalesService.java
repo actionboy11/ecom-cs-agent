@@ -3,7 +3,9 @@ package com.example.csagent.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.csagent.api.NotFoundException;
+import com.example.csagent.config.EvalClock;
 import com.example.csagent.domain.AfterSalesRequest;
+import com.example.csagent.domain.Order;
 import com.example.csagent.domain.AfterSalesRequestEntity;
 import com.example.csagent.domain.OrderEntity;
 import com.example.csagent.security.AuthenticatedUser;
@@ -41,13 +43,22 @@ public class AfterSalesService {
     private final AfterSalesRequestMapper afterSalesMapper;
     private final OrderAccessGuard orderAccessGuard;
     private final AuditService auditService;
+    private final OrderEligibilityService eligibilityService;
+    private final InterceptService interceptService;
+    private final EvalClock clock;
 
     public AfterSalesService(AfterSalesRequestMapper afterSalesMapper,
                              OrderAccessGuard orderAccessGuard,
-                             AuditService auditService) {
+                             AuditService auditService,
+                             OrderEligibilityService eligibilityService,
+                             InterceptService interceptService,
+                             EvalClock clock) {
         this.afterSalesMapper = afterSalesMapper;
         this.orderAccessGuard = orderAccessGuard;
         this.auditService = auditService;
+        this.eligibilityService = eligibilityService;
+        this.interceptService = interceptService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -68,6 +79,25 @@ public class AfterSalesService {
 
         OrderEntity order = orderAccessGuard.requireVisible(orderNo, user,
                 AuditEvent.ACTION_APPLY_AFTER_SALES, AuditEvent.TYPE_AFTER_SALES, requestPath);
+
+        if (!"URGE".equals(normalizedType)) {
+            String action = switch (normalizedType) {
+                case "REFUND" -> "refund";
+                case "RETURN" -> "return";
+                case "EXCHANGE" -> "exchange";
+                default -> "refund";
+            };
+            boolean quality = reason.contains("质量") || reason.contains("坏") || reason.contains("破")
+                    || reason.contains("漏") || reason.contains("故障") || reason.contains("开线");
+            Order domain = new Order(order.getOrderNo(), order.getSku(), order.getItemName(),
+                    order.getAmount(), order.getStatus(), order.getCreatedAt().toLocalDate(),
+                    order.getDeliveredAt(), order.getTags());
+            var eligibility = eligibilityService.check(domain, action, quality,
+                    interceptService.intercepted(orderNo), clock.today());
+            if (!eligibility.allowed()) {
+                throw new StateConflictException(eligibility.reason());
+            }
+        }
 
         LocalDateTime now = LocalDateTime.now().withNano(0);
         AfterSalesRequestEntity entity = new AfterSalesRequestEntity();

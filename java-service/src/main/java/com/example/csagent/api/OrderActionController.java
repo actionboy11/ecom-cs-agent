@@ -4,6 +4,7 @@ import com.example.csagent.security.AuthenticatedUser;
 import com.example.csagent.config.EvalClock;
 import com.example.csagent.domain.Order;
 import com.example.csagent.service.Eligibility;
+import com.example.csagent.service.InterceptService;
 import com.example.csagent.service.OrderActionService;
 import com.example.csagent.service.OrderEligibilityService;
 import com.example.csagent.service.OrderQueryService;
@@ -27,17 +28,36 @@ public class OrderActionController {
     private final OrderActionService service;
     private final OrderQueryService orderQueryService;
     private final OrderEligibilityService eligibilityService;
+    private final InterceptService interceptService;
     private final EvalClock clock;
 
     public OrderActionController(
             OrderActionService service,
             OrderQueryService orderQueryService,
             OrderEligibilityService eligibilityService,
+            InterceptService interceptService,
             EvalClock clock) {
         this.service = service;
         this.orderQueryService = orderQueryService;
         this.eligibilityService = eligibilityService;
+        this.interceptService = interceptService;
         this.clock = clock;
+    }
+
+    @PostMapping("/{orderNo}/intercept")
+    public java.util.Map<String, Object> intercept(
+            @PathVariable String orderNo,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            HttpServletRequest httpRequest) {
+        return interceptService.intercept(orderNo, user, httpRequest.getRequestURI());
+    }
+
+    @GetMapping("/{orderNo}/intercept")
+    public java.util.Map<String, Object> interceptStatus(
+            @PathVariable String orderNo,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            HttpServletRequest httpRequest) {
+        return interceptService.get(orderNo, user, httpRequest.getRequestURI());
     }
 
     @GetMapping("/{orderNo}/eligibility")
