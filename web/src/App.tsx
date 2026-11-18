@@ -178,7 +178,7 @@ function UserActionCard({
   action: NonNullable<api.ChatReply["ui_action"]>;
   toast: (text: string) => void;
 }) {
-  const [orderNo, setOrderNo] = useState(action.order_no || "");
+  const orderNo = action.order_no || "";
   const [receiver, setReceiver] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -189,8 +189,8 @@ function UserActionCard({
   const [busy, setBusy] = useState(false);
 
   async function submit() {
-    if (!orderNo.trim()) {
-      toast("请填写订单号");
+    if (!orderNo) {
+      toast("未识别到订单，请先选择订单");
       return;
     }
     setBusy(true);
@@ -224,7 +224,7 @@ function UserActionCard({
       <p>{action.message}</p>
       <label>
         订单号
-        <input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="CS2024..." />
+        <input value={orderNo} readOnly />
       </label>
       {action.action === "change_address" ? (
         <>

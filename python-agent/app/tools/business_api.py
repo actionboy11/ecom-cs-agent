@@ -108,6 +108,20 @@ async def get_product(sku: str, token: str = "") -> dict[str, Any]:
     return await _mcp("get_product_info", {"sku": sku}, token)
 
 
+async def order_eligibility(
+    order_no: str, action: str, token: str, quality: bool = False, intercepted: bool = False
+) -> dict[str, Any]:
+    async with _client() as client:
+        resp = await client.get(
+            f"/api/orders/{order_no}/eligibility",
+            params={"action": action, "quality": str(quality).lower(),
+                    "intercepted": str(intercepted).lower()},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def list_after_sales(token: str) -> list[dict[str, Any]]:
     async with _client() as client:
         resp = await client.get("/api/after-sales", headers={"Authorization": f"Bearer {token}"})

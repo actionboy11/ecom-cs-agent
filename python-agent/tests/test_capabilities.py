@@ -7,7 +7,7 @@ from app.graph import capabilities
 def test_address_is_user_action() -> None:
     result = capabilities.detect("帮我把这个订单的地址改到公司")
     assert result is not None
-    assert result.kind == "user_action"
+    assert result.kind == "user_action_request"
     assert result.payload["action"] == "change_address"
 
 

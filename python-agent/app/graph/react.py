@@ -62,6 +62,11 @@ class HandoffArgs(BaseModel):
     summary: str = Field(default="", description="给坐席的摘要")
 
 
+class PrepareUserActionArgs(BaseModel):
+    action: str = Field(description="change_address 或 invoice")
+    order_no: str = Field(description="已识别的订单号")
+
+
 class UrgeArgs(BaseModel):
     order_no: str = Field(description="订单号")
     reason: str = Field(default="用户申请催件", description="催件原因")
@@ -84,6 +89,27 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
 
     async def get_product(sku: str) -> str:
         return _json(await business_api.get_product(sku, token))
+
+    async def prepare_user_action(action: str, order_no: str) -> str:
+        order = await business_api.get_order(order_no, token)
+        eligibility_action = "address" if action == "change_address" else action
+        eligibility = await business_api.order_eligibility(order_no, eligibility_action, token)
+        if not eligibility.get("allowed"):
+            return _json({"error": eligibility.get("reason"), "eligibility": eligibility})
+        fields = {
+            "change_address": ["receiver", "phone", "address"],
+            "invoice": ["title", "taxId", "email"],
+        }.get(action, [])
+        return _json({
+            "type": "user_action",
+            "action": action,
+            "order_no": order_no,
+            "order_summary": f"{order.get('item')}，{order.get('status')}",
+            "message": "请填写信息后提交" if action == "change_address" else "请填写发票信息",
+            "fields": fields,
+            "shipping_payer": eligibility.get("shippingPayer"),
+            "requires_evidence": eligibility.get("requiresEvidence", False),
+        })
 
     async def urge_logistics(order_no: str, reason: str = "用户申请催件") -> str:
         return _json(await business_api.urge_logistics(order_no, token, reason))
@@ -162,6 +188,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
             name="query_logistics",
             description="按订单号查物流轨迹；仅本人订单。",
             args_schema=OrderArgs,
+        ),
+        StructuredTool.from_function(
+            coroutine=prepare_user_action,
+            name="prepare_user_action",
+            description="订单已识别后，为改地址/发票准备前端表单；必须先定位订单再调用。",
+            args_schema=PrepareUserActionArgs,
         ),
         StructuredTool.from_function(
             coroutine=urge_logistics,
@@ -256,6 +288,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     context = build_context(last_text, state)
     candidates = context.candidates
     pending_action = state.get("pending_write_action")
+    pending_user_action = state.get("pending_user_action")
+    ui_action: dict[str, Any] | None = None
     if active is None and state.get("active_order_no"):
         active_at = None
     if context.selected_order:
@@ -293,6 +327,10 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 f"上一轮待办：{pending_action}。用户本轮已选订单 {active} 时，直接调用对应写工具，不要再问。"
                 if pending_action and active else ""
             )
+            + (
+                f"待办能力动作：{pending_user_action.get('action')}。必须先定位订单；订单确定后调用 prepare_user_action，不要直接让用户填订单号，也不要直接给表单。"
+                if pending_user_action else ""
+            )
             + f"当前会话订单：{active or '无'}。"
             "如果用户回复「选择订单 CSxxxx」，直接用该订单继续，不要再让用户选。"
             f"用户说退/退款且订单已确定、未签收或政策允许仅退款时调 create_refund；说退货调 create_return；说换货调 create_exchange。"
@@ -328,6 +366,18 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             if not text:
                 fallback_reason = "empty_reply"
                 break
+            if (
+                pending_user_action
+                and active
+                and not any(item.get("tool") == "prepare_user_action" for item in trace)
+                and not guard_retried
+            ):
+                guard_retried = True
+                messages.append(SystemMessage(content=(
+                    f"用户要做 {pending_user_action.get('action')}，订单已确定为 {active}。"
+                    "现在必须调用 prepare_user_action，不要直接给表单或让用户填订单号。"
+                )))
+                continue
             required_action = context.action if context.action in ALL_ACTIONS else pending_action
             required_tools = {
                 "refund": "create_refund", "return": "create_return",
@@ -358,6 +408,8 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 "active_order_at": active_at,
                 "last_candidates": candidates[:5],
                 "pending_write_action": pending_action,
+                "ui_action": ui_action,
+                "pending_user_action": pending_user_action,
                 "candidates": candidates[:3],
             }
 
@@ -431,6 +483,14 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 if order_no and name in ("query_order", "query_logistics"):
                     active_order = str(order_no)
                     active_at = clock.now(UTC).isoformat()
+                if name == "prepare_user_action":
+                    try:
+                        payload = json.loads(str(result))
+                        if payload.get("type") == "user_action":
+                            ui_action = payload
+                            pending_user_action = None
+                    except (TypeError, ValueError):
+                        pass
                 if name == "find_my_orders":
                     try:
                         payload = json.loads(str(result))

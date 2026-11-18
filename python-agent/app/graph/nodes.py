@@ -270,7 +270,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "confidence": 1.0,
             "urgent": False,
             "matched_products": [],
-            "ui_action": payload if capability.kind == "user_action" else None,
+            "ui_action": None,
+            "pending_user_action": payload if capability.kind == "user_action_request" else None,
             "history_request": payload if capability.kind == "order_history" else None,
         }
 
@@ -324,6 +325,8 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "confidence": parsed.confidence,
             "urgent": any(hint in text for hint in URGENT_HINTS),
             "matched_products": list(dict.fromkeys(item["canonical"] for item in matches)),
+            "ui_action": None,
+            "history_request": None,
         }
 
 
@@ -484,6 +487,8 @@ def route_after_classify(state: AgentState) -> str:
     # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
     if int(state.get("turn_count") or 0) > MAX_TURNS:
         return "handoff"
+    if state.get("pending_user_action"):
+        return "react"
     if state.get("ui_action") or state.get("history_request"):
         return "respond"
     if state.get("awaiting_confirm"):

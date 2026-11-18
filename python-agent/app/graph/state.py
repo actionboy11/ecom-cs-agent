@@ -24,6 +24,7 @@ class AgentState(TypedDict, total=False):
     urgent: bool
     matched_products: list[str]
     ui_action: dict[str, Any] | None
+    pending_user_action: dict[str, Any] | None
     history_request: dict[str, Any] | None
     order_no: str | None
     sku: str | None

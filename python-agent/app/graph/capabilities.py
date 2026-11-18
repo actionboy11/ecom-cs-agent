@@ -56,28 +56,14 @@ def detect(text: str) -> CapabilityResult | None:
     )
     if any(word in text for word in ADDRESS_WORDS) or address_change:
         return CapabilityResult(
-            kind="user_action",
-            payload={
-                "type": "user_action",
-                "action": "change_address",
-                "order_no": order_no,
-                "message": "修改收货地址需要填写新地址，请在下方操作",
-                "fields": ["receiver", "phone", "address"],
-            },
-            reply="修改地址需要您填写新地址，请在下方操作。",
+            kind="user_action_request",
+            payload={"action": "change_address", "order_no": order_no},
         )
 
     if any(word in text for word in INVOICE_WORDS):
         return CapabilityResult(
-            kind="user_action",
-            payload={
-                "type": "user_action",
-                "action": "invoice",
-                "order_no": order_no,
-                "message": "开票需要填写抬头和税号，请在下方操作",
-                "fields": ["title", "taxId", "email"],
-            },
-            reply="开票需要您填写发票信息，请在下方操作。",
+            kind="user_action_request",
+            payload={"action": "invoice", "order_no": order_no},
         )
 
     if any(word in text for word in HISTORY_WORDS) or (
