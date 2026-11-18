@@ -12,7 +12,10 @@ from app import clock
 ORDER_RE = re.compile(r"(CS\d{7,})", re.IGNORECASE)
 ADDRESS_WORDS = ("改地址", "换地址", "修改地址", "改收货地址", "改收件人", "换收件人")
 INVOICE_WORDS = ("发票", "开票", "开发票")
-HISTORY_WORDS = ("历史订单", "订单记录", "账单", "买过什么", "订单列表", "消费记录")
+HISTORY_WORDS = (
+    "历史订单", "订单记录", "历史账单", "全部订单", "订单列表",
+    "买过什么", "买了什么", "买过哪些", "都买了什么", "消费记录",
+)
 
 
 @dataclass
@@ -66,9 +69,7 @@ def detect(text: str) -> CapabilityResult | None:
             payload={"action": "invoice", "order_no": order_no},
         )
 
-    if any(word in text for word in HISTORY_WORDS) or (
-        "月" in text and any(word in text for word in ("买", "订单", "消费"))
-    ):
+    if any(word in text for word in HISTORY_WORDS):
         start, end = _month_range(text)
         payload = {
             "type": "order_history",
