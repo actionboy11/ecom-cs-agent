@@ -76,6 +76,8 @@ class AfterSalesPersistenceApiTest {
     @Test
     void after_sales_creation_is_audited() throws Exception {
         String token = LoginSupport.tokenFor(mockMvc, "buyer_a");
+        mockMvc.perform(post("/api/orders/CS2024002/intercept")
+                .header("Authorization", "Bearer " + token));
         String body = mockMvc.perform(post("/api/after-sales")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
