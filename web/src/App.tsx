@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import * as api from "./api";
+import BuyerWorkbench from "./Workbench";
 
 type Message = {
   role: "user" | "assistant";
@@ -761,27 +762,29 @@ export default function App() {
   }
 
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="who">
-          {user ? (
-            <>
-              <strong>{user.displayName || user.username}</strong> · {roleLabel(user.role)}
-            </>
-          ) : (
-            ""
+    <div className={`shell ${user && roleLabel(user.role) !== "坐席" ? "shell-wide" : ""}`}>
+      {(!user || roleLabel(user.role) === "坐席") && (
+        <header className="topbar">
+          <div className="who">
+            {user ? (
+              <>
+                <strong>{user.displayName || user.username}</strong> · {roleLabel(user.role)}
+              </>
+            ) : (
+              ""
+            )}
+          </div>
+          {user && (
+            <button className="ghost" onClick={logout}>
+              退出
+            </button>
           )}
-        </div>
-        {user && (
-          <button className="ghost" onClick={logout}>
-            退出
-          </button>
-        )}
-      </header>
+        </header>
+      )}
       {!user && <Login onLogin={handleLogin} />}
       {user && roleLabel(user.role) === "坐席" && <AgentWorkbench user={user} toast={toast} />}
       {user && roleLabel(user.role) !== "坐席" && (
-        <BuyerChat user={user} onLogout={logout} toast={toast} />
+        <BuyerWorkbench user={user} onLogout={logout} toast={toast} />
       )}
       <Toast text={toastText} />
     </div>
