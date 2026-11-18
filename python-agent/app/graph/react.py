@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -295,6 +296,68 @@ def _active_order(state: AgentState) -> str | None:
     return str(order_no)
 
 
+
+SAFETY_HANDOFF_HINTS = ("鼓包", "冒烟", "起火", "爆炸", "漏电", "发烫", "烫手")
+POLICY_HANDOFF_HINTS = ("赔偿", "赔我", "赔钱", "凭什么", "拒了", "拒绝")
+
+
+def _force_handoff_for_policy(text: str, thread_id: str) -> None:
+    """安全/赔付/争议不是普通售后，直接转人工挂起。"""
+    safety = any(word in text for word in SAFETY_HANDOFF_HINTS)
+    dispute = any(word in text for word in POLICY_HANDOFF_HINTS) or (
+        "留着" in text and "退" in text
+    )
+    if not (safety or dispute):
+        return
+    decision = interrupt(
+        {
+            "type": "human_handoff",
+            "thread_id": thread_id,
+            "reason": "safety_escalation" if safety else "policy_dispute",
+            "summary": text,
+        }
+    )
+    if isinstance(decision, dict) and decision.get("approved") is False:
+        return
+
+
+async def _force_handoff_if_ineligible(
+    token: str, order_no: str | None, action: str | None, text: str, reply: str, thread_id: str
+) -> None:
+    """资格明确返回 HANDOFF 时，真正挂起，而不是只让模型解释。"""
+    if not order_no:
+        # 模型已在回复里锁定唯一订单时，用该订单做资格复核
+        found = set(re.findall(r"CS\d{7,}", reply, re.IGNORECASE))
+        if len(found) == 1:
+            order_no = next(iter(found))
+    if not order_no:
+        return
+    if action not in ALL_ACTIONS:
+        if "换" in text:
+            action = "exchange"
+        elif "退" in text:
+            action = "return" if "退货" in text else "refund"
+        else:
+            return
+    quality = any(word in text for word in QUALITY_HINTS)
+    try:
+        eligibility = await business_api.order_eligibility(order_no, action, token, quality=quality)
+    except Exception:  # noqa: BLE001
+        return
+    if eligibility.get("allowed") or str(eligibility.get("nextAction")) != "HANDOFF":
+        return
+    decision = interrupt(
+        {
+            "type": "human_handoff",
+            "thread_id": thread_id,
+            "reason": eligibility.get("reasonCode") or "ELIGIBILITY_HANDOFF",
+            "summary": f"{text}；{eligibility.get('reason') or ''}".strip("；"),
+            "order_no": order_no,
+        }
+    )
+    if isinstance(decision, dict) and decision.get("approved") is False:
+        return
+
 async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
     token = (config or {}).get("configurable", {}).get("auth_token") or ""
     if not token:
@@ -420,6 +483,11 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     f"现在必须调用 {action_tool} 并等待系统确认；如果政策不允许，调用 handoff_to_human 或明确解释，不要只文字询问。"
                 )))
                 continue
+            await _force_handoff_if_ineligible(
+                token, active_order or active, context.action or pending_action,
+                last_text, text, thread_id,
+            )
+            _force_handoff_for_policy(last_text, thread_id)
             return {
                 "reply": text,
                 "messages": [AIMessage(content=text)],

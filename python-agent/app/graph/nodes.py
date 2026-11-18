@@ -164,6 +164,18 @@ def _keyword_classify(text: str) -> Classification:
     return Classification(intent=intent, order_no=order_no, sku=sku, reason=text[:100], confidence=0.4)
 
 
+
+SAFETY_HANDOFF_HINTS = ("鼓包", "冒烟", "起火", "爆炸", "漏电", "发烫", "烫手")
+DISPUTE_HANDOFF_HINTS = ("赔偿", "赔我", "赔钱", "凭什么", "拒了", "拒绝", "改主意", "投诉", "曝光", "12315")
+
+
+def _needs_human_handoff(text: str) -> bool:
+    if any(word in text for word in SAFETY_HANDOFF_HINTS):
+        return True
+    if any(word in text for word in DISPUTE_HANDOFF_HINTS):
+        return True
+    return "留着" in text and "退" in text
+
 async def classify(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
     text = _last_user_text(state["messages"])
@@ -246,6 +258,29 @@ async def classify(state: AgentState) -> dict[str, Any]:
                 "reason": None,
                 "confidence": 1.0,
             }
+
+    if _needs_human_handoff(text) and not state.get("awaiting_confirm"):
+        return {
+            "intent": "complaint",
+            "tasks": [],
+            "pending_tasks": [],
+            "pending_actions": [],
+            "awaiting_confirm": False,
+            "cancelled": False,
+            "turn_count": turn_count,
+            "refusal": None,
+            "safety_reply": None,
+            "tool_result": None,
+            "order_no": None,
+            "sku": None,
+            "reason": "safety_or_dispute",
+            "confidence": 1.0,
+            "urgent": True,
+            "matched_products": [],
+            "ui_action": None,
+            "pending_user_action": None,
+            "history_request": None,
+        }
 
     capability = capabilities.detect(text)
     if capability is not None:
