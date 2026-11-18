@@ -1,5 +1,6 @@
 package com.example.csagent.service;
 
+import com.example.csagent.config.EvalClock;
 import com.example.csagent.domain.Order;
 import com.example.csagent.security.AuthenticatedUser;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,10 +18,18 @@ public class OrderActionService {
 
     private final JdbcTemplate jdbc;
     private final OrderQueryService orderQueryService;
+    private final OrderEligibilityService eligibilityService;
+    private final EvalClock clock;
 
-    public OrderActionService(JdbcTemplate jdbc, OrderQueryService orderQueryService) {
+    public OrderActionService(
+            JdbcTemplate jdbc,
+            OrderQueryService orderQueryService,
+            OrderEligibilityService eligibilityService,
+            EvalClock clock) {
         this.jdbc = jdbc;
         this.orderQueryService = orderQueryService;
+        this.eligibilityService = eligibilityService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -28,8 +37,8 @@ public class OrderActionService {
             String orderNo, String receiver, String phone, String address,
             AuthenticatedUser user, String path) {
         Order order = orderQueryService.findByOrderNo(orderNo, user, path);
-        if (!"待发货".equals(order.status())) {
-            throw new StateConflictException("订单已发货，不能修改收货地址");
+        if (!eligibilityService.check(order, "address", false, false, clock.today()).allowed()) {
+            throw new StateConflictException("订单已发货或已签收，不能修改收货地址");
         }
         jdbc.update("""
                 INSERT INTO order_addresses (order_no, user_id, receiver, phone, address)
@@ -51,8 +60,8 @@ public class OrderActionService {
             String orderNo, String title, String taxId, String email,
             AuthenticatedUser user, String path) {
         Order order = orderQueryService.findByOrderNo(orderNo, user, path);
-        if ("已取消".equals(order.status())) {
-            throw new StateConflictException("已取消订单不能开票");
+        if (!eligibilityService.check(order, "invoice", false, false, clock.today()).allowed()) {
+            throw new StateConflictException("订单未签收或签收超过 30 天，不能开票");
         }
         Integer exists = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM invoices WHERE order_no = ?", Integer.class, orderNo);

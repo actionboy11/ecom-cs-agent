@@ -9,7 +9,7 @@ import sys
 from app.knowledge.policies import load_policies
 from app.knowledge.store import build_store, index_policies
 
-EXPECTED_POLICIES = 12
+EXPECTED_POLICIES = 15
 
 
 def main() -> None:

@@ -90,15 +90,15 @@ def _reset_store():
 
 def test_policy_file_has_twelve_entries() -> None:
     policies = load_policies()
-    assert len(policies) == 12
-    assert [p.policy_id for p in policies] == [f"P{i:02d}" for i in range(1, 13)]
+    assert len(policies) == 15
+    assert [p.policy_id for p in policies] == [f"P{i:02d}" for i in range(1, 16)]
     assert all(p.title and p.body for p in policies)
 
 
 def test_index_policies_writes_ids_and_titles() -> None:
     store = FakeChroma()
-    assert index_policies(store) == 12
-    assert store.ids == [f"P{i:02d}" for i in range(1, 13)]
+    assert index_policies(store) == 15
+    assert store.ids == [f"P{i:02d}" for i in range(1, 16)]
     assert all(m.get("title") for m in store.metas)
     assert store.metas[2]["title"].startswith("退款")
 
@@ -106,7 +106,7 @@ def test_index_policies_writes_ids_and_titles() -> None:
 def test_real_chroma_with_fake_embeddings_end_to_end(local_tmp) -> None:
     """真实 Chroma 落盘 + 假向量：验证「入库 → 检索」确实能命中 P03 且带标题。"""
     store = build_store(embeddings=FakeEmbeddings(), persist_directory=str(local_tmp / "chroma"))
-    assert index_policies(store) == 12
+    assert index_policies(store) == 15
 
     hits = store.similarity_search("退款多久到账", k=3)
     assert hits
