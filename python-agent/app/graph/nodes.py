@@ -467,6 +467,10 @@ def _apply_hard_rules(text: str, intent: str, catalog=None) -> str:
     """分类器的确定性兜底：政策例外、模糊指代、投诉/加急、价保。"""
     has_order = bool(ORDER_NO_PATTERN.search(text))
     matches = match_products(text, catalog)["matches"] if catalog is not None else match_products(text)["matches"]
+    if any(word in text for word in ("催", "不发货", "必须发", "差评", "着急")) and (
+        has_order or any(hint in text for hint in PRODUCT_HINTS)
+    ):
+        return "logistics"
     # 赠品没有明确政策条款：转人工确认，避免套用商品条款
     if any(word in text for word in ("赠品", "送的", "赠的")):
         return "complaint"

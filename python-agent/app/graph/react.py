@@ -16,6 +16,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app import clock, skill_registry
+from app.graph.preflight import run_preflight
 from app.graph.query_context import ALL_ACTIONS, build_context, resolve_candidate
 from app.graph.state import AgentState
 from app.graph.time_refs import parse_time_reference
@@ -489,6 +490,29 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     trace: list[dict[str, Any]] = []
     active_order = active
     fallback_reason: str | None = None
+
+    preflight = await run_preflight(last_text, state, token, context.order_no)
+    if preflight.trace:
+        trace.extend(preflight.trace)
+    if preflight.order_no:
+        active_order = preflight.order_no
+        active_at = clock.now(UTC).isoformat()
+    if preflight.candidates:
+        candidates = preflight.candidates[:5]
+    if preflight.facts:
+        messages.append(SystemMessage(content="已预取：" + "；".join(preflight.facts)))
+    if preflight.intercept_failed:
+        decision = interrupt(
+            {
+                "type": "human_handoff",
+                "thread_id": thread_id,
+                "reason": "INTERCEPT_FAILED",
+                "summary": "运输中订单拦截失败，无法确认退款",
+                "order_no": preflight.order_no,
+            }
+        )
+        if isinstance(decision, dict) and decision.get("approved") is False:
+            return _fallback(trace, "handoff_rejected", active_order, active_at)
     failures = 0
     guard_retried = False
 
