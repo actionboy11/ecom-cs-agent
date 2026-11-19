@@ -606,6 +606,13 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             call_id = call.get("id", f"call-{step}-{name}")
             write_types = {"create_refund": "REFUND", "create_return": "RETURN", "create_exchange": "EXCHANGE"}
             if name in write_types:
+                explicit_order = context.order_no or state.get("order_no")
+                if not (active_order or active or explicit_order):
+                    messages.append(ToolMessage(
+                        content=_json({"error": "订单未定位，不能直接写；先 find_my_orders/query_order"}),
+                        tool_call_id=call_id,
+                    ))
+                    continue
                 if not (active_order or active) and len(candidates) > 1:
                     messages.append(ToolMessage(
                         content=_json({"error": "有多个候选订单，必须先确认是哪一单"}),
