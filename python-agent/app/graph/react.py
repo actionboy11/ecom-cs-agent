@@ -66,6 +66,7 @@ class HandoffArgs(BaseModel):
 class PrepareUserActionArgs(BaseModel):
     action: str = Field(description="change_address / invoice / return / exchange")
     order_no: str = Field(description="已识别的订单号")
+    quality: bool = Field(default=False, description="8–15 天质量问题退货/换货时传 true")
 
 
 class InterceptArgs(BaseModel):
@@ -95,10 +96,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
     async def get_product(sku: str) -> str:
         return _json(await business_api.get_product(sku, token))
 
-    async def prepare_user_action(action: str, order_no: str) -> str:
+    async def prepare_user_action(action: str, order_no: str, quality: bool = False) -> str:
         order = await business_api.get_order(order_no, token)
         eligibility_action = "address" if action == "change_address" else action
-        eligibility = await business_api.order_eligibility(order_no, eligibility_action, token)
+        eligibility = await business_api.order_eligibility(
+            order_no, eligibility_action, token, quality=quality
+        )
         if not eligibility.get("allowed"):
             return _json({"error": eligibility.get("reason"), "eligibility": eligibility})
         fields = {

@@ -13,6 +13,7 @@ export type PendingAction = {
   type?: string;
   intent?: string;
   order_no?: string | null;
+  active_order_no?: string | null;
   reason?: string;
   label?: string;
 };
@@ -21,6 +22,7 @@ export type ChatReply = {
   reply: string;
   intent?: string;
   order_no?: string | null;
+  active_order_no?: string | null;
   tool_result?: { tool?: string; error?: string; data?: Record<string, unknown> };
   policy_refs?: string[];
   chain?: string;

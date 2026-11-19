@@ -91,6 +91,7 @@ class ChatResponse(BaseModel):
     reply: str
     intent: str | None = None
     order_no: str | None = None
+    active_order_no: str | None = None
     tool_result: dict[str, Any] | None = None
     needs_human: bool = False
     interrupt: dict[str, Any] | None = None
@@ -247,6 +248,7 @@ async def chat(
         reply=reply,
         intent=result.get("intent"),
         order_no=result.get("order_no"),
+        active_order_no=result.get("active_order_no"),
         policy_refs=result.get("policy_refs") or [],
         chain=result.get("reply_chain", ""),
         latency_ms=elapsed_ms,

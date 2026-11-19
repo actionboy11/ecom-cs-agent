@@ -607,7 +607,7 @@ export default function BuyerWorkbench({
     }
   }
 
-  const currentOrder = orders?.items.find((item) => item.orderNo === lastReply?.order_no);
+  const currentOrder = orders?.items.find((item) => item.orderNo === lastReply?.active_order_no || lastReply?.order_no);
 
   return (
     <div className="workbench">
