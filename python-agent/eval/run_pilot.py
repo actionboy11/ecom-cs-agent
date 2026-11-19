@@ -65,6 +65,8 @@ def check_single(case: dict, data: dict) -> tuple[bool, str]:
     if expected.get("order_no"):
         orders.add(expected["order_no"])
 
+    if kind == "history":
+        return bool(data.get("history_request")) and not write, f"history={bool(data.get('history_request'))}"
     if kind == "user_action":
         action = (data.get("ui_action") or {})
         ok = bool(action) and action.get("action") == expected.get("action")

@@ -73,6 +73,10 @@ class InterceptArgs(BaseModel):
     order_no: str = Field(description="运输中的订单号")
 
 
+class QueryAfterSalesArgs(BaseModel):
+    order_no: str | None = Field(default=None, description="订单号；为空则查当前用户全部售后")
+
+
 class UrgeArgs(BaseModel):
     order_no: str = Field(description="订单号")
     reason: str = Field(default="用户申请催件", description="催件原因")
@@ -95,6 +99,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
 
     async def get_product(sku: str) -> str:
         return _json(await business_api.get_product(sku, token))
+
+    async def query_after_sales(order_no: str | None = None) -> str:
+        rows = await business_api.list_after_sales(token)
+        if order_no:
+            rows = [row for row in rows if row.get("orderNo") == order_no]
+        return _json({"after_sales": rows, "count": len(rows)})
 
     async def prepare_user_action(action: str, order_no: str, quality: bool = False) -> str:
         order = await business_api.get_order(order_no, token)
@@ -209,6 +219,12 @@ def _build_tools(token: str, thread_id: str) -> list[StructuredTool]:
             args_schema=OrderArgs,
         ),
         StructuredTool.from_function(
+            coroutine=query_after_sales,
+            name="query_after_sales",
+            description="查售后进度/换货补发/退款审核；先 query_order 再查售后，按 order_no 过滤。",
+            args_schema=QueryAfterSalesArgs,
+        ),
+        StructuredTool.from_function(
             coroutine=prepare_user_action,
             name="prepare_user_action",
             description="订单已识别后，为改地址/发票准备前端表单；必须先定位订单再调用。",
@@ -245,7 +261,7 @@ def _candidate_selection(text: str, candidates: list[dict[str, Any]]) -> str | N
     return resolve_candidate(text, candidates)
 
 
-QUALITY_HINTS = ("质量", "坏", "破", "漏", "杂音", "故障", "开线", "发错", "错色")
+QUALITY_HINTS = ("质量", "坏", "破", "漏", "杂音", "故障", "开线", "发错", "错色", "差", "磕", "异响", "充不进", "不工作", "不匹配")
 
 
 async def _action_eligible(token: str, order_no: str | None, action: str, text: str) -> bool:
@@ -437,7 +453,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         content=(
             "你是电商售后 Agent，用户已登录。"
             "必须调用工具获取事实，可多次调用、换工具、重试；不要编造订单或政策。"
-            "售后进度/退款到账先 query_order 查订单与售后状态；物流问题按 find_my_orders → query_order → query_logistics；催件必须调 urge_logistics，不要只回复。"
+            "售后进度/退款到账先 query_order，再 query_after_sales；物流问题按 find_my_orders → query_order → query_logistics；催件必须调 urge_logistics，不要只回复。"
             "用户只描述商品（我的鞋/那个耳机）时先 find_my_orders；有明确订单号再用 query_order/query_logistics。"
             "没有订单号时禁止直接回答‘查不到’，必须先 find_my_orders 查候选。"
             "政策问题用 search_policy，并保留 [Pxx] 引用。"
@@ -528,6 +544,17 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 last_text, text, thread_id,
             )
             _force_handoff_for_policy(last_text, thread_id)
+            if ui_action is None:
+                for item in trace:
+                    if item.get("tool") != "prepare_user_action":
+                        continue
+                    try:
+                        payload = json.loads(str(item.get("result")))
+                        if payload.get("type") == "user_action":
+                            ui_action = payload
+                            break
+                    except (TypeError, ValueError):
+                        continue
             if ui_action is None:
                 ui_action = await _fallback_user_action(
                     token, active_order or active, state.get("intent"), last_text, text
@@ -642,7 +669,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     "step": step,
                     "tool": name,
                     "args": args,
-                    "result": str(result) if name == "find_my_orders" else str(result)[:300],
+                    "result": str(result) if name in ("find_my_orders", "prepare_user_action") else str(result)[:300],
                 })
                 messages.append(ToolMessage(content=str(result), tool_call_id=call_id))
                 failures = 0
