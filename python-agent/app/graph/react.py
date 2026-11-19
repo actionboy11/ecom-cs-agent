@@ -725,6 +725,20 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         if fallback_reason:
             break
 
+    if ui_action is not None:
+        text = "请在表单中填写信息后提交。"
+        return {
+            "reply": text,
+            "messages": [AIMessage(content=text)],
+            "reply_chain": "react",
+            "tool_trace": trace,
+            "react_fallback": False,
+            "react_fallback_reason": None,
+            "active_order_no": active_order,
+            "active_order_at": active_at,
+            "ui_action": ui_action,
+            "pending_user_action": None,
+        }
     if fallback_reason is None:
         fallback_reason = "step_limit"
     return _fallback(trace, fallback_reason, active_order, active_at)
