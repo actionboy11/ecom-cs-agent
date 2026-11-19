@@ -23,7 +23,7 @@ def load(pattern: str) -> list[dict]:
     rows: list[dict] = []
     for path in sorted(BASE.glob(pattern)):
         rows.extend(json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
-    return rows
+    return [row for row in rows if not row.get("invalid")]
 
 
 def check_step(expected: dict, data: dict) -> tuple[bool, str]:
