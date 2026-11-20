@@ -1,0 +1,25 @@
+{"id": "v2-001", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_d", "orders": ["CS2024292"]}, "input": "我那个杯子到哪了，前天就说发货了怎么还在原地", "expected": {"type": "tool", "tools": ["query_order", "query_logistics"]}}
+{"id": "v2-002", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "上周买的耳机能退吗，戴了两天耳朵疼", "expected": {"type": "clarify"}}
+{"id": "v2-003", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": []}, "input": "退款什么时候到帐，都五天了", "expected": {"type": "answer"}}
+{"id": "v2-004", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024249"]}, "input": "发票能补开吗，公司报销要用", "expected": {"type": "clarify"}}
+{"id": "v2-005", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": ["CS2024201"]}, "input": "地址写错了能改吗，另外发票抬头也要改一下", "expected": {"type": "clarify"}}
+{"id": "v2-007", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_d", "orders": ["CS2024279"]}, "input": "我买的那双鞋怎么还不发货，都等着穿呢", "expected": {"type": "clarify"}}
+{"id": "v2-008", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_c", "orders": []}, "input": "订单号我忘了，就是十月份买的那个黑的", "expected": {"type": "clarify"}}
+{"id": "v2-009", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024247"]}, "input": "赠品是不是漏发了，我记得有个小包的", "expected": {"type": "handoff"}}
+{"id": "v2-010", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_e", "orders": ["CS2024317"]}, "input": "这个定制的杯子能不能换个颜色，字也刻错了", "expected": {"type": "handoff"}}
+{"id": "v2-011", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "你们这什么服务啊，问了三天没一个人回", "expected": {"type": "handoff"}}
+{"id": "v2-012", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": []}, "input": "我想问下七天无理由是从签收那天算起吗", "expected": {"type": "answer"}}
+{"id": "v2-013", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "两个事，一是耳机有杂音，二是我要开发票", "expected": {"type": "clarify"}}
+{"id": "v2-015", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": ["CS2024218"]}, "input": "能不能换货，尺码小了，顺便问下退货运费谁出", "expected": {"type": "clarify"}}
+{"id": "v2-016", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024237"]}, "input": "物流显示签收了但我没收到，谁签的", "expected": {"type": "tool", "tools": ["query_logistics", "query_order"]}}
+{"id": "v2-017", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_c", "orders": ["CS2024275"]}, "input": "上次买的那个包，背带断了，这个能赔吗", "expected": {"type": "handoff"}}
+{"id": "v2-018", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "订单CS2026081573这个，我查不到进度了", "expected": {"type": "clarify"}}
+{"id": "v2-020", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024237"]}, "input": "我要投诉快递，直接给我扔门口了", "expected": {"type": "handoff"}}
+{"id": "v2-022", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": []}, "input": "上个月买的耳机现在降价了，能补差价吗", "expected": {"type": "answer"}}
+{"id": "v2-024", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "退货运费谁出啊，是你们质量问题吧", "expected": {"type": "answer"}}
+{"id": "v2-025", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_c", "orders": []}, "input": "我想问下你们支持以旧换新吗，就随便问问", "expected": {"type": "answer"}}
+{"id": "v2-026", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_d", "orders": ["CS2024293"]}, "input": "杯子和包一起买的，杯子要退，包不用", "expected": {"type": "clarify"}}
+{"id": "v2-027", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_e", "orders": ["CS2024310"]}, "input": "我记错时间了，应该是十一月不是十月，反正就那个耳机", "expected": {"type": "clarify"}}
+{"id": "v2-028", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "你们客服电话多少，我不想打字了", "expected": {"type": "answer"}}
+{"id": "v2-029", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "钱退了但是少了二十，运费扣我头上了？", "expected": {"type": "clarify"}}
+{"id": "v2-030", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "那个带盖的杯子漏水，放包里把电脑弄湿了，这个怎么说", "expected": {"type": "handoff"}}

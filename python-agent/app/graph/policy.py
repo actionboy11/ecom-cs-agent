@@ -7,7 +7,7 @@ from app.graph.decision import Decision
 PRICE_WORDS = ("价保", "补差价", "降价", "退差")
 TRADE_IN_WORDS = ("以旧换新", "旧机", "折价换")
 PHONE_WORDS = ("客服电话", "电话多少", "人工电话")
-EXPLICIT_HANDOFF_WORDS = ("转人工", "人工客服", "找人工", "投诉", "曝光", "12315")
+EXPLICIT_HANDOFF_WORDS = ("转人工", "人工客服", "找人工", "投诉", "曝光", "12315", "什么服务", "没人回", "服务态度")
 COMPENSATION_WORDS = (
     "赔偿", "赔钱", "赔我", "能赔", "索赔", "损失",
     "弄湿", "泡了", "泡坏", "电脑坏了", "赔吗",
