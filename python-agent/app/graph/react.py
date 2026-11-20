@@ -515,7 +515,49 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         order_no = selected.group(1).upper()
         if order_no in candidate_orders(pending_case):
             active_order = order_no
-            form = await build_form(token, order_no, pending_case)
+            pending_case = dict(pending_case)
+            pending_case["selected_order"] = order_no
+            action = pending_case.get("action")
+            if not action:
+                action = infer_action(last_text, state.get("intent"))
+                if action:
+                    pending_case["action"] = action
+            if action:
+                form = await build_form(token, order_no, pending_case)
+                if form is not None:
+                    text = "已为您打开表单，请填写后提交。"
+                    return {
+                        "reply": text,
+                        "messages": [AIMessage(content=text)],
+                        "reply_chain": "react",
+                        "tool_trace": trace,
+                        "react_fallback": False,
+                        "react_fallback_reason": None,
+                        "active_order_no": active_order,
+                        "active_order_at": clock.now(UTC).isoformat(),
+                        "ui_action": form,
+                        "pending_case": None,
+                        "pending_user_action": None,
+                    }
+            text = "这单您是想退货、换货，还是维修？"
+            return {
+                "reply": text,
+                "messages": [AIMessage(content=text)],
+                "reply_chain": "react",
+                "tool_trace": trace,
+                "react_fallback": False,
+                "react_fallback_reason": None,
+                "active_order_no": active_order,
+                "active_order_at": clock.now(UTC).isoformat(),
+                "pending_case": pending_case,
+                "pending_user_action": None,
+            }
+    if pending_case and pending_case.get("selected_order") and not pending_case.get("action"):
+        action = infer_action(last_text, state.get("intent"))
+        if action:
+            pending_case = dict(pending_case)
+            pending_case["action"] = action
+            form = await build_form(token, str(pending_case["selected_order"]), pending_case)
             if form is not None:
                 text = "已为您打开表单，请填写后提交。"
                 return {
@@ -525,7 +567,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     "tool_trace": trace,
                     "react_fallback": False,
                     "react_fallback_reason": None,
-                    "active_order_no": active_order,
+                    "active_order_no": str(pending_case["selected_order"]),
                     "active_order_at": clock.now(UTC).isoformat(),
                     "ui_action": form,
                     "pending_case": None,
@@ -533,8 +575,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 }
     if candidates and pending_case is None and not active_order:
         case_action = infer_action(last_text, state.get("intent"))
-        if case_action:
-            pending_case = remember(case_action, last_text, candidates)
+        pending_case = remember(case_action, last_text, candidates)
 
     if preflight.refund_unresolved:
         decision = interrupt(

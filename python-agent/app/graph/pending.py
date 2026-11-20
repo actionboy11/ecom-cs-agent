@@ -17,19 +17,20 @@ def infer_action(text: str, intent: str | None) -> str | None:
     for action, words in ACTION_WORDS.items():
         if any(word in text for word in words):
             return action
-    if "退" in text or any(word in text for word in QUALITY_HINTS):
+    if "退" in text:
         return "return"
     if intent in ("refund", "return", "exchange"):
         return str(intent)
     return None
 
 
-def remember(action: str, original_text: str, candidates: list[dict[str, Any]], target: str | None = None) -> dict[str, Any]:
+def remember(action: str | None, original_text: str, candidates: list[dict[str, Any]], target: str | None = None) -> dict[str, Any]:
     return {
         "action": action,
         "original_text": original_text,
         "candidates": candidates[:5],
         "target": target,
+        "selected_order": None,
         "created_at": datetime.now(UTC).isoformat(),
     }
 
