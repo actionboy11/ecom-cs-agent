@@ -221,8 +221,8 @@ async def chat(
     reply = result.get("reply", "")
     pending_actions = result.get("pending_actions") or []
     tool_trace = result.get("tool_trace") or []
-    if interrupt is not None and interrupt.get("type") == "human_handoff" and not reply:
-        reply = str(interrupt.get("summary") or "已为您转接人工客服，请稍候。")
+    if interrupt is not None and interrupt.get("type") == "human_handoff":
+        reply = str(interrupt.get("reply") or reply or interrupt.get("summary") or "已为您转接人工客服，请稍候。")
     if write_approval:
         order = interrupt.get("order") or {}
         action = str(interrupt.get("action") or "refund")

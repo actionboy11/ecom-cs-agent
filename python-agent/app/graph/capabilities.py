@@ -16,6 +16,10 @@ HISTORY_WORDS = (
     "历史订单", "订单记录", "历史账单", "全部订单", "订单列表",
     "买过什么", "买了什么", "买过哪些", "都买了什么", "消费记录",
 )
+COMPENSATION_WORDS = (
+    "赔偿", "赔钱", "赔我", "能赔", "索赔", "损失",
+    "弄湿", "泡了", "泡坏", "电脑坏了", "赔吗",
+)
 
 
 @dataclass
@@ -50,6 +54,13 @@ def _month_range(text: str) -> tuple[str | None, str | None]:
 
 
 def detect(text: str) -> CapabilityResult | None:
+    if any(word in text for word in COMPENSATION_WORDS):
+        return CapabilityResult(
+            kind="handoff_request",
+            payload={"reason": "compensation_or_damage", "summary": text},
+            reply="这类赔偿/物品损失需要人工核实，我先为您转接。",
+        )
+
     order = ORDER_RE.search(text)
     order_no = order.group(1).upper() if order else None
 

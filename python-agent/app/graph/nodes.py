@@ -18,7 +18,7 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.graph import capabilities
+from app.graph import capabilities, policy
 from app.graph.state import AgentState
 from app.knowledge import store as knowledge_store
 from app.llm.registry import ainvoke_with_fallback, with_structured_output
@@ -282,7 +282,85 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "history_request": None,
         }
 
+    policy_decision = policy.detect(text)
+    if policy_decision is not None:
+        if policy_decision.kind == "handoff":
+            return {
+                "intent": "complaint",
+                "tasks": [],
+                "pending_tasks": [],
+                "pending_actions": [],
+                "awaiting_confirm": False,
+                "cancelled": False,
+                "turn_count": turn_count,
+                "refusal": None,
+                "safety_reply": None,
+                "tool_result": None,
+                "order_no": None,
+                "sku": None,
+                "reason": policy_decision.reason,
+                "handoff_reason": policy_decision.reason,
+                "handoff_summary": text,
+                "confidence": 1.0,
+                "urgent": True,
+                "matched_products": [],
+                "ui_action": None,
+                "pending_user_action": None,
+                "history_request": None,
+                "policy_answer": None,
+            }
+        return {
+            "intent": "policy",
+            "tasks": [],
+            "pending_tasks": [],
+            "pending_actions": [],
+            "awaiting_confirm": False,
+            "cancelled": False,
+            "turn_count": turn_count,
+            "refusal": None,
+            "safety_reply": None,
+            "tool_result": None,
+            "order_no": None,
+            "sku": None,
+            "reason": None,
+            "confidence": 1.0,
+            "urgent": False,
+            "matched_products": [],
+            "ui_action": None,
+            "pending_user_action": None,
+            "history_request": None,
+            "policy_answer": policy_decision.text,
+        }
+
     capability = capabilities.detect(text)
+    if capability is not None and capability.kind == "handoff_request":
+        with node_span(thread_id, "classify", user_text=text[:200]) as info:
+            info["source"] = "capability"
+            info["capability"] = "handoff"
+        return {
+            "intent": "complaint",
+            "tasks": [],
+            "pending_tasks": [],
+            "pending_actions": [],
+            "awaiting_confirm": False,
+            "cancelled": False,
+            "turn_count": turn_count,
+            "refusal": None,
+            "safety_reply": None,
+            "tool_result": None,
+            "order_no": None,
+            "sku": None,
+            "reason": capability.payload.get("reason"),
+            "handoff_reason": capability.payload.get("reason"),
+            "handoff_summary": text,
+            "confidence": 1.0,
+            "urgent": True,
+            "matched_products": [],
+            "ui_action": None,
+            "pending_user_action": None,
+            "history_request": None,
+        }
+
     if capability is not None:
         with node_span(thread_id, "classify", user_text=text[:200]) as info:
             info["source"] = "capability"
@@ -362,6 +440,11 @@ async def classify(state: AgentState) -> dict[str, Any]:
             "matched_products": list(dict.fromkeys(item["canonical"] for item in matches)),
             "ui_action": None,
             "history_request": None,
+            "pending_issue": (
+                "refund_discrepancy"
+                if any(word in text for word in ("少了", "少退", "扣我", "差额"))
+                else state.get("pending_issue")
+            ),
         }
 
 
@@ -528,6 +611,8 @@ def route_after_classify(state: AgentState) -> str:
         return "handoff"
     if state.get("pending_user_action"):
         return "react"
+    if state.get("policy_answer"):
+        return "respond"
     if state.get("ui_action") or state.get("history_request"):
         return "respond"
     if state.get("awaiting_confirm"):
@@ -724,6 +809,8 @@ async def handoff_prepare(state: AgentState) -> dict[str, Any]:
     with node_span(thread_id, "handoff_prepare", reason="turn_limit" if over_limit else "complaint"):
         if over_limit:
             text = TURN_LIMIT_REPLY
+        elif state.get("handoff_reason") == "compensation_or_damage":
+            text = "这类赔偿或物品损失需要人工核实责任与金额，已为您转接人工，请稍候。"
         elif "赠品" in _last_user_text(state["messages"]):
             text = "赠品单独退换没有明确的政策条款，为避免误导，已为您转接人工确认。"
         elif any(word in _last_user_text(state["messages"]) for word in URGENT_HINTS):
@@ -838,6 +925,9 @@ def _with_citation(text: str, refs: list[str]) -> str:
 
 async def respond_node(state: AgentState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "unknown")  # type: ignore[arg-type]
+    if state.get("policy_answer"):
+        text = str(state["policy_answer"])
+        return {"reply": text, "messages": [AIMessage(content=text)], "reply_chain": "policy"}
     if state.get("ui_action"):
         payload = state["ui_action"]
         text = str(payload.get("message") or "请在下方完成操作。")

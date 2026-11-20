@@ -12,7 +12,7 @@ from typing import Any
 from app.tools import business_api
 
 ORDER_RE = re.compile(r"(CS\d{7,})", re.IGNORECASE)
-AFTER_SALES_HINTS = ("换货申请", "退款申请", "审核", "进度", "补发", "到账", "退款被拒", "退货申请")
+AFTER_SALES_HINTS = ("换货申请", "退款申请", "审核", "进度", "补发", "到账", "退款被拒", "退货申请", "少了", "少退", "扣我", "差额")
 LOGISTICS_HINTS = ("物流", "到哪", "没收到", "运输", "快递", "签收", "发货", "补发")
 URGE_HINTS = ("催", "不发货", "必须发", "差评")
 ORDER_INTENTS = {"order_query", "logistics", "refund", "return", "exchange", "urge"}
@@ -26,6 +26,7 @@ class Preflight:
     facts: list[str] = field(default_factory=list)
     ambiguous: bool = False
     intercept_failed: bool = False
+    refund_unresolved: bool = False
 
 
 async def run_preflight(
@@ -67,9 +68,16 @@ async def run_preflight(
     except Exception:  # noqa: BLE001
         return result
 
-    if any(word in text for word in AFTER_SALES_HINTS):
+    refund_issue = state.get("pending_issue") == "refund_discrepancy" or any(
+        word in text for word in ("少了", "少退", "扣我", "差额")
+    )
+    if any(word in text for word in AFTER_SALES_HINTS) or refund_issue:
         try:
             rows = await business_api.list_after_sales(token)
+            rows = [row for row in rows if row.get("orderNo") == order_no]
+            if refund_issue:
+                # 当前没有退款金额/扣费明细，查到记录也要人工核实
+                result.refund_unresolved = True
             rows = [row for row in rows if row.get("orderNo") == order_no]
             result.trace.append({"step": -1, "tool": "query_after_sales", "args": {"order_no": order_no}, "result": str(rows)})
             result.facts.append(f"售后记录：{rows}")

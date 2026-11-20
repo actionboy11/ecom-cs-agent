@@ -508,6 +508,19 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         candidates = preflight.candidates[:5]
     if preflight.facts:
         messages.append(SystemMessage(content="已预取：" + "；".join(preflight.facts)))
+    if preflight.refund_unresolved:
+        decision = interrupt(
+            {
+                "type": "human_handoff",
+                "thread_id": thread_id,
+                "reason": "REFUND_DETAIL_UNAVAILABLE",
+                "summary": "用户反馈退款金额不符，当前无退款/扣费明细，需人工核实",
+                "reply": "这笔退款金额需要人工核对退款和扣费明细，已为您转接人工，请稍候。",
+                "order_no": preflight.order_no,
+            }
+        )
+        if isinstance(decision, dict) and decision.get("approved") is False:
+            return _fallback(trace, "handoff_rejected", active_order, active_at)
     if preflight.intercept_failed:
         decision = interrupt(
             {
@@ -515,6 +528,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 "thread_id": thread_id,
                 "reason": "INTERCEPT_FAILED",
                 "summary": "运输中订单拦截失败，无法确认退款",
+                "reply": "快递拦截失败，无法直接退款，已为您转接人工核实物流。",
                 "order_no": preflight.order_no,
             }
         )

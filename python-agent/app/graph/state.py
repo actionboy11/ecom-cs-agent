@@ -26,6 +26,8 @@ class AgentState(TypedDict, total=False):
     ui_action: dict[str, Any] | None
     pending_user_action: dict[str, Any] | None
     history_request: dict[str, Any] | None
+    policy_answer: str | None
+    pending_issue: str | None
     order_no: str | None
     sku: str | None
     reason: str | None
