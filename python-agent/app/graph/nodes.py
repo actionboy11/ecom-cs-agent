@@ -609,6 +609,8 @@ def route_after_classify(state: AgentState) -> str:
     # SPEC §8：超过轮次上限转人工（真实挂起，可被坐席恢复）
     if int(state.get("turn_count") or 0) > MAX_TURNS:
         return "handoff"
+    if state.get("pending_case") and "选择订单" in str((state.get("messages") or [""])[-1].content):
+        return "react"
     if state.get("pending_user_action"):
         return "react"
     if state.get("policy_answer"):

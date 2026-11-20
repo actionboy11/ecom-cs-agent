@@ -16,6 +16,8 @@ from langgraph.types import interrupt
 from pydantic import BaseModel, Field
 
 from app import clock, skill_registry
+from app.graph.action_builder import build_form
+from app.graph.pending import candidate_orders, infer_action, remember
 from app.graph.preflight import run_preflight
 from app.graph.query_context import ALL_ACTIONS, build_context, resolve_candidate
 from app.graph.state import AgentState
@@ -508,6 +510,32 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
         candidates = preflight.candidates[:5]
     if preflight.facts:
         messages.append(SystemMessage(content="已预取：" + "；".join(preflight.facts)))
+    pending_case = state.get("pending_case")
+    if selected and pending_case:
+        order_no = selected.group(1).upper()
+        if order_no in candidate_orders(pending_case):
+            active_order = order_no
+            form = await build_form(token, order_no, pending_case)
+            if form is not None:
+                text = "已为您打开表单，请填写后提交。"
+                return {
+                    "reply": text,
+                    "messages": [AIMessage(content=text)],
+                    "reply_chain": "react",
+                    "tool_trace": trace,
+                    "react_fallback": False,
+                    "react_fallback_reason": None,
+                    "active_order_no": active_order,
+                    "active_order_at": clock.now(UTC).isoformat(),
+                    "ui_action": form,
+                    "pending_case": None,
+                    "pending_user_action": None,
+                }
+    if candidates and pending_case is None and not active_order:
+        case_action = infer_action(last_text, state.get("intent"))
+        if case_action:
+            pending_case = remember(case_action, last_text, candidates)
+
     if preflight.refund_unresolved:
         decision = interrupt(
             {
@@ -588,6 +616,10 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 found = set(ORDER_RE.findall(text))
                 if len(found) == 1:
                     active_order = next(iter(found)).upper()
+            if pending_case is None and len(candidates) > 1:
+                case_action = infer_action(last_text, state.get("intent"))
+                if case_action:
+                    pending_case = remember(case_action, last_text, candidates)
             await _force_handoff_if_ineligible(
                 token, active_order or active, context.action or pending_action,
                 last_text, text, thread_id,
@@ -621,6 +653,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                 "pending_write_action": pending_action,
                 "ui_action": ui_action,
                 "pending_user_action": pending_user_action,
+                "pending_case": pending_case,
                 "candidates": candidates[:3],
             }
 

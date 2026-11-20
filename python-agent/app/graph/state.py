@@ -28,6 +28,7 @@ class AgentState(TypedDict, total=False):
     history_request: dict[str, Any] | None
     policy_answer: str | None
     pending_issue: str | None
+    pending_case: dict[str, Any] | None
     order_no: str | None
     sku: str | None
     reason: str | None
