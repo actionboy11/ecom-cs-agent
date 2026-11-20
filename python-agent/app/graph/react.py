@@ -24,6 +24,9 @@ from app.knowledge import store as knowledge_store
 from app.llm.registry import get_chat_model
 from app.tools import business_api
 
+ORDER_RE = re.compile(r"(CS\d{7,})", re.IGNORECASE)
+SELECT_RE = re.compile(r"选择订单\s*(CS\d{7,})", re.IGNORECASE)
+SELECT_RE = re.compile(r"选择订单\s*(CS\d{7,})", re.IGNORECASE)
 MAX_STEPS = 6
 ACTIVE_ORDER_TTL = timedelta(minutes=30)
 
@@ -491,7 +494,11 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
     active_order = active
     fallback_reason: str | None = None
 
-    preflight = await run_preflight(last_text, state, token, context.order_no)
+    selected = SELECT_RE.search(last_text)
+    if selected:
+        active_order = selected.group(1).upper()
+        active_at = clock.now(UTC).isoformat()
+    preflight = await run_preflight(last_text, state, token, context.order_no or active_order)
     if preflight.trace:
         trace.extend(preflight.trace)
     if preflight.order_no:
@@ -563,6 +570,10 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
                     f"现在必须调用 {action_tool} 并等待系统确认；如果政策不允许，调用 handoff_to_human 或明确解释，不要只文字询问。"
                 )))
                 continue
+            if not active_order:
+                found = set(ORDER_RE.findall(text))
+                if len(found) == 1:
+                    active_order = next(iter(found)).upper()
             await _force_handoff_if_ineligible(
                 token, active_order or active, context.action or pending_action,
                 last_text, text, thread_id,
@@ -606,7 +617,7 @@ async def react_node(state: AgentState, config: RunnableConfig) -> dict[str, Any
             call_id = call.get("id", f"call-{step}-{name}")
             write_types = {"create_refund": "REFUND", "create_return": "RETURN", "create_exchange": "EXCHANGE"}
             if name in write_types:
-                explicit_order = context.order_no or state.get("order_no")
+                explicit_order = context.order_no
                 if not (active_order or active or explicit_order):
                     messages.append(ToolMessage(
                         content=_json({"error": "订单未定位，不能直接写；先 find_my_orders/query_order"}),
