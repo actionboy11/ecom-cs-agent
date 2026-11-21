@@ -5,7 +5,7 @@
 {"id": "v2-005", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": ["CS2024201"]}, "input": "地址写错了能改吗，另外发票抬头也要改一下", "expected": {"type": "clarify"}}
 {"id": "v2-007", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_d", "orders": ["CS2024279"]}, "input": "我买的那双鞋怎么还不发货，都等着穿呢", "expected": {"type": "clarify"}}
 {"id": "v2-008", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_c", "orders": []}, "input": "订单号我忘了，就是十月份买的那个黑的", "expected": {"type": "clarify"}}
-{"id": "v2-009", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024247"]}, "input": "赠品是不是漏发了，我记得有个小包的", "expected": {"type": "handoff"}}
+{"id": "v2-009", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": ["CS2024247"]}, "input": "赠品是不是漏发了，我记得有个小包的", "expected": {"type": "clarify"}}
 {"id": "v2-010", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_e", "orders": ["CS2024317"]}, "input": "这个定制的杯子能不能换个颜色，字也刻错了", "expected": {"type": "clarify"}}
 {"id": "v2-011", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_a", "orders": []}, "input": "你们这什么服务啊，问了三天没一个人回", "expected": {"type": "handoff"}}
 {"id": "v2-012", "kind": "single", "category": "v2", "persona": "consumer", "preconditions": {"user": "eval_b", "orders": []}, "input": "我想问下七天无理由是从签收那天算起吗", "expected": {"type": "answer"}}

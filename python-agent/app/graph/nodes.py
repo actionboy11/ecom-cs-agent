@@ -554,8 +554,10 @@ def _apply_hard_rules(text: str, intent: str, catalog=None) -> str:
         has_order or any(hint in text for hint in PRODUCT_HINTS)
     ):
         return "logistics"
-    # 赠品没有明确政策条款：转人工确认，避免套用商品条款
+    # 赠品漏发/物流先查订单；只有赠品退换才走人工
     if any(word in text for word in ("赠品", "送的", "赠的")):
+        if any(word in text for word in ("漏发", "没收到", "没发", "物流", "到哪", "发了吗")):
+            return "logistics"
         return "complaint"
     if any(hint in text for hint in PRODUCT_HINTS) and any(
         word in text for word in ("有货", "库存", "多少钱", "价格", "降价")

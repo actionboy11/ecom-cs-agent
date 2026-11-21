@@ -110,7 +110,7 @@
       ],
       "input": "赠品是不是漏发了，我记得有个小包的",
       "expected": {
-        "type": "handoff"
+        "type": "clarify"
       }
     },
     {
